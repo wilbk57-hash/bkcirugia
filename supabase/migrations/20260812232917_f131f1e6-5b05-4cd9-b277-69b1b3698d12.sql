@@ -1,0 +1,1 @@
+INSERT INTO public.admin_roles (user_id, level) SELECT id, 'superadmin' FROM auth.users WHERE email='testuser_bk2@example.com' ON CONFLICT DO NOTHING;
