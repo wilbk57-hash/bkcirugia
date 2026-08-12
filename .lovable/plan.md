@@ -1,36 +1,46 @@
-# Ligar a autenticação do BK-CIRURGIA ao backend deste projeto
+# Tutor de IA com múltiplos provedores (Claude, Gemini, ChatGPT)
 
-## Situação atual (verificada)
+## Como está hoje (verificado no `public/app.html`)
 
-O app é o ficheiro estático `public/app.html`, carregado num iframe pela página inicial. Ele **já contém toda a lógica de autenticação escrita** (login, registo em 3 passos, recuperação de senha, login de administrador, painel admin, biblioteca do utilizador). O problema é que aponta para um backend **externo/antigo** (`lcmfpvnahmzhekaobsqw`) e não para a base de dados deste projeto, que está vazia (sem tabelas, funções, triggers ou buckets).
+- O tutor é um chat próprio (`iaView` + barra `iaInputBar`), com histórico local, voz e leitura em voz alta.
+- Toda a chamada de IA está em duas funções: `sendIaMessage()` (chat principal, linha ~4392) e a explicação de termo selecionado durante a leitura (~linha 2063).
+- Ambas chamam **diretamente** `https://api.anthropic.com/v1/messages`, modelo fixo `claude-sonnet-5`, com o cabeçalho `anthropic-dangerous-direct-browser-access: true`.
+- A chave é da Anthropic, colada pelo próprio aluno nas Definições e guardada em `localStorage` (`bkcirurgia_api_key`). Ou seja: hoje **a chave vive no navegador do aluno** e cada aluno paga/gasta a sua própria quota.
+- A busca na web usa a ferramenta nativa da Anthropic (`web_search_20250305`), e as respostas mostram "Fontes".
 
-Logo, não é preciso reescrever nada de UI: basta apontar o app para este backend e criar o esquema que o código já espera.
+## O que proponho
 
-## O que vai ser feito
+### 1. Passar as chamadas de IA para o servidor deste projeto
+Criar um endpoint no backend do próprio app (mesma origem do `app.html`, por isso funciona sem CORS nem alterações visuais) que recebe: provedor escolhido, mensagens, system prompt e a opção de busca web. O `app.html` deixa de falar diretamente com a Anthropic e passa a falar só com o nosso servidor.
 
-### 1. Base de dados (migração)
-- **`profiles`** — ligada ao utilizador autenticado: nome, email, telefone, país, role (`aluno` / `professor` / `admin`), instituição, curso, ano, estado (`active` / `suspended`).
-- **`admin_roles`** — tabela separada que define quem é administrador (com nível). As permissões nunca ficam guardadas no perfil, por segurança.
-- **`user_books`** — livros carregados por cada utilizador (título, autor, edição, categoria, idioma, ficheiro, tamanho).
-- **`audit_events`** + função `log_event` — registo de eventos (login, registo, ações de admin) que o app já chama.
-- **Trigger de criação automática de perfil** quando alguém se regista.
-- **Regras de acesso**: cada utilizador só vê e edita o seu próprio perfil e os seus próprios livros; administradores podem ver todos os perfis e bloquear/desbloquear utilizadores.
-- **Espaço de ficheiros privado** `user-books`, onde cada utilizador só acede aos seus ficheiros.
+Vantagens: nenhuma chave fica no frontend, podemos trocar de provedor sem mexer no app, e conseguimos fazer *fallback* automático.
 
-### 2. Ligação do app ao backend
-- Substituir no `public/app.html` o endereço e a chave pública do backend antigo pelos deste projeto. É a única alteração ao ficheiro do app — **zero mudanças de design ou conteúdo**.
+### 2. Seletor de provedor na interface do tutor
+- Um seletor discreto no topo do chat do tutor com três opções: **Claude**, **Gemini**, **ChatGPT**, mais a opção **Automático**.
+- Usa exatamente os estilos já existentes (mesmo padrão dos controlos "segmented" já usados nas Definições) — sem novo design, sem novas cores.
+- A escolha fica guardada nas definições do aluno (mesma mecânica de `SETTINGS_STATE`), e também aparece como item na secção "Tutor de IA" das Definições.
+- **Automático** (recomendado como padrão): tenta o provedor preferido e, se esse devolver limite atingido (429/quota), passa sozinho para o seguinte — que é precisamente o problema dos limites diários que queres resolver. Nesse caso a resposta indica discretamente qual modelo respondeu.
 
-### 3. Fluxo dos botões (já existentes)
-- **Entrar** → login por email/senha; se a conta estiver suspensa, o acesso é recusado.
-- **Criar conta** → registo com email/senha; o perfil é criado automaticamente e completado com os dados dos 3 passos.
-- **Acesso Administrativo** → ecrã de login separado que já existe; depois de autenticar, verifica no servidor se o email consta em `admin_roles`. Se não constar, a sessão é terminada e o acesso negado. Só admins veem o painel administrativo.
+### 3. Comportamento por provedor
+- **Gemini** e **ChatGPT**: passam a funcionar **sem o aluno ter de colar chave nenhuma**, através da IA integrada da plataforma Lovable (já incluída neste projeto, sem chaves para configurar).
+- **Claude**: a IA integrada da plataforma não inclui modelos Anthropic. Duas hipóteses:
+  - (a) manter o caminho atual, com a chave Anthropic do aluno guardada no navegador — funciona já, sem custos para ti;
+  - (b) tu forneceres uma chave Anthropic única do projeto, guardada como segredo no servidor, e todos os alunos usarem-na.
+  Por omissão implemento (a) + deixo (b) pronto para ligar depois.
+- A busca web nativa continua no Claude; para Gemini/ChatGPT indico ao modelo que não tem busca em tempo real (ou desligo o aviso "Fontes"), para não prometer o que não faz.
 
-### 4. Configuração de autenticação
-- Email/senha ativo. Confirmação de email mantém-se no comportamento por defeito (o app já mostra o ecrã "verifica o teu email"). Se preferires entrar logo após o registo, digo-me e ativo a confirmação automática.
+### 4. Chaves de API e segurança
+- **Gemini / ChatGPT**: **nenhuma chave necessária** — a IA da plataforma já está disponível no backend e a credencial nunca sai do servidor.
+- **Anthropic (Claude)**, só se escolheres a opção (b): a chave é adicionada por ti em **Definições do Projeto → Secrets** e lida apenas no servidor. Nunca é escrita no `app.html`, nunca aparece no HTML/JS enviado ao navegador, nunca é devolvida em respostas.
+- Regra que mantenho em todo o caso: nenhuma chave de projeto no frontend; o navegador só envia o texto da pergunta.
+- Protejo o endpoint para exigir sessão iniciada (só alunos autenticados podem gastar IA) e limito o tamanho do pedido.
 
 ## Detalhes técnicos
-- Migração SQL única com `CREATE TABLE` + `GRANT` + RLS + políticas, função `has_admin_role()` do tipo `security definer` para evitar recursão nas políticas, trigger `handle_new_user()` em `auth.users`, e políticas de storage no bucket `user-books`.
-- O primeiro administrador é concedido inserindo uma linha em `admin_roles` para o teu email depois de criares a conta pelo ecrã "Criar conta de administrador".
+- Endpoint: server function TanStack (`src/lib/tutor.functions.ts`) com `requireSupabaseAuth`, chamada pelo `app.html` via `fetch` same-origin para uma rota `src/routes/api/tutor.ts` (o `app.html` é HTML estático, por isso precisa de rota HTTP, não de RPC).
+- Modelos: `google/gemini-3-flash` e `openai/gpt-5.2` (nomes finais confirmados no catálogo no momento da implementação) via AI Gateway; Claude via `api.anthropic.com` com `claude-sonnet-5`.
+- Normalizo pedido/resposta num formato único `{ text, sources[], provider }` para não duplicar a lógica de render já existente.
+- Alterações no `app.html`: substituir o corpo das duas funções de chamada, adicionar o seletor e as strings de tradução (PT/EN/ES). Zero alterações de CSS ou de layout.
 
 ## A confirmar
-- Qual o email que deve ficar como administrador principal?
+1. Para o Claude: manter a chave do aluno (a) ou passares a fornecer uma chave do projeto (b)?
+2. O padrão do seletor deve ser **Automático** (com fallback entre provedores) ou um provedor fixo?
