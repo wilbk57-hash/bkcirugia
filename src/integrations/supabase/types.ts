@@ -14,13 +14,163 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_roles: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      audit_events: {
+        Row: {
+          created_at: string
+          detail: Json | null
+          event: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json | null
+          event: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: Json | null
+          event?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          country: string | null
+          course: string | null
+          created_at: string
+          email: string
+          id: string
+          institution: string | null
+          name: string
+          phone: string | null
+          role: string
+          status: string
+          updated_at: string
+          year: string | null
+        }
+        Insert: {
+          country?: string | null
+          course?: string | null
+          created_at?: string
+          email?: string
+          id: string
+          institution?: string | null
+          name?: string
+          phone?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          year?: string | null
+        }
+        Update: {
+          country?: string | null
+          course?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          institution?: string | null
+          name?: string
+          phone?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
+      user_books: {
+        Row: {
+          author: string | null
+          category: string | null
+          created_at: string
+          edition: string | null
+          file_hash: string | null
+          file_name: string | null
+          file_path: string
+          id: string
+          language: string | null
+          mime_type: string | null
+          size_bytes: number | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          created_at?: string
+          edition?: string | null
+          file_hash?: string | null
+          file_name?: string | null
+          file_path: string
+          id?: string
+          language?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          created_at?: string
+          edition?: string | null
+          file_hash?: string | null
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          language?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_event: {
+        Args: { p_detail?: Json; p_event: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
