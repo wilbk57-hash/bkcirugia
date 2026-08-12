@@ -6827,7 +6827,11 @@ let _adminUsersCache = [];
 function auditLog(event, detail) {
   /* Grava no servidor (tabela audit_log), nunca editável pelo browser.
      Fire-and-forget: um falha de rede aqui não deve travar a UI. */
-  supabaseClient.rpc('log_event', { p_event: event, p_detail: detail ? { detail } : null }).catch(() => {});
+  try {
+    Promise.resolve(
+      supabaseClient.rpc('log_event', { p_event: event, p_detail: detail ? { detail } : null })
+    ).catch(() => {});
+  } catch (_) { /* nunca bloquear a UI */ }
 }
 function randomToken() { return Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b => b.toString(16).padStart(2,'0')).join(''); }
 
