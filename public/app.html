@@ -881,6 +881,10 @@
   }
   .ia-speak-btn:hover { color: var(--teal-light); background: var(--teal-dim); }
   .ia-speak-btn.speaking { color: var(--teal); background: var(--teal-dim); }
+  .ia-provider-select { height: 30px; padding: 0 8px; font-size: 12px; }
+  .ia-provider-row { display: flex; justify-content: center; margin: 10px 0 4px; }
+  .ia-toolbar-spacer { margin-left: auto; margin-right: 8px; }
+  .ia-provider-badge { font-size: 11px; color: var(--text3); margin-top: 4px; }
   .apikey-input-row { display: flex; gap: 8px; }
   .apikey-status { font-size: 11.5px; color: var(--text3); }
   .apikey-status.set { color: var(--teal); }
@@ -2060,8 +2064,8 @@ async function explainSelection() {
   if (sel && sel.removeAllRanges) sel.removeAllRanges();
   if (!termo) return;
 
-  const apiKey = getApiKey();
-  if (!apiKey) {
+  /* Só a opção "Claude" depende da chave pessoal do aluno. */
+  if ((SETTINGS_STATE.tutorProvider === 'claude') && !getApiKey()) {
     showToast(t('toast.apikey.missing'));
     openSettings();
     setTimeout(() => { const el = document.getElementById('apiKeyInput'); if (el) el.focus(); }, 350);
@@ -2070,43 +2074,14 @@ async function explainSelection() {
 
   openExplainCardLoading(termo);
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 220,
-        system: buildExplainSystemPrompt(),
-        messages: [{ role: 'user', content: `Trecho onde a seleção aparece: "${contexto}"\n\nExplique apenas o trecho selecionado: "${termo}"` }],
-      }),
+    const out = await runTutorRequest({
+      system: buildExplainSystemPrompt(),
+      messages: [{ role: 'user', content: `Trecho onde a seleção aparece: "${contexto}"\n\nExplique apenas o trecho selecionado: "${termo}"` }],
+      maxTokens: 400,
     });
-    if (!resp.ok) {
-      let msg = 'HTTP ' + resp.status;
-      let errType = '';
-      try {
-        const errBody = await resp.json();
-        if (errBody && errBody.error) {
-          errType = errBody.error.type || '';
-          if (errBody.error.message) msg = errBody.error.message;
-        }
-      } catch (e2) {}
-      const err = new Error(msg);
-      /* Mesmo tratamento amigável usado no chat principal do tutor: em vez do
-         erro técnico cru, mostramos "limite atingido" ou "indisponível". */
-      err.limitReached = resp.status === 429 || errType === 'rate_limit_error' || /credit balance|quota|billing/i.test(msg);
-      err.overloaded = resp.status === 529 || errType === 'overloaded_error';
-      throw err;
-    }
-    const data = await resp.json();
-    const textOut = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n\n').trim();
-    renderExplainCard(termo, textOut || t('explain.empty'));
+    renderExplainCard(termo, out.text || t('explain.empty'));
   } catch (err) {
-    if (err && err.limitReached) {
+    if (err && (err.limitReached || err.needsKey)) {
       renderExplainCard(termo, null, null, { overloaded: false, title: t('ia.error.limit.title'), content: t('ia.error.limit.body') });
     } else if (err && err.overloaded) {
       renderExplainCard(termo, null, null, { overloaded: true, title: t('ia.error.overloaded.title'), content: t('ia.error.overloaded.body') });
@@ -4323,6 +4298,7 @@ function renderIaMessages() {
         <div class="ia-intro-icon">🤖</div>
         <div class="ia-intro-title">${t('ia.intro.title')}</div>
         <div class="ia-intro-sub">${t('ia.intro.sub')}</div>
+        <div class="ia-provider-row">${iaProviderSelectorHtml()}</div>
         <div class="ia-suggestions">
           ${IA_SUGGESTIONS_KEYS.map(k => `<button class="ia-suggestion-chip" onclick="useIaSuggestion(this.textContent)">${t(k)}</button>`).join('')}
         </div>
@@ -4331,7 +4307,7 @@ function renderIaMessages() {
   }
   const typingHtml = iaSending ? `<div class="ia-msg ia-msg-assistant"><div class="ia-msg-bubble"><div class="ia-typing"><span></span><span></span><span></span></div></div></div>` : '';
   host.innerHTML =
-    `<div class="ia-toolbar"><span class="ia-toolbar-title">${t('ia.intro.title')}</span><button class="ia-clear-btn" onclick="clearIaChat()">${t('ia.clear')}</button></div>` +
+    `<div class="ia-toolbar"><span class="ia-toolbar-title">${t('ia.intro.title')}</span><span class="ia-toolbar-spacer">${iaProviderSelectorHtml()}</span><button class="ia-clear-btn" onclick="clearIaChat()">${t('ia.clear')}</button></div>` +
     IA_MESSAGES.map((m, i) => {
       if (m.limitNotice) {
         /* Short, calm notice instead of a wall of raw API error text —
@@ -4352,12 +4328,15 @@ function renderIaMessages() {
         ? `<div class="ia-msg-tools"><button class="ia-speak-btn" id="ia-speak-${i}" onclick="speakIaMessage(${i})" aria-label="${t('ia.speak.aria')}">🔊 ${t('ia.speak.label')}</button></div>`
         : '';
       const searchedBadge = m.searched ? `<div class="ia-search-badge">🌐 ${t('ia.searched.label')}</div>` : '';
+      const providerBadge = (m.role === 'assistant' && m.provider && !m.error)
+        ? `<div class="ia-provider-badge">${t('ia.answeredby')} ${escapeHtml(tutorProviderName(m.provider))}</div>` : '';
       const sourcesHtml = (m.sources && m.sources.length)
         ? `<div class="ia-sources"><div class="ia-sources-title">${t('ia.sources.title')}</div>${m.sources.map(s => `<a class="ia-source-link" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.title)}</a>`).join('')}</div>`
         : '';
       return `
       <div class="ia-msg ia-msg-${m.role}${m.error ? ' ia-msg-error' : ''}">
         <div class="ia-msg-bubble">${searchedBadge}${formatMdLite(m.content)}${sourcesHtml}</div>
+        ${providerBadge}
         ${speakBtn}
       </div>`;
     }).join('') + typingHtml;
@@ -4389,14 +4368,161 @@ function clearIaChat() {
   renderIaMessages();
 }
 
+/* ============================================================
+   TUTOR DE IA — CAMADA DE PROVEDORES (Claude / Gemini / ChatGPT)
+   ------------------------------------------------------------
+   Gemini e ChatGPT passam pelo servidor do próprio app
+   (/api/tutor), que guarda as credenciais — nenhuma chave desses
+   provedores existe aqui no frontend. O Claude continua a usar a
+   chave pessoal que o aluno cola nas Definições.
+   ============================================================ */
+const TUTOR_PROVIDER_NAMES = { claude: 'Claude', gemini: 'Gemini', openai: 'ChatGPT' };
+function tutorProviderName(p) { return TUTOR_PROVIDER_NAMES[p] || p; }
+
+function setTutorProvider(v) {
+  SETTINGS_STATE.tutorProvider = v;
+  saveSettingsState();
+  renderIaMessages();
+  if (typeof renderSettings === 'function') { try { renderSettings(); } catch (e) {} }
+}
+
+/* Ordem de tentativa. Em "Automático" começa pelos provedores da
+   plataforma (sem limite pessoal do aluno) e só usa o Claude se o
+   aluno tiver chave própria salva. Se um provedor devolver limite
+   atingido, o próximo da lista responde. */
+function tutorProviderChain() {
+  const pref = SETTINGS_STATE.tutorProvider || 'auto';
+  if (pref && pref !== 'auto') return [pref];
+  const chain = ['gemini', 'openai'];
+  if (getApiKey()) chain.push('claude');
+  return chain;
+}
+
+function iaProviderSelectorHtml() {
+  const cur = SETTINGS_STATE.tutorProvider || 'auto';
+  const opts = [['auto','provider.auto'],['gemini','provider.gemini'],['openai','provider.openai'],['claude','provider.claude']];
+  return `<select class="settings-select ia-provider-select" aria-label="${t('item.provider.label')}" onchange="setTutorProvider(this.value)">`
+    + opts.map(([v,k]) => `<option value="${v}" ${cur===v?'selected':''}>${t(k)}</option>`).join('')
+    + `</select>`;
+}
+
+async function getTutorAuthToken() {
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    return (data && data.session && data.session.access_token) || '';
+  } catch (e) { return ''; }
+}
+
+/* Claude — chamada direta com a chave pessoal do aluno (opção mantida). */
+async function callClaudeTutor(opts) {
+  const apiKey = getApiKey();
+  if (!apiKey) { const e = new Error('no-key'); e.needsKey = true; throw e; }
+  const body = {
+    model: 'claude-sonnet-5',
+    max_tokens: opts.maxTokens || 1500,
+    system: opts.system,
+    messages: opts.messages,
+  };
+  if (opts.webSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }];
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    let msg = 'HTTP ' + resp.status;
+    let errType = '';
+    try {
+      const errBody = await resp.json();
+      if (errBody && errBody.error) {
+        errType = errBody.error.type || '';
+        if (errBody.error.message) msg = errBody.error.message;
+      }
+    } catch (e2) {}
+    const err = new Error(msg);
+    err.limitReached = resp.status === 429 || errType === 'rate_limit_error' || /credit balance|quota|billing/i.test(msg);
+    err.overloaded = resp.status === 529 || errType === 'overloaded_error';
+    throw err;
+  }
+  const data = await resp.json();
+  const blocks = data.content || [];
+  const textOut = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n\n');
+  const searched = blocks.some(b => b.type === 'server_tool_use' && b.name === 'web_search');
+  const sources = [];
+  const seenUrls = new Set();
+  blocks.forEach(b => {
+    if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) {
+      b.content.forEach(r => {
+        if (r && r.url && !seenUrls.has(r.url)) { seenUrls.add(r.url); sources.push({ title: r.title || r.url, url: r.url }); }
+      });
+    }
+  });
+  return { text: (textOut || '').trim(), searched, sources: sources.slice(0, 6), provider: 'claude' };
+}
+
+/* Gemini / ChatGPT — sempre pelo servidor do app, com sessão iniciada. */
+async function callGatewayTutor(provider, opts) {
+  const token = await getTutorAuthToken();
+  if (!token) { const e = new Error('no-session'); e.needsAuth = true; throw e; }
+  const resp = await fetch('/api/tutor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({
+      provider,
+      system: opts.system,
+      messages: opts.messages,
+      maxTokens: opts.maxTokens || 1500,
+    }),
+  });
+  let data = null;
+  try { data = await resp.json(); } catch (e) {}
+  if (!resp.ok) {
+    const err = new Error((data && data.message) || 'HTTP ' + resp.status);
+    err.limitReached = resp.status === 429 || resp.status === 402;
+    err.overloaded = resp.status === 503 || resp.status >= 500;
+    err.needsAuth = resp.status === 401;
+    throw err;
+  }
+  return { text: ((data && data.text) || '').trim(), searched: false, sources: [], provider };
+}
+
+async function callTutorProvider(provider, opts) {
+  return provider === 'claude' ? callClaudeTutor(opts) : callGatewayTutor(provider, opts);
+}
+
+/* Percorre a cadeia de provedores: se o primeiro atingiu o limite
+   (ou está sobrecarregado / sem chave), tenta o seguinte. */
+async function runTutorRequest(opts) {
+  const chain = tutorProviderChain();
+  let lastErr = null;
+  for (let i = 0; i < chain.length; i++) {
+    try {
+      const out = await callTutorProvider(chain[i], opts);
+      if (out.text) return out;
+      lastErr = new Error('empty');
+    } catch (err) {
+      lastErr = err;
+      const recoverable = err && (err.limitReached || err.overloaded || err.needsKey);
+      if (!recoverable) break;
+    }
+  }
+  throw lastErr || new Error('erro');
+}
+
 async function sendIaMessage() {
   if (iaSending) return;
   const input = document.getElementById('iaInput');
   const text = (input.value || '').trim();
   if (!text) return;
 
-  const apiKey = getApiKey();
-  if (!apiKey) {
+  /* Só o Claude exige chave pessoal; nas outras opções o servidor do
+     app trata das credenciais. */
+  if ((SETTINGS_STATE.tutorProvider === 'claude') && !getApiKey()) {
     showToast(t('toast.apikey.missing'));
     openSettings();
     setTimeout(() => { const el = document.getElementById('apiKeyInput'); if (el) el.focus(); }, 350);
@@ -4413,75 +4539,29 @@ async function sendIaMessage() {
 
   let newAssistantIdx = null;
   try {
-    const useWebSearch = !!SETTINGS_STATE.webSearchEnabled;
-    const body = {
-      model: 'claude-sonnet-5',
-      max_tokens: 1500,
+    const out = await runTutorRequest({
       system: buildIaSystemPrompt(),
       messages: IA_MESSAGES.filter(m => !m.limitNotice).map(m => ({ role: m.role, content: m.content })),
-    };
-    /* Ferramenta de busca nativa da API da Anthropic: quando incluída, o
-       próprio modelo decide se e quando pesquisar na web para responder
-       (ex.: diretriz atualizada, informação após o corte de conhecimento).
-       A API já devolve a busca executada e o texto final na mesma resposta —
-       não precisamos rodar um loop de tool-use manual aqui. */
-    if (useWebSearch) {
-      body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }];
-    }
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify(body),
+      maxTokens: 1500,
+      webSearch: !!SETTINGS_STATE.webSearchEnabled,
     });
-    if (!resp.ok) {
-      let msg = 'HTTP ' + resp.status;
-      let errType = '';
-      try {
-        const errBody = await resp.json();
-        if (errBody && errBody.error) {
-          errType = errBody.error.type || '';
-          if (errBody.error.message) msg = errBody.error.message;
-        }
-      } catch (e2) {}
-      const err = new Error(msg);
-      /* 429 = rate_limit_error, or the account ran out of credits/quota —
-         either way, from the student's point of view it's simply
-         "o limite acabou por agora", not a technical fetch error. */
-      err.limitReached = resp.status === 429 || errType === 'rate_limit_error' || /credit balance|quota|billing/i.test(msg);
-      err.overloaded = resp.status === 529 || errType === 'overloaded_error';
-      throw err;
-    }
-    const data = await resp.json();
-    const blocks = data.content || [];
-    const textOut = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n\n');
-    const searched = blocks.some(b => b.type === 'server_tool_use' && b.name === 'web_search');
-    /* Cada web_search_tool_result traz uma lista de resultados (title/url) —
-       juntamos e deduplicamos por URL para mostrar como "Fontes" abaixo da
-       resposta, sem expor o conteúdo bruto retornado pela busca. */
-    const sources = [];
-    const seenUrls = new Set();
-    blocks.forEach(b => {
-      if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) {
-        b.content.forEach(r => {
-          if (r && r.url && !seenUrls.has(r.url)) {
-            seenUrls.add(r.url);
-            sources.push({ title: r.title || r.url, url: r.url });
-          }
-        });
-      }
+    IA_MESSAGES.push({
+      role: 'assistant',
+      content: out.text || t('ia.empty.response'),
+      searched: out.searched,
+      sources: out.sources || [],
+      provider: out.provider,
     });
-    IA_MESSAGES.push({ role: 'assistant', content: textOut || t('ia.empty.response'), searched, sources: sources.slice(0, 6) });
     newAssistantIdx = IA_MESSAGES.length - 1;
   } catch (err) {
-    if (err && err.limitReached) {
+    if (err && err.needsAuth) {
+      IA_MESSAGES.push({ role: 'assistant', limitNotice: true, title: t('ia.error.auth.title'), content: t('ia.error.auth.body') });
+    } else if (err && err.limitReached) {
       IA_MESSAGES.push({ role: 'assistant', limitNotice: true, title: t('ia.error.limit.title'), content: t('ia.error.limit.body') });
     } else if (err && err.overloaded) {
       IA_MESSAGES.push({ role: 'assistant', limitNotice: true, overloaded: true, title: t('ia.error.overloaded.title'), content: t('ia.error.overloaded.body') });
+    } else if (err && err.needsKey) {
+      IA_MESSAGES.push({ role: 'assistant', limitNotice: true, title: t('ia.error.nokey.title'), content: t('ia.error.nokey.body') });
     } else {
       IA_MESSAGES.push({ role: 'assistant', content: t('ia.error.prefix') + ' (' + (err && err.message ? err.message : 'erro') + ')', error: true });
     }
@@ -4931,6 +5011,17 @@ const STR_TABLE = [
  ['medal.r6.title','Todos os temas','All topics','Todos los temas'],
  ['medal.r6.desc','Concluiu todos os temas disponíveis','Completed all available topics','Completó todos los temas disponibles'],
  ['sec.iatutor','Tutor de IA','AI Tutor','Tutor de IA'],
+ ['item.provider.label','Provedor do Tutor de IA','AI Tutor provider','Proveedor del Tutor de IA'],
+ ['item.provider.desc','Escolha qual IA responde. Em "Automático", se um provedor atingir o limite diário, o próximo responde sozinho. Gemini e ChatGPT já vêm incluídos — só o Claude precisa da sua chave pessoal.','Choose which AI answers. On "Automatic", if one provider hits its daily limit the next one answers automatically. Gemini and ChatGPT are included — only Claude needs your personal key.','Elige qué IA responde. En "Automático", si un proveedor alcanza su límite diario, responde el siguiente. Gemini y ChatGPT ya están incluidos — solo Claude necesita tu clave personal.'],
+ ['provider.auto','Automático','Automatic','Automático'],
+ ['provider.gemini','Gemini','Gemini','Gemini'],
+ ['provider.openai','ChatGPT','ChatGPT','ChatGPT'],
+ ['provider.claude','Claude (chave própria)','Claude (own key)','Claude (clave propia)'],
+ ['ia.answeredby','Respondido por','Answered by','Respondido por'],
+ ['ia.error.auth.title','Sessão expirada','Session expired','Sesión expirada'],
+ ['ia.error.auth.body','Entre novamente na sua conta para continuar a usar o Tutor de IA.','Sign in again to keep using the AI Tutor.','Inicia sesión de nuevo para seguir usando el Tutor de IA.'],
+ ['ia.error.nokey.title','Chave do Claude em falta','Claude key missing','Falta la clave de Claude'],
+ ['ia.error.nokey.body','Adicione a sua chave da Anthropic nas Definições, ou escolha Gemini/ChatGPT no seletor do tutor.','Add your Anthropic key in Settings, or pick Gemini/ChatGPT in the tutor selector.','Añade tu clave de Anthropic en Ajustes, o elige Gemini/ChatGPT en el selector del tutor.'],
  ['item.apikey.label','Chave de API da Anthropic','Anthropic API key','Clave de API de Anthropic'],
  ['item.apikey.desc','Necessária para o Tutor de IA responder. Crie a sua em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--teal);">console.anthropic.com</a>. A chave fica salva apenas neste navegador — nunca é enviada para nenhum servidor além da própria Anthropic.','Needed for the AI Tutor to respond. Create yours at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--teal);">console.anthropic.com</a>. The key is stored only in this browser — never sent anywhere except Anthropic itself.','Necesaria para que el Tutor de IA responda. Créala en <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--teal);">console.anthropic.com</a>. La clave se guarda solo en este navegador — nunca se envía a nadie más que Anthropic.'],
  ['item.apikey.placeholder.set','•••••••••••• (colar para substituir)','•••••••••••• (paste to replace)','•••••••••••• (pegar para reemplazar)'],
@@ -5151,6 +5242,7 @@ const SETTINGS_STATE = {
   readerFontSize: 14,   // 12–24px, aplicado ao texto de leitura (temas, casos, termos)
   focusMode: false,      // esconde topbar/bottom-nav durante a leitura
   autoSpeakTutor: false, // lê em voz alta cada nova resposta do Tutor de IA automaticamente
+  tutorProvider: 'auto', // provedor de IA do tutor: auto | claude | gemini | openai
   webSearchEnabled: true, // permite o Tutor de IA pesquisar na internet em tempo real quando julgar necessário
 };
 
@@ -5412,6 +5504,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'lang', key: 'language' },
   ]},
   { sec: 'sec.iatutor', items: [
+      { type: 'select', key: 'tutorProvider', label: 'item.provider.label', desc: 'item.provider.desc', opts: [['auto','provider.auto'],['gemini','provider.gemini'],['openai','provider.openai'],['claude','provider.claude']] },
       { type: 'apikey', key: 'iaApiKey', label: 'item.apikey.label', desc: 'item.apikey.desc' },
       { type: 'niveltutor', key: 'tutorNivel', label: 'item.niveltutor.label', desc: 'item.niveltutor.desc' },
       { type: 'toggle', key: 'autoSpeakTutor', label: 'item.autospeak.label', desc: 'item.autospeak.desc' },
