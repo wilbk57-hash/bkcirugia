@@ -881,6 +881,10 @@
   }
   .ia-speak-btn:hover { color: var(--teal-light); background: var(--teal-dim); }
   .ia-speak-btn.speaking { color: var(--teal); background: var(--teal-dim); }
+  .ia-provider-select { height: 30px; padding: 0 8px; font-size: 12px; }
+  .ia-provider-row { display: flex; justify-content: center; margin: 10px 0 4px; }
+  .ia-toolbar-spacer { margin-left: auto; margin-right: 8px; }
+  .ia-provider-badge { font-size: 11px; color: var(--text3); margin-top: 4px; }
   .apikey-input-row { display: flex; gap: 8px; }
   .apikey-status { font-size: 11.5px; color: var(--text3); }
   .apikey-status.set { color: var(--teal); }
@@ -2060,8 +2064,8 @@ async function explainSelection() {
   if (sel && sel.removeAllRanges) sel.removeAllRanges();
   if (!termo) return;
 
-  const apiKey = getApiKey();
-  if (!apiKey) {
+  /* Só a opção "Claude" depende da chave pessoal do aluno. */
+  if ((SETTINGS_STATE.tutorProvider === 'claude') && !getApiKey()) {
     showToast(t('toast.apikey.missing'));
     openSettings();
     setTimeout(() => { const el = document.getElementById('apiKeyInput'); if (el) el.focus(); }, 350);
@@ -2070,43 +2074,14 @@ async function explainSelection() {
 
   openExplainCardLoading(termo);
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 220,
-        system: buildExplainSystemPrompt(),
-        messages: [{ role: 'user', content: `Trecho onde a seleção aparece: "${contexto}"\n\nExplique apenas o trecho selecionado: "${termo}"` }],
-      }),
+    const out = await runTutorRequest({
+      system: buildExplainSystemPrompt(),
+      messages: [{ role: 'user', content: `Trecho onde a seleção aparece: "${contexto}"\n\nExplique apenas o trecho selecionado: "${termo}"` }],
+      maxTokens: 400,
     });
-    if (!resp.ok) {
-      let msg = 'HTTP ' + resp.status;
-      let errType = '';
-      try {
-        const errBody = await resp.json();
-        if (errBody && errBody.error) {
-          errType = errBody.error.type || '';
-          if (errBody.error.message) msg = errBody.error.message;
-        }
-      } catch (e2) {}
-      const err = new Error(msg);
-      /* Mesmo tratamento amigável usado no chat principal do tutor: em vez do
-         erro técnico cru, mostramos "limite atingido" ou "indisponível". */
-      err.limitReached = resp.status === 429 || errType === 'rate_limit_error' || /credit balance|quota|billing/i.test(msg);
-      err.overloaded = resp.status === 529 || errType === 'overloaded_error';
-      throw err;
-    }
-    const data = await resp.json();
-    const textOut = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n\n').trim();
-    renderExplainCard(termo, textOut || t('explain.empty'));
+    renderExplainCard(termo, out.text || t('explain.empty'));
   } catch (err) {
-    if (err && err.limitReached) {
+    if (err && (err.limitReached || err.needsKey)) {
       renderExplainCard(termo, null, null, { overloaded: false, title: t('ia.error.limit.title'), content: t('ia.error.limit.body') });
     } else if (err && err.overloaded) {
       renderExplainCard(termo, null, null, { overloaded: true, title: t('ia.error.overloaded.title'), content: t('ia.error.overloaded.body') });
@@ -4323,6 +4298,7 @@ function renderIaMessages() {
         <div class="ia-intro-icon">🤖</div>
         <div class="ia-intro-title">${t('ia.intro.title')}</div>
         <div class="ia-intro-sub">${t('ia.intro.sub')}</div>
+        <div class="ia-provider-row">${iaProviderSelectorHtml()}</div>
         <div class="ia-suggestions">
           ${IA_SUGGESTIONS_KEYS.map(k => `<button class="ia-suggestion-chip" onclick="useIaSuggestion(this.textContent)">${t(k)}</button>`).join('')}
         </div>
@@ -4331,7 +4307,7 @@ function renderIaMessages() {
   }
   const typingHtml = iaSending ? `<div class="ia-msg ia-msg-assistant"><div class="ia-msg-bubble"><div class="ia-typing"><span></span><span></span><span></span></div></div></div>` : '';
   host.innerHTML =
-    `<div class="ia-toolbar"><span class="ia-toolbar-title">${t('ia.intro.title')}</span><button class="ia-clear-btn" onclick="clearIaChat()">${t('ia.clear')}</button></div>` +
+    `<div class="ia-toolbar"><span class="ia-toolbar-title">${t('ia.intro.title')}</span><span class="ia-toolbar-spacer">${iaProviderSelectorHtml()}</span><button class="ia-clear-btn" onclick="clearIaChat()">${t('ia.clear')}</button></div>` +
     IA_MESSAGES.map((m, i) => {
       if (m.limitNotice) {
         /* Short, calm notice instead of a wall of raw API error text —
@@ -4352,12 +4328,15 @@ function renderIaMessages() {
         ? `<div class="ia-msg-tools"><button class="ia-speak-btn" id="ia-speak-${i}" onclick="speakIaMessage(${i})" aria-label="${t('ia.speak.aria')}">🔊 ${t('ia.speak.label')}</button></div>`
         : '';
       const searchedBadge = m.searched ? `<div class="ia-search-badge">🌐 ${t('ia.searched.label')}</div>` : '';
+      const providerBadge = (m.role === 'assistant' && m.provider && !m.error)
+        ? `<div class="ia-provider-badge">${t('ia.answeredby')} ${escapeHtml(tutorProviderName(m.provider))}</div>` : '';
       const sourcesHtml = (m.sources && m.sources.length)
         ? `<div class="ia-sources"><div class="ia-sources-title">${t('ia.sources.title')}</div>${m.sources.map(s => `<a class="ia-source-link" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.title)}</a>`).join('')}</div>`
         : '';
       return `
       <div class="ia-msg ia-msg-${m.role}${m.error ? ' ia-msg-error' : ''}">
         <div class="ia-msg-bubble">${searchedBadge}${formatMdLite(m.content)}${sourcesHtml}</div>
+        ${providerBadge}
         ${speakBtn}
       </div>`;
     }).join('') + typingHtml;
