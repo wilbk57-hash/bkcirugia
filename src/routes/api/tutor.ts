@@ -73,19 +73,20 @@ export const Route = createFileRoute('/api/tutor')({
         if (!apiKey) return json({ error: 'unavailable', message: 'AI not configured' }, 503)
 
         const modelId = MODELS[parsed.provider]
+        const system = parsed.system ?? 'You are a helpful assistant.'
         try {
           const result =
             parsed.provider === 'openai'
               ? streamText({
                   model: createLovableResponsesProvider(apiKey).responses(modelId),
-                  system: parsed.system,
+                  system,
                   messages: parsed.messages,
                   maxOutputTokens: parsed.maxTokens ?? 1500,
                   providerOptions: { openai: { store: false } },
                 })
               : streamText({
                   model: createLovableChatProvider(apiKey)(modelId),
-                  system: parsed.system,
+                  system,
                   messages: parsed.messages,
                   maxOutputTokens: parsed.maxTokens ?? 1500,
                 })
