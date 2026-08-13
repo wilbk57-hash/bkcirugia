@@ -1922,9 +1922,8 @@ document.addEventListener('click', (e) => {
   try { url = new URL(a.href, location.href); } catch (_) { return; }
   if (url.origin === location.origin) return; // links internos seguem normal
   e.preventDefault();
-  console.log("[extlink] intercept", url.href);
   let win = null;
-  try { win = window.open(url.href, '_blank', 'noopener,noreferrer'); } catch (_) { win = null; }
+  try { win = window.open(url.href, '_blank'); } catch (_) { win = null; }
   if (win) { try { win.opener = null; } catch (_) {} return; }
   // Bloqueado pelo iframe: tenta a janela de topo
   try {
