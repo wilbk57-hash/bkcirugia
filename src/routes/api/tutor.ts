@@ -23,8 +23,8 @@ const BodySchema = z.object({
 })
 
 const MODELS = {
-  gemini: 'google/gemini-3.6-flash',
-  openai: 'openai/gpt-5.4-mini',
+  gemini: 'google/gemini-3.1-flash-lite',
+  openai: 'openai/gpt-5.6-luna',
 } as const
 
 function json(data: unknown, status = 200) {
