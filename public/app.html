@@ -7361,6 +7361,36 @@ const MYLIB_MAX_BYTES = 100 * 1024 * 1024; // 100MB por ficheiro (limite do buck
 const MYLIB_QUOTA_BYTES = 500 * 1024 * 1024; // 500MB por utilizador (ver migration)
 let _myBooksCache = [];
 let _myLibPendingFile = null; // { file, hash } entre a validação e a confirmação dos metadados
+let _myLibSearchQuery = '';
+let _myLibSearchTimer = null;
+
+function normalizeMyLibSearch(s) {
+  if (!s) return '';
+  return s.toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function getFilteredMyBooks() {
+  const q = normalizeMyLibSearch(_myLibSearchQuery);
+  if (!q) return _myBooksCache;
+  return _myBooksCache.filter(b => {
+    const hay = [
+      b.title,
+      b.author,
+      b.category,
+      b.edition,
+      b.language,
+      b.file_name
+    ].map(v => normalizeMyLibSearch(v || '')).join(' ');
+    return q.split(' ').every(part => hay.includes(part));
+  });
+}
+function onMyLibSearchInput(value) {
+  _myLibSearchQuery = value;
+  clearTimeout(_myLibSearchTimer);
+  _myLibSearchTimer = setTimeout(() => renderMyLibList(), 180);
+}
+
 
 function openMyLibrary(fromPop) {
   MAIN_VIEWS.forEach(vid => hideEl(document.getElementById(vid)));
@@ -7419,11 +7449,22 @@ function renderMyLibrary() {
 
     <div id="myLibUploadHost"></div>
 
+    <div class="search-bar" style="margin:4px 0 12px;">
+      <span class="search-bar-icon">🔎</span>
+      <input id="myLibSearchInput" class="search-input" type="text" autocomplete="off"
+        placeholder="${myLibT('Pesquisar nos meus livros...','Search my books...','Buscar en mis libros...')}"
+        value="${_myLibSearchQuery.replace(/"/g,'&quot;')}"
+        oninput="onMyLibSearchInput(this.value)">
+      <button type="button" class="search-close" style="${ _myLibSearchQuery ? '' : 'display:none;'}"
+        onclick="document.getElementById('myLibSearchInput').value='';onMyLibSearchInput('')" aria-label="${myLibT('Limpar','Clear','Limpiar')}">✕</button>
+    </div>
+
     <div class="sec-heading" style="margin-top:4px;"><h2>${myLibT('Seus livros','Your books','Tus libros')}</h2></div>
     <div id="myLibList" class="card" style="padding:0;overflow:hidden;"></div>
   `;
   renderMyLibUploadArea();
   renderMyLibList();
+
 }
 
 function renderMyLibUploadArea() {
@@ -7594,12 +7635,19 @@ async function refreshMyBooks() {
 
 function renderMyLibList() {
   const host = document.getElementById('myLibList');
+  const input = document.getElementById('myLibSearchInput');
+  if (input) _myLibSearchQuery = input.value;
   if (!host) return;
+  const filtered = getFilteredMyBooks();
   if (!_myBooksCache.length) {
     host.innerHTML = `<div style="padding:28px 16px;text-align:center;color:var(--text3);font-size:13px;">${myLibT('Ainda não tens livros. Toca em "Adicionar livro" para começar.','You don\'t have any books yet. Tap "Add book" to get started.','Aún no tienes libros. Toca "Añadir libro" para empezar.')}</div>`;
     return;
   }
-  host.innerHTML = _myBooksCache.map(b => `
+  if (!filtered.length) {
+    host.innerHTML = `<div style="padding:28px 16px;text-align:center;color:var(--text3);font-size:13px;">${myLibT('Nenhum livro encontrado.','No books found.','Ningún libro encontrado.')}<br><span style="font-size:12px;opacity:.8;">${myLibT('Tenta outro termo ou limpa a pesquisa.','Try another term or clear the search.','Prueba con otro término o limpia la búsqueda.')}</span></div>`;
+    return;
+  }
+  host.innerHTML = filtered.map(b => `
     <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
       <div style="font-size:22px;">${b.mime_type === 'application/pdf' ? '📕' : '📗'}</div>
       <div style="flex:1;min-width:0;">
@@ -7614,6 +7662,7 @@ function renderMyLibList() {
     </div>
   `).join('');
 }
+
 
 async function myLibSignedUrl(book) {
   const { data, error } = await supabaseClient.storage.from(MYLIB_BUCKET).createSignedUrl(book.file_path, 120); // 2 min
