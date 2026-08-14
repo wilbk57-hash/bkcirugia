@@ -7635,12 +7635,19 @@ async function refreshMyBooks() {
 
 function renderMyLibList() {
   const host = document.getElementById('myLibList');
+  const input = document.getElementById('myLibSearchInput');
+  if (input) _myLibSearchQuery = input.value;
   if (!host) return;
+  const filtered = getFilteredMyBooks();
   if (!_myBooksCache.length) {
     host.innerHTML = `<div style="padding:28px 16px;text-align:center;color:var(--text3);font-size:13px;">${myLibT('Ainda não tens livros. Toca em "Adicionar livro" para começar.','You don\'t have any books yet. Tap "Add book" to get started.','Aún no tienes libros. Toca "Añadir libro" para empezar.')}</div>`;
     return;
   }
-  host.innerHTML = _myBooksCache.map(b => `
+  if (!filtered.length) {
+    host.innerHTML = `<div style="padding:28px 16px;text-align:center;color:var(--text3);font-size:13px;">${myLibT('Nenhum livro encontrado.','No books found.','Ningún libro encontrado.')}<br><span style="font-size:12px;opacity:.8;">${myLibT('Tenta outro termo ou limpa a pesquisa.','Try another term or clear the search.','Prueba con otro término o limpia la búsqueda.')}</span></div>`;
+    return;
+  }
+  host.innerHTML = filtered.map(b => `
     <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
       <div style="font-size:22px;">${b.mime_type === 'application/pdf' ? '📕' : '📗'}</div>
       <div style="flex:1;min-width:0;">
@@ -7655,6 +7662,7 @@ function renderMyLibList() {
     </div>
   `).join('');
 }
+
 
 async function myLibSignedUrl(book) {
   const { data, error } = await supabaseClient.storage.from(MYLIB_BUCKET).createSignedUrl(book.file_path, 120); // 2 min
