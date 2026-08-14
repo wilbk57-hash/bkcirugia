@@ -7449,11 +7449,22 @@ function renderMyLibrary() {
 
     <div id="myLibUploadHost"></div>
 
+    <div class="search-bar" style="margin:4px 0 12px;">
+      <span class="search-bar-icon">🔎</span>
+      <input id="myLibSearchInput" class="search-input" type="text" autocomplete="off"
+        placeholder="${myLibT('Pesquisar nos meus livros...','Search my books...','Buscar en mis libros...')}"
+        value="${_myLibSearchQuery.replace(/"/g,'&quot;')}"
+        oninput="onMyLibSearchInput(this.value)">
+      <button type="button" class="search-close" style="${ _myLibSearchQuery ? '' : 'display:none;'}"
+        onclick="document.getElementById('myLibSearchInput').value='';onMyLibSearchInput('')" aria-label="${myLibT('Limpar','Clear','Limpiar')}">✕</button>
+    </div>
+
     <div class="sec-heading" style="margin-top:4px;"><h2>${myLibT('Seus livros','Your books','Tus libros')}</h2></div>
     <div id="myLibList" class="card" style="padding:0;overflow:hidden;"></div>
   `;
   renderMyLibUploadArea();
   renderMyLibList();
+
 }
 
 function renderMyLibUploadArea() {
