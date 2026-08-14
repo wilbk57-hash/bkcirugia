@@ -7361,6 +7361,36 @@ const MYLIB_MAX_BYTES = 100 * 1024 * 1024; // 100MB por ficheiro (limite do buck
 const MYLIB_QUOTA_BYTES = 500 * 1024 * 1024; // 500MB por utilizador (ver migration)
 let _myBooksCache = [];
 let _myLibPendingFile = null; // { file, hash } entre a validação e a confirmação dos metadados
+let _myLibSearchQuery = '';
+let _myLibSearchTimer = null;
+
+function normalizeMyLibSearch(s) {
+  if (!s) return '';
+  return s.toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function getFilteredMyBooks() {
+  const q = normalizeMyLibSearch(_myLibSearchQuery);
+  if (!q) return _myBooksCache;
+  return _myBooksCache.filter(b => {
+    const hay = [
+      b.title,
+      b.author,
+      b.category,
+      b.edition,
+      b.language,
+      b.file_name
+    ].map(v => normalizeMyLibSearch(v || '')).join(' ');
+    return q.split(' ').every(part => hay.includes(part));
+  });
+}
+function onMyLibSearchInput(value) {
+  _myLibSearchQuery = value;
+  clearTimeout(_myLibSearchTimer);
+  _myLibSearchTimer = setTimeout(() => renderMyLibList(), 180);
+}
+
 
 function openMyLibrary(fromPop) {
   MAIN_VIEWS.forEach(vid => hideEl(document.getElementById(vid)));
