@@ -7992,7 +7992,75 @@ function renderAdminDashboard() {
         </tbody>
       </table>
     </div>
+
+    ${renderAdminBooksSection()}
   `;
+}
+
+/* Visão operacional dos uploads dos alunos: apenas metadados e estatísticas.
+   Nunca gera URLs assinadas nem permite abrir o conteúdo — as políticas do
+   Storage continuam restritas ao dono do ficheiro. */
+function renderAdminBooksSection() {
+  const books = _adminBooksCache;
+  const byUser = new Map();
+  books.forEach(b => {
+    const cur = byUser.get(b.user_id) || { bytes: 0, count: 0 };
+    cur.bytes += b.size_bytes || 0; cur.count += 1;
+    byUser.set(b.user_id, cur);
+  });
+  const userLabel = (uid) => {
+    const u = _adminUsersCache.find(x => x.id === uid);
+    return u ? (u.email || u.name || uid) : uid;
+  };
+  const totalBytes = books.reduce((s, b) => s + (b.size_bytes || 0), 0);
+  const fmtDate = (d) => { try { return new Date(d).toLocaleDateString(); } catch (e) { return ''; } };
+  const T = (pt, en, es) => myLibT(pt, en, es);
+  const rows = books.slice(0, 100).map(b => `
+    <tr>
+      <td class="name">${(b.title || b.file_name || '—')}</td>
+      <td>${userLabel(b.user_id)}</td>
+      <td>${myLibFormatBytes(b.size_bytes || 0)}</td>
+      <td>${fmtDate(b.created_at)}</td>
+      <td><span class="adm-role-pill">${b.status || 'ready'}</span></td>
+    </tr>`).join('');
+  const usageRows = Array.from(byUser.entries())
+    .sort((a, b) => b[1].bytes - a[1].bytes)
+    .map(([uid, v]) => `
+      <tr>
+        <td class="name">${userLabel(uid)}</td>
+        <td>${v.count}</td>
+        <td>${myLibFormatBytes(v.bytes)}</td>
+      </tr>`).join('');
+  return `
+    <div class="sec-heading" style="margin-top:18px;"><h2>${T('Biblioteca dos alunos','Students\\' library','Biblioteca de los alumnos')}</h2></div>
+    <div class="adm-stat-grid">
+      <div class="adm-stat-card"><div class="n">${books.length}</div><div class="l">${T('Uploads','Uploads','Subidas')}</div></div>
+      <div class="adm-stat-card"><div class="n">${byUser.size}</div><div class="l">${T('Alunos','Students','Alumnos')}</div></div>
+      <div class="adm-stat-card"><div class="n">${myLibFormatBytes(totalBytes)}</div><div class="l">${T('Armazenamento','Storage','Almacenamiento')}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:10px 0 8px;">${T('Apenas metadados — o conteúdo dos livros pessoais permanece privado.','Metadata only — the content of personal books stays private.','Solo metadatos — el contenido de los libros personales sigue siendo privado.')}</div>
+    <div class="stat-table-card">
+      <table class="adm-table">
+        <thead><tr><th>${T('Livro','Book','Libro')}</th><th>${T('Aluno','Student','Alumno')}</th><th>${T('Tamanho','Size','Tamaño')}</th><th>${T('Data','Date','Fecha')}</th><th>${T('Estado','Status','Estado')}</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:18px;">${T('Sem uploads ainda.','No uploads yet.','Sin subidas todavía.')}</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="sec-heading" style="margin-top:18px;"><h2>${T('Armazenamento por aluno','Storage per student','Almacenamiento por alumno')}</h2></div>
+    <div class="stat-table-card">
+      <table class="adm-table">
+        <thead><tr><th>${T('Aluno','Student','Alumno')}</th><th>${T('Livros','Books','Libros')}</th><th>${T('Total','Total','Total')}</th></tr></thead>
+        <tbody>${usageRows || `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:18px;">—</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+}
+async function refreshAdminBooks() {
+  const { data, error } = await supabaseClient
+    .from('user_books')
+    .select('id,user_id,title,file_name,size_bytes,status,created_at')
+    .order('created_at', { ascending: false });
+  if (!error) _adminBooksCache = data || [];
+  renderAdminDashboard();
 }
 async function refreshAdminUsers() {
   const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
