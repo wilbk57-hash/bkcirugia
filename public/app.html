@@ -6942,6 +6942,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 /* ---- cache em memória, sincronizada com a sessão real do Supabase ---- */
 const _authCache = { user: null, admin: null, ready: false };
 let _adminUsersCache = [];
+let _adminBooksCache = [];
 
 function auditLog(event, detail) {
   /* Grava no servidor (tabela audit_log), nunca editável pelo browser.
@@ -7328,6 +7329,7 @@ function openAdmin(fromPop) {
   renderCrumb('admin');
   renderAdminDashboard();
   refreshAdminUsers();
+  refreshAdminBooks();
   syncIaBar();
   window.scrollTo(0, 0);
   if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
@@ -7496,6 +7498,127 @@ async function myLibComputeHash(file) {
   return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/* ---- Extração automática de metadados (best-effort, 100% no cliente) ----
+   PDF: dicionário /Info e/ou XMP embutido.
+   EPUB: é um ZIP — lê o content.opf (Dublin Core) sem bibliotecas externas. */
+async function myLibSliceText(file, start, end) {
+  const buf = await file.slice(Math.max(0, start), end).arrayBuffer();
+  return new TextDecoder('latin1').decode(buf);
+}
+function myLibDecodePdfString(raw) {
+  if (!raw) return '';
+  raw = raw.trim();
+  if (raw.startsWith('<') && raw.endsWith('>')) {
+    const hex = raw.slice(1, -1).replace(/[^0-9a-fA-F]/g, '');
+    const bytes = [];
+    for (let i = 0; i + 1 < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
+    if (bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      let out = '';
+      for (let i = 2; i + 1 < bytes.length; i += 2) out += String.fromCharCode((bytes[i] << 8) | bytes[i + 1]);
+      return out.trim();
+    }
+    return bytes.map(b => String.fromCharCode(b)).join('').trim();
+  }
+  if (raw.startsWith('(') && raw.endsWith(')')) raw = raw.slice(1, -1);
+  raw = raw.replace(/\\([nrtbf()\\])/g, (m, c) => ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[c] ?? c);
+  if (raw.charCodeAt(0) === 0xFE && raw.charCodeAt(1) === 0xFF) {
+    let out = '';
+    for (let i = 2; i + 1 < raw.length; i += 2) out += String.fromCharCode((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
+    raw = out;
+  }
+  return raw.trim();
+}
+function myLibCleanMeta(v) {
+  if (!v) return '';
+  const s = v.replace(/\s+/g, ' ').trim();
+  if (!s || s.length > 300) return '';
+  if (/^(untitled|unknown|microsoft word|sem t[ií]tulo)/i.test(s)) return '';
+  return s;
+}
+async function myLibExtractPdfMeta(file) {
+  const meta = {};
+  try {
+    const head = await myLibSliceText(file, 0, 3 * 1024 * 1024);
+    const tail = await myLibSliceText(file, Math.max(0, file.size - 2 * 1024 * 1024), file.size);
+    const text = head + '\n' + tail;
+    const grab = (key) => {
+      const m = text.match(new RegExp('/' + key + '\\s*(\\((?:[^\\\\)]|\\\\.)*\\)|<[0-9A-Fa-f\\s]*>)'));
+      return m ? myLibDecodePdfString(m[1]) : '';
+    };
+    meta.title = myLibCleanMeta(grab('Title'));
+    meta.author = myLibCleanMeta(grab('Author'));
+    if (!meta.title) {
+      const x = text.match(/<dc:title>[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/i) || text.match(/<dc:title>([^<]+)<\/dc:title>/i);
+      if (x) meta.title = myLibCleanMeta(x[1]);
+    }
+    if (!meta.author) {
+      const x = text.match(/<dc:creator>[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/i) || text.match(/<dc:creator>([^<]+)<\/dc:creator>/i);
+      if (x) meta.author = myLibCleanMeta(x[1]);
+    }
+    const lang = text.match(/<dc:language>[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/i) || text.match(/<dc:language>([^<]+)<\/dc:language>/i);
+    if (lang) meta.language = myLibCleanMeta(lang[1]).slice(0, 12);
+  } catch (e) { /* best-effort */ }
+  return meta;
+}
+async function myLibReadZipEntry(file, wantSuffix) {
+  const tailSize = Math.min(file.size, 66 * 1024);
+  const tailBuf = new Uint8Array(await file.slice(file.size - tailSize, file.size).arrayBuffer());
+  let eocd = -1;
+  for (let i = tailBuf.length - 22; i >= 0; i--) {
+    if (tailBuf[i] === 0x50 && tailBuf[i + 1] === 0x4B && tailBuf[i + 2] === 0x05 && tailBuf[i + 3] === 0x06) { eocd = i; break; }
+  }
+  if (eocd < 0) return null;
+  const dv = new DataView(tailBuf.buffer);
+  const cdSize = dv.getUint32(eocd + 12, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+  if (cdOffset === 0xFFFFFFFF) return null; // ZIP64 não suportado
+  const cdBuf = new Uint8Array(await file.slice(cdOffset, cdOffset + cdSize).arrayBuffer());
+  const cdv = new DataView(cdBuf.buffer);
+  let p = 0, found = null;
+  while (p + 46 <= cdBuf.length && cdv.getUint32(p, true) === 0x02014b50) {
+    const method = cdv.getUint16(p + 10, true);
+    const compSize = cdv.getUint32(p + 20, true);
+    const nameLen = cdv.getUint16(p + 28, true);
+    const extraLen = cdv.getUint16(p + 30, true);
+    const commentLen = cdv.getUint16(p + 32, true);
+    const localOffset = cdv.getUint32(p + 42, true);
+    const name = new TextDecoder('utf-8').decode(cdBuf.slice(p + 46, p + 46 + nameLen));
+    if (name.toLowerCase().endsWith(wantSuffix)) { found = { method, compSize, localOffset }; break; }
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  if (!found) return null;
+  const lh = new DataView(await file.slice(found.localOffset, found.localOffset + 30).arrayBuffer());
+  if (lh.getUint32(0, true) !== 0x04034b50) return null;
+  const dataStart = found.localOffset + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+  const blob = file.slice(dataStart, dataStart + found.compSize);
+  if (found.method === 0) return await blob.text();
+  if (found.method === 8 && typeof DecompressionStream !== 'undefined') {
+    const stream = blob.stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return await new Response(stream).text();
+  }
+  return null;
+}
+async function myLibExtractEpubMeta(file) {
+  const meta = {};
+  try {
+    const opf = await myLibReadZipEntry(file, '.opf');
+    if (!opf) return meta;
+    const pick = (tag) => {
+      const m = opf.match(new RegExp('<(?:dc:)?' + tag + '\\b[^>]*>([\\s\\S]*?)</(?:dc:)?' + tag + '>', 'i'));
+      return m ? myLibCleanMeta(m[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"')) : '';
+    };
+    meta.title = pick('title');
+    meta.author = pick('creator');
+    meta.language = pick('language').slice(0, 12);
+  } catch (e) { /* best-effort */ }
+  return meta;
+}
+async function myLibExtractMeta(file, mime) {
+  try {
+    return mime === 'application/pdf' ? await myLibExtractPdfMeta(file) : await myLibExtractEpubMeta(file);
+  } catch (e) { return {}; }
+}
+
 async function myLibHandleFileSelect(input) {
   const file = input.files && input.files[0];
   input.value = '';
@@ -7538,26 +7661,36 @@ async function myLibHandleFileSelect(input) {
     return;
   }
 
+  setStatus(myLibT('A ler os dados do livro…','Reading book details…','Leyendo los datos del libro…'));
+  const meta = await myLibExtractMeta(file, mime);
+
   setStatus('');
-  _myLibPendingFile = { file, hash, mime };
+  _myLibPendingFile = { file, hash, mime, meta };
   renderMyLibUploadArea();
 }
 
 function renderMyLibMetadataForm() {
   const host = document.getElementById('myLibUploadHost');
   if (!host || !_myLibPendingFile) return;
-  const guessedTitle = _myLibPendingFile.file.name.replace(/\.(pdf|epub)$/i, '').replace(/[_-]+/g, ' ').trim();
+  const meta = _myLibPendingFile.meta || {};
+  const esc = (v) => (v || '').toString().replace(/"/g, '&quot;');
+  const fileTitle = _myLibPendingFile.file.name.replace(/\.(pdf|epub)$/i, '').replace(/[_-]+/g, ' ').trim();
+  const guessedTitle = meta.title || fileTitle;
+  const autoNote = (meta.title || meta.author || meta.language)
+    ? `<div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;">${myLibT('Dados preenchidos automaticamente a partir do ficheiro — podes corrigir.','Fields pre-filled from the file — you can edit them.','Datos rellenados automáticamente desde el archivo — puedes corregirlos.')}</div>`
+    : '';
   host.innerHTML = `
     <div class="card">
       <div style="font-weight:600;margin-bottom:10px;">${myLibT('Confirma os dados do livro','Confirm book details','Confirma los datos del libro')}</div>
-      <div class="auth-field"><label>${myLibT('Título','Title','Título')}</label><input class="auth-input" id="myLibTitle" value="${guessedTitle.replace(/"/g,'&quot;')}"></div>
+      ${autoNote}
+      <div class="auth-field"><label>${myLibT('Título','Title','Título')}</label><input class="auth-input" id="myLibTitle" value="${esc(guessedTitle)}"></div>
       <div class="auth-row2">
-        <div class="auth-field"><label>${myLibT('Autor','Author','Autor')}</label><input class="auth-input" id="myLibAuthor" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
+        <div class="auth-field"><label>${myLibT('Autor','Author','Autor')}</label><input class="auth-input" id="myLibAuthor" value="${esc(meta.author)}" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
         <div class="auth-field"><label>${myLibT('Edição','Edition','Edición')}</label><input class="auth-input" id="myLibEdition" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
       </div>
       <div class="auth-row2">
         <div class="auth-field"><label>${myLibT('Categoria','Category','Categoría')}</label><input class="auth-input" id="myLibCategory" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
-        <div class="auth-field"><label>${myLibT('Idioma','Language','Idioma')}</label><input class="auth-input" id="myLibLanguage" placeholder="pt / en / es"></div>
+        <div class="auth-field"><label>${myLibT('Idioma','Language','Idioma')}</label><input class="auth-input" id="myLibLanguage" value="${esc(meta.language)}" placeholder="pt / en / es"></div>
       </div>
       <div style="font-size:11px;color:var(--text3);margin:8px 0 14px;">${myLibT('Declaras que tens autorização para armazenar e utilizar este conteúdo nesta plataforma.','You declare you have the right to store and use this content on this platform.','Declaras que tienes autorización para almacenar y usar este contenido en esta plataforma.')}</div>
       <div id="myLibUploadProgress"></div>
@@ -7569,6 +7702,28 @@ function renderMyLibMetadataForm() {
   `;
 }
 function myLibCancelUpload() { _myLibPendingFile = null; renderMyLibUploadArea(); }
+
+/* Upload direto ao Storage via XHR para termos progresso real (o SDK não
+   expõe eventos de progresso). Mesmo endpoint/políticas do SDK. */
+function myLibUploadWithProgress(path, file, mime, token, onProgress) {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${MYLIB_BUCKET}/${path}`);
+    xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+    xhr.setRequestHeader('x-upsert', 'false');
+    xhr.setRequestHeader('Content-Type', mime);
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) { onProgress(1); resolve({ error: null }); return; }
+      let msg = xhr.responseText || ('HTTP ' + xhr.status);
+      try { const j = JSON.parse(xhr.responseText); msg = j.message || j.error || msg; } catch (e) {}
+      resolve({ error: { message: msg } });
+    };
+    xhr.onerror = () => resolve({ error: { message: myLibT('Falha de rede durante o envio.','Network failure during upload.','Fallo de red durante el envío.') } });
+    xhr.send(file);
+  });
+}
 
 async function myLibConfirmUpload() {
   if (!_myLibPendingFile) return;
@@ -7583,15 +7738,28 @@ async function myLibConfirmUpload() {
   btn.classList.add('loading'); btn.disabled = true;
   const progressEl = document.getElementById('myLibUploadProgress');
   const setProgress = (label) => { if (progressEl) progressEl.innerHTML = `<div style="font-size:12px;color:var(--text3);margin-bottom:8px;">${label}</div>`; };
+  const setProgressBar = (label, ratio) => {
+    if (!progressEl) return;
+    const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+    progressEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px;">
+        <span>${label}</span><span>${pct}%</span>
+      </div>
+      <div style="height:8px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-bottom:10px;">
+        <div style="height:100%;width:${pct}%;background:var(--teal);transition:width .15s;"></div>
+      </div>`;
+  };
 
   const session = await supabaseClient.auth.getSession();
   const uid = session.data.session.user.id;
+  const accessToken = session.data.session.access_token;
   const bookId = crypto.randomUUID();
   const safeExt = mime === 'application/pdf' ? 'pdf' : 'epub';
   const path = `${uid}/${bookId}/original.${safeExt}`;
 
-  setProgress(myLibT('A enviar…','Uploading…','Enviando…'));
-  const { error: upErr } = await supabaseClient.storage.from(MYLIB_BUCKET).upload(path, file, { contentType: mime, upsert: false });
+  const uploadLabel = myLibT('A enviar…','Uploading…','Enviando…');
+  setProgressBar(uploadLabel, 0);
+  const { error: upErr } = await myLibUploadWithProgress(path, file, mime, accessToken, (r) => setProgressBar(uploadLabel, r));
   if (upErr) {
     btn.classList.remove('loading'); btn.disabled = false;
     setProgress(`<span style="color:var(--red);">${upErr.message}</span>`);
@@ -7824,7 +7992,75 @@ function renderAdminDashboard() {
         </tbody>
       </table>
     </div>
+
+    ${renderAdminBooksSection()}
   `;
+}
+
+/* Visão operacional dos uploads dos alunos: apenas metadados e estatísticas.
+   Nunca gera URLs assinadas nem permite abrir o conteúdo — as políticas do
+   Storage continuam restritas ao dono do ficheiro. */
+function renderAdminBooksSection() {
+  const books = _adminBooksCache;
+  const byUser = new Map();
+  books.forEach(b => {
+    const cur = byUser.get(b.user_id) || { bytes: 0, count: 0 };
+    cur.bytes += b.size_bytes || 0; cur.count += 1;
+    byUser.set(b.user_id, cur);
+  });
+  const userLabel = (uid) => {
+    const u = _adminUsersCache.find(x => x.id === uid);
+    return u ? (u.email || u.name || uid) : uid;
+  };
+  const totalBytes = books.reduce((s, b) => s + (b.size_bytes || 0), 0);
+  const fmtDate = (d) => { try { return new Date(d).toLocaleDateString(); } catch (e) { return ''; } };
+  const T = (pt, en, es) => myLibT(pt, en, es);
+  const rows = books.slice(0, 100).map(b => `
+    <tr>
+      <td class="name">${(b.title || b.file_name || '—')}</td>
+      <td>${userLabel(b.user_id)}</td>
+      <td>${myLibFormatBytes(b.size_bytes || 0)}</td>
+      <td>${fmtDate(b.created_at)}</td>
+      <td><span class="adm-role-pill">${b.status || 'ready'}</span></td>
+    </tr>`).join('');
+  const usageRows = Array.from(byUser.entries())
+    .sort((a, b) => b[1].bytes - a[1].bytes)
+    .map(([uid, v]) => `
+      <tr>
+        <td class="name">${userLabel(uid)}</td>
+        <td>${v.count}</td>
+        <td>${myLibFormatBytes(v.bytes)}</td>
+      </tr>`).join('');
+  return `
+    <div class="sec-heading" style="margin-top:18px;"><h2>${T('Biblioteca dos alunos','Students\\' library','Biblioteca de los alumnos')}</h2></div>
+    <div class="adm-stat-grid">
+      <div class="adm-stat-card"><div class="n">${books.length}</div><div class="l">${T('Uploads','Uploads','Subidas')}</div></div>
+      <div class="adm-stat-card"><div class="n">${byUser.size}</div><div class="l">${T('Alunos','Students','Alumnos')}</div></div>
+      <div class="adm-stat-card"><div class="n">${myLibFormatBytes(totalBytes)}</div><div class="l">${T('Armazenamento','Storage','Almacenamiento')}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:10px 0 8px;">${T('Apenas metadados — o conteúdo dos livros pessoais permanece privado.','Metadata only — the content of personal books stays private.','Solo metadatos — el contenido de los libros personales sigue siendo privado.')}</div>
+    <div class="stat-table-card">
+      <table class="adm-table">
+        <thead><tr><th>${T('Livro','Book','Libro')}</th><th>${T('Aluno','Student','Alumno')}</th><th>${T('Tamanho','Size','Tamaño')}</th><th>${T('Data','Date','Fecha')}</th><th>${T('Estado','Status','Estado')}</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:18px;">${T('Sem uploads ainda.','No uploads yet.','Sin subidas todavía.')}</td></tr>`}</tbody>
+      </table>
+    </div>
+    <div class="sec-heading" style="margin-top:18px;"><h2>${T('Armazenamento por aluno','Storage per student','Almacenamiento por alumno')}</h2></div>
+    <div class="stat-table-card">
+      <table class="adm-table">
+        <thead><tr><th>${T('Aluno','Student','Alumno')}</th><th>${T('Livros','Books','Libros')}</th><th>${T('Total','Total','Total')}</th></tr></thead>
+        <tbody>${usageRows || `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:18px;">—</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+}
+async function refreshAdminBooks() {
+  const { data, error } = await supabaseClient
+    .from('user_books')
+    .select('id,user_id,title,file_name,size_bytes,status,created_at')
+    .order('created_at', { ascending: false });
+  if (!error) _adminBooksCache = data || [];
+  renderAdminDashboard();
 }
 async function refreshAdminUsers() {
   const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
