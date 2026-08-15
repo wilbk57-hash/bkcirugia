@@ -7329,6 +7329,7 @@ function openAdmin(fromPop) {
   renderCrumb('admin');
   renderAdminDashboard();
   refreshAdminUsers();
+  refreshAdminBooks();
   syncIaBar();
   window.scrollTo(0, 0);
   if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
