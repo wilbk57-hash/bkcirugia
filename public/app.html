@@ -6942,6 +6942,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 /* ---- cache em memória, sincronizada com a sessão real do Supabase ---- */
 const _authCache = { user: null, admin: null, ready: false };
 let _adminUsersCache = [];
+let _adminBooksCache = [];
 
 function auditLog(event, detail) {
   /* Grava no servidor (tabela audit_log), nunca editável pelo browser.
