@@ -7496,6 +7496,127 @@ async function myLibComputeHash(file) {
   return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/* ---- Extração automática de metadados (best-effort, 100% no cliente) ----
+   PDF: dicionário /Info e/ou XMP embutido.
+   EPUB: é um ZIP — lê o content.opf (Dublin Core) sem bibliotecas externas. */
+async function myLibSliceText(file, start, end) {
+  const buf = await file.slice(Math.max(0, start), end).arrayBuffer();
+  return new TextDecoder('latin1').decode(buf);
+}
+function myLibDecodePdfString(raw) {
+  if (!raw) return '';
+  raw = raw.trim();
+  if (raw.startsWith('<') && raw.endsWith('>')) {
+    const hex = raw.slice(1, -1).replace(/[^0-9a-fA-F]/g, '');
+    const bytes = [];
+    for (let i = 0; i + 1 < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
+    if (bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      let out = '';
+      for (let i = 2; i + 1 < bytes.length; i += 2) out += String.fromCharCode((bytes[i] << 8) | bytes[i + 1]);
+      return out.trim();
+    }
+    return bytes.map(b => String.fromCharCode(b)).join('').trim();
+  }
+  if (raw.startsWith('(') && raw.endsWith(')')) raw = raw.slice(1, -1);
+  raw = raw.replace(/\\([nrtbf()\\])/g, (m, c) => ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[c] ?? c);
+  if (raw.charCodeAt(0) === 0xFE && raw.charCodeAt(1) === 0xFF) {
+    let out = '';
+    for (let i = 2; i + 1 < raw.length; i += 2) out += String.fromCharCode((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
+    raw = out;
+  }
+  return raw.trim();
+}
+function myLibCleanMeta(v) {
+  if (!v) return '';
+  const s = v.replace(/\s+/g, ' ').trim();
+  if (!s || s.length > 300) return '';
+  if (/^(untitled|unknown|microsoft word|sem t[ií]tulo)/i.test(s)) return '';
+  return s;
+}
+async function myLibExtractPdfMeta(file) {
+  const meta = {};
+  try {
+    const head = await myLibSliceText(file, 0, 3 * 1024 * 1024);
+    const tail = await myLibSliceText(file, Math.max(0, file.size - 2 * 1024 * 1024), file.size);
+    const text = head + '\n' + tail;
+    const grab = (key) => {
+      const m = text.match(new RegExp('/' + key + '\\s*(\\((?:[^\\\\)]|\\\\.)*\\)|<[0-9A-Fa-f\\s]*>)'));
+      return m ? myLibDecodePdfString(m[1]) : '';
+    };
+    meta.title = myLibCleanMeta(grab('Title'));
+    meta.author = myLibCleanMeta(grab('Author'));
+    if (!meta.title) {
+      const x = text.match(/<dc:title>[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/i) || text.match(/<dc:title>([^<]+)<\/dc:title>/i);
+      if (x) meta.title = myLibCleanMeta(x[1]);
+    }
+    if (!meta.author) {
+      const x = text.match(/<dc:creator>[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/i) || text.match(/<dc:creator>([^<]+)<\/dc:creator>/i);
+      if (x) meta.author = myLibCleanMeta(x[1]);
+    }
+    const lang = text.match(/<dc:language>[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/i) || text.match(/<dc:language>([^<]+)<\/dc:language>/i);
+    if (lang) meta.language = myLibCleanMeta(lang[1]).slice(0, 12);
+  } catch (e) { /* best-effort */ }
+  return meta;
+}
+async function myLibReadZipEntry(file, wantSuffix) {
+  const tailSize = Math.min(file.size, 66 * 1024);
+  const tailBuf = new Uint8Array(await file.slice(file.size - tailSize, file.size).arrayBuffer());
+  let eocd = -1;
+  for (let i = tailBuf.length - 22; i >= 0; i--) {
+    if (tailBuf[i] === 0x50 && tailBuf[i + 1] === 0x4B && tailBuf[i + 2] === 0x05 && tailBuf[i + 3] === 0x06) { eocd = i; break; }
+  }
+  if (eocd < 0) return null;
+  const dv = new DataView(tailBuf.buffer);
+  const cdSize = dv.getUint32(eocd + 12, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+  if (cdOffset === 0xFFFFFFFF) return null; // ZIP64 não suportado
+  const cdBuf = new Uint8Array(await file.slice(cdOffset, cdOffset + cdSize).arrayBuffer());
+  const cdv = new DataView(cdBuf.buffer);
+  let p = 0, found = null;
+  while (p + 46 <= cdBuf.length && cdv.getUint32(p, true) === 0x02014b50) {
+    const method = cdv.getUint16(p + 10, true);
+    const compSize = cdv.getUint32(p + 20, true);
+    const nameLen = cdv.getUint16(p + 28, true);
+    const extraLen = cdv.getUint16(p + 30, true);
+    const commentLen = cdv.getUint16(p + 32, true);
+    const localOffset = cdv.getUint32(p + 42, true);
+    const name = new TextDecoder('utf-8').decode(cdBuf.slice(p + 46, p + 46 + nameLen));
+    if (name.toLowerCase().endsWith(wantSuffix)) { found = { method, compSize, localOffset }; break; }
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  if (!found) return null;
+  const lh = new DataView(await file.slice(found.localOffset, found.localOffset + 30).arrayBuffer());
+  if (lh.getUint32(0, true) !== 0x04034b50) return null;
+  const dataStart = found.localOffset + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+  const blob = file.slice(dataStart, dataStart + found.compSize);
+  if (found.method === 0) return await blob.text();
+  if (found.method === 8 && typeof DecompressionStream !== 'undefined') {
+    const stream = blob.stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return await new Response(stream).text();
+  }
+  return null;
+}
+async function myLibExtractEpubMeta(file) {
+  const meta = {};
+  try {
+    const opf = await myLibReadZipEntry(file, '.opf');
+    if (!opf) return meta;
+    const pick = (tag) => {
+      const m = opf.match(new RegExp('<(?:dc:)?' + tag + '\\b[^>]*>([\\s\\S]*?)</(?:dc:)?' + tag + '>', 'i'));
+      return m ? myLibCleanMeta(m[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"')) : '';
+    };
+    meta.title = pick('title');
+    meta.author = pick('creator');
+    meta.language = pick('language').slice(0, 12);
+  } catch (e) { /* best-effort */ }
+  return meta;
+}
+async function myLibExtractMeta(file, mime) {
+  try {
+    return mime === 'application/pdf' ? await myLibExtractPdfMeta(file) : await myLibExtractEpubMeta(file);
+  } catch (e) { return {}; }
+}
+
 async function myLibHandleFileSelect(input) {
   const file = input.files && input.files[0];
   input.value = '';
