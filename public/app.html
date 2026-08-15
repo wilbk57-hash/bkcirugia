@@ -7659,26 +7659,36 @@ async function myLibHandleFileSelect(input) {
     return;
   }
 
+  setStatus(myLibT('A ler os dados do livro…','Reading book details…','Leyendo los datos del libro…'));
+  const meta = await myLibExtractMeta(file, mime);
+
   setStatus('');
-  _myLibPendingFile = { file, hash, mime };
+  _myLibPendingFile = { file, hash, mime, meta };
   renderMyLibUploadArea();
 }
 
 function renderMyLibMetadataForm() {
   const host = document.getElementById('myLibUploadHost');
   if (!host || !_myLibPendingFile) return;
-  const guessedTitle = _myLibPendingFile.file.name.replace(/\.(pdf|epub)$/i, '').replace(/[_-]+/g, ' ').trim();
+  const meta = _myLibPendingFile.meta || {};
+  const esc = (v) => (v || '').toString().replace(/"/g, '&quot;');
+  const fileTitle = _myLibPendingFile.file.name.replace(/\.(pdf|epub)$/i, '').replace(/[_-]+/g, ' ').trim();
+  const guessedTitle = meta.title || fileTitle;
+  const autoNote = (meta.title || meta.author || meta.language)
+    ? `<div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;">${myLibT('Dados preenchidos automaticamente a partir do ficheiro — podes corrigir.','Fields pre-filled from the file — you can edit them.','Datos rellenados automáticamente desde el archivo — puedes corregirlos.')}</div>`
+    : '';
   host.innerHTML = `
     <div class="card">
       <div style="font-weight:600;margin-bottom:10px;">${myLibT('Confirma os dados do livro','Confirm book details','Confirma los datos del libro')}</div>
-      <div class="auth-field"><label>${myLibT('Título','Title','Título')}</label><input class="auth-input" id="myLibTitle" value="${guessedTitle.replace(/"/g,'&quot;')}"></div>
+      ${autoNote}
+      <div class="auth-field"><label>${myLibT('Título','Title','Título')}</label><input class="auth-input" id="myLibTitle" value="${esc(guessedTitle)}"></div>
       <div class="auth-row2">
-        <div class="auth-field"><label>${myLibT('Autor','Author','Autor')}</label><input class="auth-input" id="myLibAuthor" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
+        <div class="auth-field"><label>${myLibT('Autor','Author','Autor')}</label><input class="auth-input" id="myLibAuthor" value="${esc(meta.author)}" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
         <div class="auth-field"><label>${myLibT('Edição','Edition','Edición')}</label><input class="auth-input" id="myLibEdition" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
       </div>
       <div class="auth-row2">
         <div class="auth-field"><label>${myLibT('Categoria','Category','Categoría')}</label><input class="auth-input" id="myLibCategory" placeholder="${myLibT('Opcional','Optional','Opcional')}"></div>
-        <div class="auth-field"><label>${myLibT('Idioma','Language','Idioma')}</label><input class="auth-input" id="myLibLanguage" placeholder="pt / en / es"></div>
+        <div class="auth-field"><label>${myLibT('Idioma','Language','Idioma')}</label><input class="auth-input" id="myLibLanguage" value="${esc(meta.language)}" placeholder="pt / en / es"></div>
       </div>
       <div style="font-size:11px;color:var(--text3);margin:8px 0 14px;">${myLibT('Declaras que tens autorização para armazenar e utilizar este conteúdo nesta plataforma.','You declare you have the right to store and use this content on this platform.','Declaras que tienes autorización para almacenar y usar este contenido en esta plataforma.')}</div>
       <div id="myLibUploadProgress"></div>
