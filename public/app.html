@@ -4052,7 +4052,10 @@ function buildIaSystemPrompt() {
   perfil.ultimaSessao = new Date().toISOString().slice(0, 10);
   saveTutorProfile(perfil);
 
-  const footprint = `\n\n== PEGADA DIGITAL DO ALUNO (estado ao vivo do app, gerado automaticamente — não é algo que o aluno digitou) ==\n- ${buildStudentFootprint()}\n\nUse essas informações com naturalidade, só quando for realmente útil (ex.: perceber que ele já concluiu certa lição e por isso pular a introdução básica, notar que ele ainda não confirmou ter terminado o conteúdo que estava lendo e perguntar sutilmente se já terminou, retomar de onde parou, ou sugerir revisar um tema com lições pendentes). Nunca liste esses dados de forma robótica nem cite "pegada digital" para o aluno — trate como algo que você simplesmente sabe, como um preceptor que acompanha o progresso do interno.`;
+  let fp = String(buildStudentFootprint() || '');
+  const FP_MAX = 6000;
+  if (fp.length > FP_MAX) fp = fp.slice(0, FP_MAX) + ' …(resumo truncado)';
+  const footprint = `\n\n== PEGADA DIGITAL DO ALUNO (estado ao vivo do app, gerado automaticamente — não é algo que o aluno digitou) ==\n- ${fp}\n\nUse essas informações com naturalidade, só quando for realmente útil (ex.: perceber que ele já concluiu certa lição e por isso pular a introdução básica, notar que ele ainda não confirmou ter terminado o conteúdo que estava lendo e perguntar sutilmente se já terminou, retomar de onde parou, ou sugerir revisar um tema com lições pendentes). Nunca liste esses dados de forma robótica nem cite "pegada digital" para o aluno — trate como algo que você simplesmente sabe, como um preceptor que acompanha o progresso do interno.`;
 
   if (context) return `${IA_SYSTEM_PROMPT}\n\n== CONTEXTO SALVO DESTE ALUNO ==${context}${footprint}`;
   return `${IA_SYSTEM_PROMPT}${footprint}`;
