@@ -4052,7 +4052,10 @@ function buildIaSystemPrompt() {
   perfil.ultimaSessao = new Date().toISOString().slice(0, 10);
   saveTutorProfile(perfil);
 
-  const footprint = `\n\n== PEGADA DIGITAL DO ALUNO (estado ao vivo do app, gerado automaticamente — não é algo que o aluno digitou) ==\n- ${buildStudentFootprint()}\n\nUse essas informações com naturalidade, só quando for realmente útil (ex.: perceber que ele já concluiu certa lição e por isso pular a introdução básica, notar que ele ainda não confirmou ter terminado o conteúdo que estava lendo e perguntar sutilmente se já terminou, retomar de onde parou, ou sugerir revisar um tema com lições pendentes). Nunca liste esses dados de forma robótica nem cite "pegada digital" para o aluno — trate como algo que você simplesmente sabe, como um preceptor que acompanha o progresso do interno.`;
+  let fp = String(buildStudentFootprint() || '');
+  const FP_MAX = 6000;
+  if (fp.length > FP_MAX) fp = fp.slice(0, FP_MAX) + ' …(resumo truncado)';
+  const footprint = `\n\n== PEGADA DIGITAL DO ALUNO (estado ao vivo do app, gerado automaticamente — não é algo que o aluno digitou) ==\n- ${fp}\n\nUse essas informações com naturalidade, só quando for realmente útil (ex.: perceber que ele já concluiu certa lição e por isso pular a introdução básica, notar que ele ainda não confirmou ter terminado o conteúdo que estava lendo e perguntar sutilmente se já terminou, retomar de onde parou, ou sugerir revisar um tema com lições pendentes). Nunca liste esses dados de forma robótica nem cite "pegada digital" para o aluno — trate como algo que você simplesmente sabe, como um preceptor que acompanha o progresso do interno.`;
 
   if (context) return `${IA_SYSTEM_PROMPT}\n\n== CONTEXTO SALVO DESTE ALUNO ==${context}${footprint}`;
   return `${IA_SYSTEM_PROMPT}${footprint}`;
@@ -7840,17 +7843,29 @@ async function myLibSignedUrl(book) {
 async function myLibReadBook(id) {
   const book = _myBooksCache.find(b => b.id === id);
   if (!book) return;
+  // Abre a aba de forma SÍNCRONA (mantém o gesto do clique) e só depois aponta para a URL assinada.
+  let w = null;
+  try { w = window.open('', '_blank'); } catch (e) { w = null; }
   const url = await myLibSignedUrl(book);
-  if (url) window.open(url, '_blank', 'noopener');
+  if (!url) { if (w) w.close(); return; }
+  if (w) { try { w.location.href = url; return; } catch (e) {} }
+  myLibOpenFallback(url);
 }
 async function myLibDownloadBook(id) {
   const book = _myBooksCache.find(b => b.id === id);
   if (!book) return;
+  let w = null;
+  try { w = window.open('', '_blank'); } catch (e) { w = null; }
   const url = await myLibSignedUrl(book);
-  if (!url) return;
-  const a = document.createElement('a');
-  a.href = url; a.download = book.file_name;
-  document.body.appendChild(a); a.click(); a.remove();
+  if (!url) { if (w) w.close(); return; }
+  if (w) { try { w.location.href = url; return; } catch (e) {} }
+  myLibOpenFallback(url);
+}
+/* Fallback quando o popup é bloqueado: reutiliza a estratégia do listener de links (abre no topo). */
+function myLibOpenFallback(url) {
+  const w2 = window.open(url, '_blank');
+  if (w2) return;
+  try { window.top.location.href = url; } catch (e) { window.location.href = url; }
 }
 async function myLibDeleteBook(id) {
   const book = _myBooksCache.find(b => b.id === id);

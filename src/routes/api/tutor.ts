@@ -9,7 +9,7 @@ import {
 
 const BodySchema = z.object({
   provider: z.enum(['gemini', 'openai']),
-  system: z.string().max(40000).optional(),
+  system: z.string().max(60000).optional(),
   maxTokens: z.number().int().min(64).max(4000).optional(),
   messages: z
     .array(
@@ -65,8 +65,12 @@ export const Route = createFileRoute('/api/tutor')({
         let parsed
         try {
           parsed = BodySchema.parse(await request.json())
-        } catch {
-          return json({ error: 'invalid_request' }, 400)
+        } catch (err) {
+          const issues =
+            err instanceof z.ZodError
+              ? err.issues.map((i) => `${i.path.join('.') || 'body'}: ${i.message}`).join('; ')
+              : 'malformed JSON body'
+          return json({ error: 'invalid_request', message: issues }, 400)
         }
 
         const apiKey = process.env['LOVABLE_API_KEY']
