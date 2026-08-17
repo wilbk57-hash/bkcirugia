@@ -7843,13 +7843,97 @@ async function myLibSignedUrl(book) {
 async function myLibReadBook(id) {
   const book = _myBooksCache.find(b => b.id === id);
   if (!book) return;
-  // Abre a aba de forma SÍNCRONA (mantém o gesto do clique) e só depois aponta para a URL assinada.
-  let w = null;
-  try { w = window.open('', '_blank'); } catch (e) { w = null; }
+  // Leitor integrado: nunca navega para fora do app.
+  myLibOpenReader(book);
+}
+
+/* ============ Leitor integrado (PDF + EPUB) ============ */
+let _myLibReaderBook = null;
+let _myLibEpubRendition = null;
+function myLibReaderEl() {
+  let el = document.getElementById('myLibReaderOverlay');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'myLibReaderOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(5,8,15,.94);backdrop-filter:blur(4px);display:none;flex-direction:column;';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2,#0b1220);">
+      <div style="font-size:18px;">📖</div>
+      <div id="myLibReaderTitle" style="flex:1;min-width:0;font-weight:600;font-size:13.5px;color:var(--text1,#e5e7eb);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+      <div id="myLibReaderNav" style="display:none;gap:6px;">
+        <button class="icon-btn" onclick="myLibReaderPrev()" title="◀">◀</button>
+        <button class="icon-btn" onclick="myLibReaderNext()" title="▶">▶</button>
+      </div>
+      <button class="icon-btn" onclick="myLibReaderZoom(-1)" title="-">➖</button>
+      <button class="icon-btn" onclick="myLibReaderZoom(1)" title="+">➕</button>
+      <button class="icon-btn" onclick="myLibCloseReader()" title="✕">✕</button>
+    </div>
+    <div id="myLibReaderBody" style="flex:1;min-height:0;overflow:auto;background:#111827;"></div>`;
+  document.body.appendChild(el);
+  return el;
+}
+let _myLibReaderZoom = 100;
+function myLibReaderZoom(dir) {
+  _myLibReaderZoom = Math.min(250, Math.max(50, _myLibReaderZoom + dir * 10));
+  const body = document.getElementById('myLibReaderBody');
+  if (!body) return;
+  if (_myLibEpubRendition) { try { _myLibEpubRendition.themes.fontSize(_myLibReaderZoom + '%'); } catch (e) {} return; }
+  const fr = body.querySelector('iframe');
+  if (fr) {
+    fr.style.width = _myLibReaderZoom + '%';
+    fr.style.transformOrigin = 'top left';
+  }
+}
+function myLibReaderPrev() { if (_myLibEpubRendition) _myLibEpubRendition.prev(); }
+function myLibReaderNext() { if (_myLibEpubRendition) _myLibEpubRendition.next(); }
+function myLibCloseReader() {
+  const el = document.getElementById('myLibReaderOverlay');
+  if (!el) return;
+  try { if (_myLibEpubRendition) _myLibEpubRendition.destroy(); } catch (e) {}
+  _myLibEpubRendition = null;
+  _myLibReaderBook = null;
+  document.getElementById('myLibReaderBody').innerHTML = '';
+  document.getElementById('myLibReaderNav').style.display = 'none';
+  el.style.display = 'none';
+}
+function myLibLoadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[data-src="' + src + '"]')) return resolve();
+    const s = document.createElement('script');
+    s.src = src; s.dataset.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('load_fail'));
+    document.head.appendChild(s);
+  });
+}
+async function myLibOpenReader(book) {
+  const el = myLibReaderEl();
+  el.style.display = 'flex';
+  _myLibReaderBook = book;
+  _myLibReaderZoom = 100;
+  document.getElementById('myLibReaderTitle').textContent = book.title || '';
+  const body = document.getElementById('myLibReaderBody');
+  body.innerHTML = '<div style="padding:24px;color:var(--text3,#9ca3af);font-size:13px;">' + myLibT('A carregar…','Loading…','Cargando…') + '</div>';
   const url = await myLibSignedUrl(book);
-  if (!url) { if (w) w.close(); return; }
-  if (w) { try { w.location.href = url; return; } catch (e) {} }
-  myLibOpenFallback(url);
+  if (!url) { myLibCloseReader(); return; }
+  const isEpub = (book.mime_type || '').includes('epub') || /\.epub$/i.test(book.file_path || '');
+  if (!isEpub) {
+    body.innerHTML = '<iframe src="' + url + '" style="width:100%;height:100%;border:0;background:#111827;" allow="fullscreen"></iframe>';
+    return;
+  }
+  try {
+    await myLibLoadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
+    await myLibLoadScript('https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js');
+    const resp = await fetch(url);
+    const buf = await resp.arrayBuffer();
+    body.innerHTML = '<div id="myLibEpubHost" style="width:100%;height:100%;background:#fff;"></div>';
+    const bookObj = ePub(buf);
+    _myLibEpubRendition = bookObj.renderTo('myLibEpubHost', { width: '100%', height: '100%', flow: 'scrolled-doc' });
+    await _myLibEpubRendition.display();
+    document.getElementById('myLibReaderNav').style.display = 'flex';
+  } catch (e) {
+    body.innerHTML = '<div style="padding:24px;color:var(--text3,#9ca3af);font-size:13px;">' + myLibT('Não foi possível abrir este EPUB.','Could not open this EPUB.','No se pudo abrir este EPUB.') + '</div>';
+  }
 }
 async function myLibDownloadBook(id) {
   const book = _myBooksCache.find(b => b.id === id);
