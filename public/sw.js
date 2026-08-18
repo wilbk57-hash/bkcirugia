@@ -1,7 +1,9 @@
-const CACHE_NAME = 'bk-cirurgia-v1';
+const CACHE_NAME = 'bk-cirurgia-v3';
+// Only static, versionless assets are pre-cached.
+// The app shell (HTML) and build assets are ALWAYS fetched from the network,
+// otherwise a stale cached shell keeps pointing at old hashed JS chunks
+// and the app breaks after a deploy.
 const ASSETS_TO_CACHE = [
-  './',
-  './app.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -10,7 +12,7 @@ const ASSETS_TO_CACHE = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE).catch(() => {}))
   );
   self.skipWaiting();
 });
@@ -27,15 +29,28 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isStatic =
+    url.pathname.endsWith('/manifest.json') || url.pathname.includes('/icons/');
+
+  if (!isStatic) {
+    // Network-first (no offline fallback) for HTML, JS, CSS and API calls.
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    caches.match(request).then((cached) => {
       if (cached) return cached;
-      return fetch(event.request)
+      return fetch(request)
         .then((response) => {
           if (response && response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
         })

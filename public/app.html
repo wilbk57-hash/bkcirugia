@@ -8369,7 +8369,15 @@ refreshAuthCache().then(initApp);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    // Purge caches from older service worker versions that cached the app shell.
+    if (window.caches && caches.keys) {
+      caches.keys().then((keys) => {
+        keys.forEach((k) => { if (k !== 'bk-cirurgia-v3') caches.delete(k); });
+      }).catch(() => {});
+    }
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then((reg) => { reg.update().catch(() => {}); })
+      .catch(() => {});
   });
 }
 </script>
