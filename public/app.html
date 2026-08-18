@@ -7948,16 +7948,15 @@ async function myLibOpenReader(book) {
     try {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error('http_' + resp.status);
-      const blob = await resp.blob();
-      const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
-      if (_myLibReaderObjectUrl) { try { URL.revokeObjectURL(_myLibReaderObjectUrl); } catch (e) {} }
-      _myLibReaderObjectUrl = URL.createObjectURL(pdfBlob);
-      const fr = document.createElement('iframe');
-      fr.style.cssText = 'width:100%;height:100%;border:0;background:#111827;';
-      fr.setAttribute('allow', 'fullscreen');
-      fr.src = _myLibReaderObjectUrl;
-      body.innerHTML = '';
-      body.appendChild(fr);
+      const buf = await resp.arrayBuffer();
+      // Renderiza com pdf.js em <canvas>: o visualizador nativo do Chrome é um
+      // plugin e fica bloqueado dentro de iframes sandbox ("Esta página foi
+      // bloqueada pelo Chrome"), mesmo com blob: mesmo-origem.
+      await myLibLoadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+      const pdfjs = window.pdfjsLib;
+      pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      _myLibPdfDoc = await pdfjs.getDocument({ data: buf }).promise;
+      await myLibRenderPdfPages();
     } catch (e) {
       body.innerHTML = '<div style="padding:24px;color:var(--text3,#9ca3af);font-size:13px;">' + myLibT('Não foi possível abrir este PDF.','Could not open this PDF.','No se pudo abrir este PDF.') + '</div>';
     }
