@@ -62,6 +62,47 @@ export type Database = {
         }
         Relationships: []
       }
+      book_chunks: {
+        Row: {
+          book_id: string
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string
+          id: string
+          page: number | null
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          chunk_index: number
+          content: string
+          created_at?: string
+          embedding: string
+          id?: string
+          page?: number | null
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string
+          id?: string
+          page?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_chunks_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "user_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           country: string | null
@@ -111,14 +152,19 @@ export type Database = {
         Row: {
           author: string | null
           category: string | null
+          chunk_count: number
           created_at: string
           edition: string | null
           file_hash: string | null
           file_name: string | null
           file_path: string
           id: string
+          index_error: string | null
+          index_status: string
+          indexed_at: string | null
           language: string | null
           mime_type: string | null
+          page_count: number | null
           size_bytes: number | null
           status: string
           title: string
@@ -128,14 +174,19 @@ export type Database = {
         Insert: {
           author?: string | null
           category?: string | null
+          chunk_count?: number
           created_at?: string
           edition?: string | null
           file_hash?: string | null
           file_name?: string | null
           file_path: string
           id?: string
+          index_error?: string | null
+          index_status?: string
+          indexed_at?: string | null
           language?: string | null
           mime_type?: string | null
+          page_count?: number | null
           size_bytes?: number | null
           status?: string
           title: string
@@ -145,14 +196,19 @@ export type Database = {
         Update: {
           author?: string | null
           category?: string | null
+          chunk_count?: number
           created_at?: string
           edition?: string | null
           file_hash?: string | null
           file_name?: string | null
           file_path?: string
           id?: string
+          index_error?: string | null
+          index_status?: string
+          indexed_at?: string | null
           language?: string | null
           mime_type?: string | null
+          page_count?: number | null
           size_bytes?: number | null
           status?: string
           title?: string
@@ -170,6 +226,20 @@ export type Database = {
       log_event: {
         Args: { p_detail?: Json; p_event: string }
         Returns: undefined
+      }
+      match_book_chunks: {
+        Args: {
+          filter_book_id?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          book_id: string
+          content: string
+          id: string
+          page: number
+          similarity: number
+        }[]
       }
     }
     Enums: {

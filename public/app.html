@@ -4543,6 +4543,35 @@ async function runTutorRequest(opts) {
   throw lastErr || new Error('erro');
 }
 
+/* ============================================================
+   TUTOR — CONTEXTO DOS LIVROS PESSOAIS DO ALUNO (RAG)
+   ------------------------------------------------------------
+   A pesquisa acontece no servidor e é sempre limitada aos livros
+   do próprio aluno (filtro por utilizador na base de dados).
+   ============================================================ */
+async function fetchMyBooksContext(question) {
+  try {
+    const token = await getTutorAuthToken();
+    if (!token) return null;
+    const resp = await fetch('/api/books/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ query: question, matchCount: 6 }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const chunks = (data && data.chunks) || [];
+    if (!chunks.length) return null;
+    const body = chunks.map((c, i) =>
+      `[${i + 1}] ${c.title || 'Livro pessoal'}${c.page ? ', p. ' + c.page : ''}\n${String(c.content).slice(0, 1500)}`
+    ).join('\n\n');
+    return '\n\n--- EXCERTOS DOS LIVROS PESSOAIS DO ALUNO ---\n'
+      + 'Usa estes excertos como fonte principal quando a pergunta for sobre os livros do aluno. '
+      + 'Cita o livro e a página quando usares um excerto. Se os excertos não responderem, diz isso e responde com o teu conhecimento geral.\n\n'
+      + body + '\n--- FIM DOS EXCERTOS ---\n';
+  } catch (e) { return null; }
+}
+
 async function sendIaMessage() {
   if (iaSending) return;
   const input = document.getElementById('iaInput');
@@ -4568,8 +4597,9 @@ async function sendIaMessage() {
 
   let newAssistantIdx = null;
   try {
+    const booksContext = await fetchMyBooksContext(text);
     const out = await runTutorRequest({
-      system: buildIaSystemPrompt(),
+      system: buildIaSystemPrompt() + (booksContext || ''),
       messages: IA_MESSAGES.filter(m => !m.limitNotice).map(m => ({ role: m.role, content: m.content })),
       maxTokens: 1500,
       webSearch: !!SETTINGS_STATE.webSearchEnabled,
@@ -7771,6 +7801,7 @@ async function myLibConfirmUpload() {
 
   setProgress(myLibT('A guardar…','Saving…','Guardando…'));
   const { error: dbErr } = await supabaseClient.from('user_books').insert({
+    id: bookId,
     user_id: uid, title, author, edition, category, language,
     file_path: path, file_name: file.name, mime_type: mime, size_bytes: file.size, file_hash: hash,
   });
@@ -7787,14 +7818,68 @@ async function myLibConfirmUpload() {
   auditLog('book_uploaded', { title });
   btn.classList.remove('loading'); btn.disabled = false;
   _myLibPendingFile = null;
+  if (mime === 'application/pdf') myLibIndexBook(bookId); // preparação para o tutor, em segundo plano
   showToast(myLibT('Livro adicionado à tua Biblioteca Pessoal.','Book added to your Personal Library.','Libro añadido a tu Biblioteca Personal.'));
+  await refreshMyBooks();
+  setTimeout(() => { renderMyLibrary(); }, 1200); // garantir que a lista mostra o novo livro
+}
+
+/* ============================================================
+   PREPARAÇÃO DOS LIVROS PARA O TUTOR (indexação automática)
+   ------------------------------------------------------------
+   Depois do upload, o servidor lê o PDF, divide-o em pedaços e
+   guarda-os para pesquisa. Corre em lotes retomáveis: se um pedido
+   chegar ao limite de tempo, continua do ponto onde ficou.
+   ============================================================ */
+async function myLibIndexBook(bookId) {
+  const token = await getTutorAuthToken();
+  if (!token) return;
+  let offset = 0;
+  for (let step = 0; step < 60; step++) {
+    let data = null;
+    try {
+      const resp = await fetch('/api/books/reindex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ bookId, offset }),
+      });
+      data = await resp.json();
+      if (!resp.ok) break;
+    } catch (e) { break; }
+    if (!data || data.done) break;
+    offset = data.nextOffset || 0;
+    await refreshMyBooks();
+  }
   await refreshMyBooks();
 }
 
+let _myLibIndexing = new Set();
+function maybeIndexPendingBooks() {
+  _myBooksCache
+    .filter(b => b.mime_type === 'application/pdf' && (b.index_status || 'pending') === 'pending')
+    .slice(0, 2)
+    .forEach(b => {
+      if (_myLibIndexing.has(b.id)) return;
+      _myLibIndexing.add(b.id);
+      myLibIndexBook(b.id).finally(() => _myLibIndexing.delete(b.id));
+    });
+}
+
+function myLibIndexLabel(b) {
+  if (b.mime_type !== 'application/pdf') return '';
+  const st = b.index_status || 'pending';
+  if (st === 'ready') return ' · ' + myLibT('pronto para o tutor','ready for the tutor','listo para el tutor');
+  if (st === 'indexing' || st === 'pending') return ' · ' + myLibT('a preparar para o tutor…','preparing for the tutor…','preparando para el tutor…');
+  if (st === 'no_text') return ' · ' + myLibT('sem texto pesquisável','no searchable text','sin texto buscable');
+  if (st === 'failed') return ' · ' + myLibT('não foi possível preparar','could not be prepared','no se pudo preparar');
+  return '';
+}
+
 async function refreshMyBooks() {
-  const { data, error } = await supabaseClient.from('user_books').select('*').eq('status', 'ready').order('created_at', { ascending: false });
-  if (!error) _myBooksCache = data || [];
+  const { data, error } = await supabaseClient.from('user_books').select('*').order('created_at', { ascending: false });
+  if (!error) _myBooksCache = (data || []).filter(b => !b.status || b.status === 'ready');
   renderMyLibList();
+  maybeIndexPendingBooks();
   // atualizar também a barra de quota no topo, sem recriar o formulário em curso
   const used = _myBooksCache.reduce((sum, b) => sum + (b.size_bytes || 0), 0);
   const pct = Math.min(100, Math.round((used / MYLIB_QUOTA_BYTES) * 100));
@@ -7823,7 +7908,7 @@ function renderMyLibList() {
       <div style="font-size:22px;">${b.mime_type === 'application/pdf' ? '📕' : '📗'}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.title}</div>
-        <div style="font-size:11.5px;color:var(--text3);">👤 ${myLibT('Livro pessoal','Personal book','Libro personal')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
+        <div style="font-size:11.5px;color:var(--text3);">👤 ${myLibT('Livro pessoal','Personal book','Libro personal')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}${myLibIndexLabel(b)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
         <button class="icon-btn" title="${myLibT('Ler','Read','Leer')}" onclick="myLibReadBook('${b.id}')">📖</button>
