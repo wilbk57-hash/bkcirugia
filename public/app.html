@@ -7821,6 +7821,7 @@ async function myLibConfirmUpload() {
   if (mime === 'application/pdf') myLibIndexBook(bookId); // preparação para o tutor, em segundo plano
   showToast(myLibT('Livro adicionado à tua Biblioteca Pessoal.','Book added to your Personal Library.','Libro añadido a tu Biblioteca Personal.'));
   await refreshMyBooks();
+  setTimeout(() => { renderMyLibrary(); }, 1200); // garantir que a lista mostra o novo livro
 }
 
 /* ============================================================
