@@ -7879,6 +7879,7 @@ function myLibReaderZoom(dir) {
   const body = document.getElementById('myLibReaderBody');
   if (!body) return;
   if (_myLibEpubRendition) { try { _myLibEpubRendition.themes.fontSize(_myLibReaderZoom + '%'); } catch (e) {} return; }
+  if (_myLibPdfDoc) { myLibRenderPdfPages(); return; }
   const fr = body.querySelector('iframe');
   if (fr) {
     fr.style.width = _myLibReaderZoom + '%';
@@ -7892,6 +7893,8 @@ function myLibCloseReader() {
   if (!el) return;
   try { if (_myLibEpubRendition) _myLibEpubRendition.destroy(); } catch (e) {}
   _myLibEpubRendition = null;
+  try { if (_myLibPdfDoc) _myLibPdfDoc.destroy(); } catch (e) {}
+  _myLibPdfDoc = null;
   _myLibReaderBook = null;
   if (_myLibReaderObjectUrl) { try { URL.revokeObjectURL(_myLibReaderObjectUrl); } catch (e) {} _myLibReaderObjectUrl = null; }
   document.getElementById('myLibReaderBody').innerHTML = '';
