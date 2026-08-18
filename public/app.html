@@ -7875,8 +7875,8 @@ function myLibIndexLabel(b) {
 }
 
 async function refreshMyBooks() {
-  const { data, error } = await supabaseClient.from('user_books').select('*').eq('status', 'ready').order('created_at', { ascending: false });
-  if (!error) _myBooksCache = data || [];
+  const { data, error } = await supabaseClient.from('user_books').select('*').order('created_at', { ascending: false });
+  if (!error) _myBooksCache = (data || []).filter(b => !b.status || b.status === 'ready');
   renderMyLibList();
   maybeIndexPendingBooks();
   // atualizar também a barra de quota no topo, sem recriar o formulário em curso
