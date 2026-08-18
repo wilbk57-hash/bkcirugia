@@ -19,7 +19,7 @@ function json(data: unknown, status = 200) {
   })
 }
 
-export const Route = createFileRoute('/api/books/')({
+export const Route = createFileRoute('/api/books/reindex')({
   server: {
     handlers: {
       POST: async ({ request }) => {

@@ -40,7 +40,7 @@ export const Route = createFileRoute('/api/books/search')({
           const { data, error } = await caller.supabase.rpc('match_book_chunks', {
             query_embedding: JSON.stringify(vector) as unknown as string,
             match_count: parsed.matchCount ?? 6,
-            filter_book_id: parsed.bookId ?? undefined,
+            ...(parsed.bookId ? { filter_book_id: parsed.bookId } : {}),
           })
           if (error) return json({ error: 'failed', message: error.message }, 502)
 
