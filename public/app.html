@@ -7850,6 +7850,7 @@ async function myLibReadBook(id) {
 /* ============ Leitor integrado (PDF + EPUB) ============ */
 let _myLibReaderBook = null;
 let _myLibEpubRendition = null;
+let _myLibReaderObjectUrl = null;
 function myLibReaderEl() {
   let el = document.getElementById('myLibReaderOverlay');
   if (el) return el;
