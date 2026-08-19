@@ -8249,16 +8249,15 @@ function myLibConfirmDialog(message, detail) {
     el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(5,8,15,.75);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;';
     el.innerHTML = `
       <div style="max-width:380px;width:100%;background:var(--bg2,#0b1220);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.5);">
-        <div style="font-weight:600;font-size:14px;color:var(--text1,#e5e7eb);margin-bottom:6px;"></div>
-        <div style="font-size:12.5px;color:var(--text3,#9ca3af);margin-bottom:16px;word-break:break-word;"></div>
+        <div id="myLibConfirmMsg" style="font-weight:600;font-size:14px;color:var(--text1,#e5e7eb);margin-bottom:6px;"></div>
+        <div id="myLibConfirmDetail" style="font-size:12.5px;color:var(--text3,#9ca3af);margin-bottom:16px;word-break:break-word;"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button class="icon-btn" data-act="cancel" style="padding:8px 14px;">${myLibT('Cancelar','Cancel','Cancelar')}</button>
           <button class="icon-btn" data-act="ok" style="padding:8px 14px;color:#fca5a5;border-color:#7f1d1d;">${myLibT('Excluir','Delete','Eliminar')}</button>
         </div>
       </div>`;
-    const texts = el.querySelectorAll('div > div > div');
-    texts[0].textContent = message;
-    texts[1].textContent = detail || '';
+    el.querySelector('#myLibConfirmMsg').textContent = message;
+    el.querySelector('#myLibConfirmDetail').textContent = detail || '';
     const done = v => { try { el.remove(); } catch (e) {} resolve(v); };
     el.addEventListener('click', ev => {
       const act = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-act');
