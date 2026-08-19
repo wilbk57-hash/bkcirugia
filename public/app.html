@@ -6854,7 +6854,7 @@ function openTopic(id, startTabId, fromPop) {
   nav.innerHTML = topic.tabs.map((tb, i) => `<button class="tab-btn ${i===startIdx?'active':''}" data-pane-id="${escapeHtml(tb.id)}" onclick="showPane('${tb.id}', this)">${tb.label}</button>`).join('');
 
   const host = document.getElementById('paneHost');
-  host.innerHTML = topic.tabs.map((tb, i) => `<div class="pane ${i===startIdx?'active':''}" id="pane-${tb.id}">${renderTab(tb, topic)}</div>`).join('');
+  host.innerHTML = topic.tabs.map((tb, i) => `<div class="pane ${i===startIdx?'active':''}" id="pane-${tb.id}">${renderTopicOverview(topic, tb.id)}${renderTab(tb, topic)}</div>`).join('');
 
   if (topic.tabs.some(tb => tb.type === 'quiz')) initQuiz(topic);
   if (topic.tabs.some(tb => tb.type === 'case')) initCaso(topic);
