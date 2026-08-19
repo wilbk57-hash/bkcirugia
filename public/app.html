@@ -1240,6 +1240,26 @@
   }
   .mm-stepbar.show { display: flex; }
   .mm-step-label { font-size: 11.5px; color: var(--text2); max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* — Integração pedagógica: resumo / questões / revisão — */
+  .mm-studybar { position: absolute; right: 12px; top: 12px; z-index: 6; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 24px); }
+  .mm-overlay.mm-focus .mm-studybar { display: none; }
+  .mm-node.mm-sel .mm-node-box { stroke: var(--violet); stroke-width: 2.4px; }
+  .mm-panel-body { font-size: 12.5px; line-height: 1.65; color: var(--text2); white-space: pre-wrap; }
+  .mm-quiz { position: absolute; inset: 0; z-index: 8; background: var(--bg); overflow-y: auto; padding: 20px 16px 40px; display: none; }
+  .mm-quiz.show { display: block; }
+  .mm-quiz-inner { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  .mm-quiz-head { display: flex; align-items: center; gap: 10px; }
+  .mm-quiz-kicker { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--teal); font-weight: 700; flex: 1 1 auto; }
+  .mm-quiz-q { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.45; }
+  .mm-quiz-opt {
+    display: block; width: 100%; text-align: left; background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; font-size: 13px; cursor: pointer; margin-bottom: 8px;
+  }
+  .mm-quiz-opt:hover:not(:disabled) { border-color: var(--teal); }
+  .mm-quiz-opt.correct { border-color: var(--teal); color: var(--teal); }
+  .mm-quiz-opt.wrong { border-color: var(--amber); color: var(--amber); }
+  .mm-quiz-exp { font-size: 12.5px; line-height: 1.6; color: var(--text2); border-left: 2px solid var(--teal); padding-left: 10px; }
+  .mm-quiz-score { font-family: 'IBM Plex Mono', monospace; font-size: 32px; color: var(--teal); text-align: center; }
   @media (max-width: 760px) {
     .mm-head { padding: 8px 10px; gap: 6px; overflow: hidden; }
     .mm-btn { padding: 6px 8px; font-size: 11px; }
@@ -4146,6 +4166,8 @@ function buildStudentFootprint() {
       }
       if (a.type === 'quiz') return `fez o quiz de ${topic ? topic.title : ''} (${a.score}/${a.total})`;
       if (a.type === 'case') return `concluiu o caso clínico de ${topic ? topic.title : ''}`;
+      if (a.type === 'mm_quiz') return `fez as questões do mapa mental "${a.mapTitle || ''}" (${a.score}/${a.total})`;
+      if (a.type === 'mm_review') return `revisou conceitos do mapa mental "${a.mapTitle || ''}"`;
       return null;
     }).filter(Boolean);
     if (recent.length) lines.push(`Últimas atividades registradas: ${recent.join('; ')}.`);
@@ -5440,6 +5462,30 @@ const STR_TABLE = [
 ['mm.update.loading','A atualizar o mapa mental…','Updating the mind map…','Actualizando el mapa mental…'],
 ['mm.update.done','Mapa mental atualizado com {n} nó(s).','Mind map updated with {n} node(s).','Mapa mental actualizado con {n} nodo(s).'],
 ['mm.update.none','Nada de novo para acrescentar ao mapa.','Nothing new to add to the map.','Nada nuevo que añadir al mapa.'],
+['mm.study.summary','Gerar resumo','Generate summary','Generar resumen'],
+['mm.study.summary.pick','Escolha o tipo de resumo','Choose the summary type','Elige el tipo de resumen'],
+['mm.study.summary.quick','60 segundos','60 seconds','60 segundos'],
+['mm.study.summary.exam','Para prova','Exam-ready','Para examen'],
+['mm.study.summary.clinical','Clínico','Clinical','Clínico'],
+['mm.study.quiz','Gerar questões','Generate questions','Generar preguntas'],
+['mm.study.review','Revisar mapa','Review map','Revisar mapa'],
+['mm.study.review.hint','Selecione 2 ou 3 nós no mapa.','Select 2 or 3 nodes on the map.','Selecciona 2 o 3 nodos en el mapa.'],
+['mm.study.review.sel','Selecionados: {n}','Selected: {n}','Seleccionados: {n}'],
+['mm.study.review.ask','Perguntar ao Tutor','Ask the Tutor','Preguntar al Tutor'],
+['mm.study.review.exit','Sair da revisão','Exit review','Salir de la revisión'],
+['mm.study.loading','A gerar…','Generating…','Generando…'],
+['mm.study.error','Não foi possível gerar agora. Tente novamente.','Could not generate right now. Please try again.','No se pudo generar ahora. Inténtalo de nuevo.'],
+['mm.doubt','Marcar dúvida','Mark as doubt','Marcar duda'],
+['mm.doubt.done','Dúvida registada.','Doubt recorded.','Duda registrada.'],
+['mm.quiz.title','Questões do mapa','Map questions','Preguntas del mapa'],
+['mm.quiz.num','Questão {a} de {b}','Question {a} of {b}','Pregunta {a} de {b}'],
+['mm.quiz.next','Próxima questão →','Next question →','Siguiente pregunta →'],
+['mm.quiz.finish','Ver resultado','See result','Ver resultado'],
+['mm.quiz.result','Resultado','Result','Resultado'],
+['mm.quiz.again','Refazer','Retry','Rehacer'],
+['mm.quiz.explain','Explicação','Explanation','Explicación'],
+['act.tpl.mmquiz','Questões do mapa','Map questions','Preguntas del mapa'],
+['act.tpl.mmreview','Revisão do mapa','Map review','Revisión del mapa'],
  ['explain.error.label','Não foi possível explicar','Could not explain','No se pudo explicar'],
 ];
 const STRINGS = { pt: {}, en: {}, es: {} };
@@ -5537,11 +5583,11 @@ function loadProgress() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return { topics: parsed.topics || {}, activity: parsed.activity || [], days: parsed.days || {} };
+        return { topics: parsed.topics || {}, activity: parsed.activity || [], days: parsed.days || {}, mindmaps: parsed.mindmaps || {} };
       }
     }
   } catch (e) {}
-  return { topics: {}, activity: [], days: {} };
+  return { topics: {}, activity: [], days: {}, mindmaps: {} };
 }
 let PROGRESS = loadProgress();
 function saveProgress() {
@@ -5629,6 +5675,7 @@ function recordQuizResult(topicId, score, total) {
   if (document.getElementById('perfilView') && document.getElementById('perfilView').classList.contains('show')) renderPerfil();
 }
 function recordCaseComplete(topicId) {
+  /* (mapas mentais registam progresso em PROGRESS.mindmaps — ver mmProgEntry) */
   const p = getTopicProg(topicId);
   if (p.caseDone) return;
   p.caseDone = true;
@@ -6470,6 +6517,12 @@ function renderPerfil() {
     } else if (a.type === 'case') {
       icon = '🏥';
       label = `${t('act.tpl.case')} ${topic ? topic.title : ''}`;
+    } else if (a.type === 'mm_quiz') {
+      icon = '🧩';
+      label = `${t('act.tpl.mmquiz')} — ${a.mapTitle || ''} ${a.score}/${a.total}`;
+    } else if (a.type === 'mm_review') {
+      icon = '🧠';
+      label = `${t('act.tpl.mmreview')} — ${a.mapTitle || ''}`;
     }
     return `
     <div class="activity-row">
@@ -8733,6 +8786,11 @@ if ('serviceWorker' in navigator) {
   <div class="mm-stage" id="mmStage">
     <div class="mm-summary" id="mmSummary" style="display:none"></div>
     <button class="mm-btn mm-focus-exit" id="mmFocusExitBtn" onclick="mmSetFocus(false)"></button>
+    <div class="mm-studybar" id="mmStudyBar">
+      <button class="mm-btn" id="mmSummaryBtn" onclick="mmSummaryMenu()"></button>
+      <button class="mm-btn" id="mmQuizBtn" onclick="mmGenerateQuiz()"></button>
+      <button class="mm-btn" id="mmReviewBtn" onclick="mmToggleReview()"></button>
+    </div>
     <div class="mm-modebar" id="mmModeBar">
       <button class="mm-btn" id="mmFocusBtn" onclick="mmSetFocus(true)"></button>
       <button class="mm-btn" id="mmPresentBtn" onclick="mmTogglePresent()"></button>
@@ -8752,6 +8810,7 @@ if ('serviceWorker' in navigator) {
     </div>
     <div class="mm-list" id="mmList"></div>
     <aside class="mm-panel" id="mmPanel" aria-live="polite"></aside>
+    <div class="mm-quiz" id="mmQuiz" aria-live="polite"></div>
   </div>
 </div>
 <script>
@@ -8767,6 +8826,8 @@ let MM_STATE = {
   listMode: false, pushedHistory: false, open: false, sourceIdx: null,
   /* modos de estudo (aditivos, nunca alteram o JSON do mapa) */
   focus: false, mode: 'normal', presentIdx: 0, revealed: {}, overview: false, frozen: {},
+  /* integração pedagógica */
+  review: false, reviewSel: [],
 };
 function mmFmt(key, vars) {
   let s = t(key);
@@ -9077,6 +9138,7 @@ function mmClearStage() {
   document.getElementById('mmSummary').style.display = 'none';
   const bar = document.getElementById('mmModeBar'); if (bar) bar.style.display = 'none';
   const sb = document.getElementById('mmStepBar'); if (sb) sb.classList.remove('show');
+  const stb = document.getElementById('mmStudyBar'); if (stb) stb.style.display = 'none';
 }
 
 /* ---- Abrir / fechar (integra-se com o History API existente) ---- */
@@ -9085,6 +9147,9 @@ function mmOpen(map, sourceIdx) {
   MM_STATE.map = map; MM_STATE.sourceIdx = sourceIdx == null ? MM_STATE.sourceIdx : sourceIdx;
   MM_STATE.collapsed = {}; MM_STATE.selected = null; MM_STATE.listMode = false;
   MM_STATE.mode = 'normal'; MM_STATE.presentIdx = 0; MM_STATE.revealed = {}; MM_STATE.frozen = {};
+  MM_STATE.review = false; MM_STATE.reviewSel = [];
+  if (typeof mmQuizClose === 'function') mmQuizClose();
+  if (map) mmRecordMapViewed(map);
   mmSetFocus(false, true);
   /* Densidade progressiva: mapas grandes ou profundos abrem só com
      raiz + nível 1; o resto fica atrás dos contadores "+N". */
@@ -9235,6 +9300,9 @@ function mmSyncModeUi() {
   set('mmMemoBtn', t('mm.memo'), MM_STATE.mode === 'memo');
   set('mmDensityBtn', MM_STATE.overview ? t('mm.expandall') : t('mm.collapseall'), MM_STATE.overview);
   set('mmStepExit', t('mm.present.exit'), false);
+  set('mmSummaryBtn', t('mm.study.summary'), false);
+  set('mmQuizBtn', t('mm.study.quiz'), false);
+  set('mmReviewBtn', t('mm.study.review'), MM_STATE.review);
   const bar = document.getElementById('mmStepBar');
   if (bar) {
     const on = MM_STATE.mode === 'present';
@@ -9260,6 +9328,8 @@ function mmRequestClose() {
 }
 function mmClose() {
   MM_STATE.open = false; MM_STATE.pushedHistory = false;
+  MM_STATE.review = false; MM_STATE.reviewSel = [];
+  mmQuizClose();
   document.getElementById('mmOverlay').classList.remove('show');
   mmClearStage();
 }
@@ -9390,7 +9460,8 @@ function mmRender(keepView) {
     const masked = mmMemoIsHidden(n);
     const grp = mmSvgEl('g', {
       class: 'mm-node mm-t-' + n.type + ' mm-imp-' + n.importance + (n.isRoot ? ' mm-node-root' : '')
-        + (MM_STATE.selected === n.id ? ' selected' : '') + (isActive(n.id) ? '' : ' mm-dim') + (masked ? ' mm-hidden-label' : ''),
+        + (MM_STATE.selected === n.id ? ' selected' : '') + (isActive(n.id) ? '' : ' mm-dim') + (masked ? ' mm-hidden-label' : '')
+        + ((MM_STATE.reviewSel || []).indexOf(n.id) !== -1 ? ' mm-sel' : ''),
       transform: 'translate(' + (n.x - n.w / 2) + ',' + (n.y - n.h / 2) + ')',
       tabindex: '0', role: 'button',
     });
@@ -9403,6 +9474,7 @@ function mmRender(keepView) {
     grp.appendChild(label);
     const activate = () => {
       if (mmMemoIsHidden(n)) { MM_STATE.revealed[n.id] = true; mmRender(true); return; }
+      if (MM_STATE.review) { mmReviewPick(n.id); return; }
       mmSelectNode(n.id);
     };
     grp.addEventListener('click', (ev) => { ev.stopPropagation(); if (!mmDragMoved) activate(); });
@@ -9431,6 +9503,7 @@ function mmRender(keepView) {
   stage.insertBefore(svg, stage.firstChild);
   mmAttachStageEvents(svg);
   const modeBar = document.getElementById('mmModeBar'); if (modeBar) modeBar.style.display = 'flex';
+  const studyBar = document.getElementById('mmStudyBar'); if (studyBar) studyBar.style.display = 'flex';
   const sum = document.getElementById('mmSummary');
   let summaryText = (MM_STATE.map.summary || '') + (MM_STATE.map.truncated ? (MM_STATE.map.summary ? ' — ' : '') + t('mm.truncated') : '');
   if (MM_STATE.mode === 'memo') {
@@ -9556,6 +9629,11 @@ function mmSelectNode(id) {
   const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = t('mm.close');
   close.onclick = mmClosePanel;
   actions.appendChild(close);
+  if (!n.isRoot) {
+    const doubt = document.createElement('button'); doubt.className = 'mm-btn'; doubt.textContent = t('mm.doubt');
+    doubt.onclick = () => { mmRecordDoubt(n.id); doubt.textContent = t('mm.doubt.done'); doubt.disabled = true; };
+    actions.insertBefore(doubt, close);
+  }
   panel.appendChild(kind); panel.appendChild(title); panel.appendChild(desc); panel.appendChild(actions);
   panel.classList.add('show');
   mmRender(true);
@@ -9621,6 +9699,309 @@ function mmRenderList() {
   if (sub) rootLi.appendChild(sub);
   rootUl.appendChild(rootLi);
   host.appendChild(rootUl);
+}
+
+/* ============================================================
+   INTEGRAÇÃO PEDAGÓGICA — resumo, questões e revisão
+   ------------------------------------------------------------
+   Tudo aqui usa EXCLUSIVAMENTE os dados do JSON do mapa como
+   contexto (nós, tipos, importância, descrições e relações);
+   nunca uma pergunta genérica desconectada do mapa.
+
+   Quiz: o motor oficial (initQuiz) espera um `topic` completo do
+   currículo curado e escreve nos nós DOM da vista de tema
+   (#quizArea, #quizQ, …). Encaixar um mapa aí seria gambiarra,
+   por isso estas questões usam um motor próprio, leve, dentro do
+   overlay do mapa e no mesmo estilo visual.
+
+   Progresso: reaproveita PROGRESS/PROGRESS_KEY + pushActivity
+   (mapas vistos, conceitos revisados, conceitos em dúvida).
+   TODO: não existe hoje motor de repetição espaçada (nem agenda
+   de revisões) na app — quando existir, ligar PROGRESS.mindmaps
+   [mapId].doubts/reviewed como fonte de itens a reagendar.
+   ============================================================ */
+function mmProgEntry(mapId, title) {
+  if (!PROGRESS.mindmaps) PROGRESS.mindmaps = {};
+  if (!PROGRESS.mindmaps[mapId]) PROGRESS.mindmaps[mapId] = { title: title || '', views: 0, lastView: null, reviewed: {}, doubts: {}, quiz: null };
+  if (title) PROGRESS.mindmaps[mapId].title = title;
+  return PROGRESS.mindmaps[mapId];
+}
+function mmRecordMapViewed(map) {
+  if (!map || !map.id) return;
+  const e = mmProgEntry(map.id, map.title);
+  e.views++; e.lastView = Date.now();
+  markStudyDay(); saveProgress();
+}
+function mmRecordReviewed(ids) {
+  const map = MM_STATE.map; if (!map) return;
+  const e = mmProgEntry(map.id, map.title);
+  (ids || []).forEach(id => { e.reviewed[id] = Date.now(); });
+  markStudyDay();
+  pushActivity({ type: 'mm_review', mapId: map.id, mapTitle: map.title, count: (ids || []).length });
+  saveProgress();
+}
+function mmRecordDoubt(id) {
+  const map = MM_STATE.map; if (!map) return;
+  const e = mmProgEntry(map.id, map.title);
+  e.doubts[id] = Date.now();
+  saveProgress();
+}
+function mmRecordQuiz(score, total) {
+  const map = MM_STATE.map; if (!map) return;
+  const e = mmProgEntry(map.id, map.title);
+  const best = e.quiz ? Math.max(e.quiz.bestScore, score) : score;
+  e.quiz = { bestScore: best, lastScore: score, total: total, attempts: (e.quiz ? e.quiz.attempts : 0) + 1, lastDate: Date.now() };
+  markStudyDay();
+  pushActivity({ type: 'mm_quiz', mapId: map.id, mapTitle: map.title, score: score, total: total });
+  saveProgress();
+}
+
+/* ---- Contexto: só dados do JSON do mapa ---- */
+function mmContextJson(map) {
+  const byId = {}; map.nodes.forEach(n => { byId[n.id] = n; });
+  const labelOf = (id) => (id === map.root.id ? map.root.label : (byId[id] ? byId[id].label : id));
+  return JSON.stringify({
+    title: map.title,
+    summary: map.summary || '',
+    root: map.root.label,
+    nodes: map.nodes.map(n => ({
+      label: n.label, parent: labelOf(n.parentId), type: n.type,
+      importance: n.importance, description: n.description || '',
+    })),
+    relations: (map.relations || []).map(r => ({ from: labelOf(r.from), to: labelOf(r.to), type: r.type, label: r.label || '' })),
+  });
+}
+
+/* ---- Painel genérico reaproveitando o estilo do painel de nó ---- */
+function mmPanelShow(kind, title, bodyText, actions) {
+  const panel = document.getElementById('mmPanel');
+  panel.textContent = '';
+  const k = document.createElement('div'); k.className = 'mm-panel-kind'; k.textContent = kind;
+  const ti = document.createElement('div'); ti.className = 'mm-panel-title'; ti.textContent = title;
+  const body = document.createElement('div'); body.className = 'mm-panel-body'; body.textContent = bodyText || '';
+  panel.appendChild(k); panel.appendChild(ti); panel.appendChild(body);
+  const wrap = document.createElement('div'); wrap.className = 'mm-panel-actions';
+  (actions || []).forEach(a => {
+    const b = document.createElement('button'); b.className = 'mm-btn'; b.textContent = a.label; b.onclick = a.onClick;
+    wrap.appendChild(b);
+  });
+  const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = t('mm.close'); close.onclick = mmClosePanel;
+  wrap.appendChild(close);
+  panel.appendChild(wrap);
+  panel.classList.add('show');
+  return body;
+}
+
+/* ---- 1) Resumo em 3 variações ---- */
+const MM_SUMMARY_KINDS = {
+  quick: {
+    key: 'mm.study.summary.quick',
+    prompt: 'Escreve um resumo de 60 SEGUNDOS: 5 a 7 bullets curtos (uma linha cada), apenas a partir dos nós com importance "high" (usa "medium" só se faltarem). Sem introdução nem conclusão.',
+  },
+  exam: {
+    key: 'mm.study.summary.exam',
+    prompt: 'Escreve um resumo PARA PROVA: mais denso, organizado pelos ramos de nível 1 do mapa, com bullets. Inclui obrigatoriamente uma secção com os nós do tipo "warning" (armadilhas/atenção) e outra com os nós do tipo "decision" (pontos de decisão).',
+  },
+  clinical: {
+    key: 'mm.study.summary.clinical',
+    prompt: 'Escreve um resumo CLÍNICO: foca os nós do tipo "clinical" e as relações causais e de risco (causes, leads_to, risk_of, complication_of, prevents, treats, diagnoses), explicando cada cadeia em linguagem de beira de leito.',
+  },
+};
+function mmSummaryMenu() {
+  if (!MM_STATE.map) return;
+  mmPanelShow(t('mm.study.summary'), t('mm.study.summary.pick'), '', Object.keys(MM_SUMMARY_KINDS).map(k => ({
+    label: t(MM_SUMMARY_KINDS[k].key),
+    onClick: () => mmGenerateSummary(k),
+  })));
+}
+async function mmGenerateSummary(kind) {
+  const map = MM_STATE.map; const spec = MM_SUMMARY_KINDS[kind];
+  if (!map || !spec) return;
+  const body = mmPanelShow(t('mm.study.summary'), t(spec.key), t('mm.study.loading'), []);
+  try {
+    const out = await runTutorRequest({
+      system: 'És um tutor de cirurgia. Responde em ' + mmLangName() + ', em texto simples (sem markdown pesado). '
+        + 'Usa EXCLUSIVAMENTE o conteúdo do mapa mental fornecido em JSON como fonte — não acrescentes temas que não estejam lá. ' + spec.prompt,
+      messages: [{ role: 'user', content: 'Mapa mental (JSON):\n' + mmContextJson(map) }],
+      maxTokens: 1200,
+    });
+    const text = (out && out.text || '').trim();
+    if (!text) throw new Error('empty');
+    body.textContent = text;
+    mmRecordMapViewed(map);
+  } catch (e) {
+    body.textContent = t('mm.study.error');
+  }
+}
+
+/* ---- 2) Questões geradas a partir dos dados do mapa ---- */
+let MM_QUIZ = { questions: [], i: 0, score: 0, answered: false };
+function mmQuizPrompt() {
+  return 'És um professor de cirurgia. Cria questões de escolha múltipla em ' + mmLangName() + ' usando EXCLUSIVAMENTE os nós e relações do mapa mental fornecido em JSON. '
+    + 'Cada questão deve testar um nó ou uma relação concreta do mapa (nunca conhecimento fora do mapa). '
+    + 'Devolve APENAS JSON válido, sem texto à volta, no formato: '
+    + '{"questions":[{"q":"","options":["","","",""],"correct":0,"explain":""}]} com 5 a 8 questões, 4 opções cada e "correct" como índice 0-3.';
+}
+async function mmGenerateQuiz() {
+  const map = MM_STATE.map; if (!map) return;
+  const host = document.getElementById('mmQuiz');
+  mmClosePanel();
+  host.classList.add('show');
+  host.innerHTML = '<div class="mm-quiz-inner"><div class="mm-quiz-kicker">' + escapeHtml(t('mm.quiz.title')) + '</div><div class="mm-panel-body">' + escapeHtml(t('mm.study.loading')) + '</div></div>';
+  try {
+    const out = await runTutorRequest({
+      system: mmQuizPrompt(),
+      messages: [{ role: 'user', content: 'Mapa mental (JSON):\n' + mmContextJson(map) }],
+      maxTokens: 1800,
+    });
+    const parsed = mmParseJson(out && out.text);
+    const qs = (parsed && Array.isArray(parsed.questions) ? parsed.questions : [])
+      .filter(q => q && q.q && Array.isArray(q.options) && q.options.length >= 2)
+      .slice(0, 10)
+      .map(q => ({
+        q: String(q.q).slice(0, 400),
+        options: q.options.slice(0, 5).map(o => String(o).slice(0, 220)),
+        correct: Math.max(0, Math.min(q.options.length - 1, parseInt(q.correct, 10) || 0)),
+        explain: q.explain ? String(q.explain).slice(0, 600) : '',
+      }));
+    if (!qs.length) throw new Error('empty');
+    MM_QUIZ = { questions: qs, i: 0, score: 0, answered: false };
+    mmQuizRender();
+  } catch (e) {
+    host.innerHTML = '<div class="mm-quiz-inner"><div class="mm-quiz-kicker">' + escapeHtml(t('mm.quiz.title')) + '</div><div class="mm-panel-body">' + escapeHtml(t('mm.study.error')) + '</div></div>';
+    const b = document.createElement('button'); b.className = 'mm-btn'; b.textContent = t('mm.close'); b.onclick = mmQuizClose;
+    host.querySelector('.mm-quiz-inner').appendChild(b);
+  }
+}
+function mmQuizClose() {
+  document.getElementById('mmQuiz').classList.remove('show');
+}
+function mmQuizRender() {
+  const host = document.getElementById('mmQuiz');
+  const q = MM_QUIZ.questions[MM_QUIZ.i];
+  host.textContent = '';
+  const inner = document.createElement('div'); inner.className = 'mm-quiz-inner';
+  const head = document.createElement('div'); head.className = 'mm-quiz-head';
+  const kicker = document.createElement('div'); kicker.className = 'mm-quiz-kicker';
+  kicker.textContent = t('mm.quiz.title') + ' · ' + mmFmt('mm.quiz.num', { a: MM_QUIZ.i + 1, b: MM_QUIZ.questions.length });
+  const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = t('mm.close'); close.onclick = mmQuizClose;
+  head.appendChild(kicker); head.appendChild(close);
+  const qEl = document.createElement('div'); qEl.className = 'mm-quiz-q'; qEl.textContent = q.q;
+  const opts = document.createElement('div');
+  inner.appendChild(head); inner.appendChild(qEl); inner.appendChild(opts);
+  const exp = document.createElement('div'); exp.className = 'mm-quiz-exp'; exp.style.display = 'none';
+  const next = document.createElement('button'); next.className = 'mm-btn'; next.style.display = 'none';
+  next.textContent = MM_QUIZ.i + 1 === MM_QUIZ.questions.length ? t('mm.quiz.finish') : t('mm.quiz.next');
+  next.onclick = () => {
+    if (MM_QUIZ.i + 1 < MM_QUIZ.questions.length) { MM_QUIZ.i++; mmQuizRender(); }
+    else mmQuizResult();
+  };
+  q.options.forEach((opt, i) => {
+    const b = document.createElement('button'); b.className = 'mm-quiz-opt'; b.textContent = opt;
+    b.onclick = () => {
+      if (MM_QUIZ.answered) return;
+      MM_QUIZ.answered = true;
+      Array.prototype.forEach.call(opts.children, (el, idx) => {
+        el.disabled = true;
+        if (idx === q.correct) el.classList.add('correct');
+        else if (idx === i) el.classList.add('wrong');
+      });
+      if (i === q.correct) MM_QUIZ.score++;
+      if (q.explain) { exp.textContent = t('mm.quiz.explain') + ' — ' + q.explain; exp.style.display = 'block'; }
+      next.style.display = 'inline-block';
+    };
+    opts.appendChild(b);
+  });
+  MM_QUIZ.answered = false;
+  inner.appendChild(exp); inner.appendChild(next);
+  host.appendChild(inner);
+  host.classList.add('show');
+  host.scrollTop = 0;
+}
+function mmQuizResult() {
+  const host = document.getElementById('mmQuiz');
+  const total = MM_QUIZ.questions.length;
+  mmRecordQuiz(MM_QUIZ.score, total);
+  host.textContent = '';
+  const inner = document.createElement('div'); inner.className = 'mm-quiz-inner';
+  const kicker = document.createElement('div'); kicker.className = 'mm-quiz-kicker'; kicker.textContent = t('mm.quiz.result');
+  const score = document.createElement('div'); score.className = 'mm-quiz-score'; score.textContent = MM_QUIZ.score + '/' + total;
+  const pct = document.createElement('div'); pct.className = 'mm-panel-body'; pct.style.textAlign = 'center';
+  pct.textContent = Math.round(MM_QUIZ.score / total * 100) + '%';
+  const again = document.createElement('button'); again.className = 'mm-btn'; again.textContent = t('mm.quiz.again');
+  again.onclick = () => { MM_QUIZ.i = 0; MM_QUIZ.score = 0; mmQuizRender(); };
+  const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = t('mm.close'); close.onclick = mmQuizClose;
+  const actions = document.createElement('div'); actions.className = 'mm-panel-actions';
+  actions.appendChild(again); actions.appendChild(close);
+  inner.appendChild(kicker); inner.appendChild(score); inner.appendChild(pct); inner.appendChild(actions);
+  host.appendChild(inner);
+}
+
+/* ---- 3) Revisar mapa: selecionar 2-3 nós e perguntar no Tutor ---- */
+function mmToggleReview() {
+  MM_STATE.review = !MM_STATE.review;
+  MM_STATE.reviewSel = [];
+  if (MM_STATE.review) mmReviewPanel(); else mmClosePanel();
+  mmSyncModeUi();
+  mmRender(true);
+}
+function mmReviewPick(id) {
+  const sel = MM_STATE.reviewSel || (MM_STATE.reviewSel = []);
+  const at = sel.indexOf(id);
+  if (at !== -1) sel.splice(at, 1);
+  else { sel.push(id); if (sel.length > 3) sel.shift(); }
+  mmReviewPanel();
+  mmRender(true);
+}
+function mmReviewLabel(id) {
+  const map = MM_STATE.map; if (!map) return id;
+  if (id === map.root.id) return map.root.label;
+  const n = map.nodes.find(x => x.id === id);
+  return n ? n.label : id;
+}
+function mmReviewRelation(ids) {
+  const rels = (MM_STATE.map && MM_STATE.map.relations) || [];
+  for (const r of rels) {
+    if (ids.indexOf(r.from) !== -1 && ids.indexOf(r.to) !== -1) return r;
+  }
+  return null;
+}
+function mmReviewPanel() {
+  const sel = MM_STATE.reviewSel || [];
+  const names = sel.map(mmReviewLabel).join(' · ');
+  const body = t('mm.study.review.hint') + '\n' + mmFmt('mm.study.review.sel', { n: sel.length }) + (names ? '\n' + names : '');
+  const actions = [];
+  if (sel.length) actions.push({ label: t('mm.study.review.ask'), onClick: mmAskReview });
+  actions.push({ label: t('mm.study.review.exit'), onClick: mmToggleReview });
+  mmPanelShow(t('mm.study.review'), MM_STATE.map ? MM_STATE.map.title : t('mm.title'), body, actions);
+}
+function mmAskReview() {
+  const map = MM_STATE.map; const sel = (MM_STATE.reviewSel || []).slice();
+  if (!map || !sel.length) return;
+  const labels = sel.map(mmReviewLabel);
+  const rel = sel.length >= 2 ? mmReviewRelation(sel) : null;
+  const inCtx = { pt: ' no contexto de "' + map.title + '".', en: ' within "' + map.title + '".', es: ' en el contexto de "' + map.title + '".' }[currentLang]
+    || ' no contexto de "' + map.title + '".';
+  let q;
+  if (sel.length === 1) {
+    q = { pt: 'Explique este conceito: "' + labels[0] + '"', en: 'Explain this concept: "' + labels[0] + '"', es: 'Explica este concepto: "' + labels[0] + '"' }[currentLang]
+      || 'Explique este conceito: "' + labels[0] + '"';
+  } else if (rel) {
+    const a = mmReviewLabel(rel.from), b = mmReviewLabel(rel.to);
+    q = { pt: 'Qual a relação entre "' + a + '" e "' + b + '" (' + (rel.label || rel.type) + ')', en: 'What is the relationship between "' + a + '" and "' + b + '" (' + (rel.label || rel.type) + ')', es: '¿Cuál es la relación entre "' + a + '" y "' + b + '" (' + (rel.label || rel.type) + ')' }[currentLang]
+      || 'Qual a relação entre "' + a + '" e "' + b + '"';
+  } else {
+    const list = labels.map(l => '"' + l + '"').join(', ');
+    q = { pt: 'Explique e relacione estes conceitos: ' + list, en: 'Explain and relate these concepts: ' + list, es: 'Explica y relaciona estos conceptos: ' + list }[currentLang]
+      || 'Explique e relacione estes conceitos: ' + list;
+  }
+  mmRecordReviewed(sel);
+  MM_STATE.review = false; MM_STATE.reviewSel = [];
+  mmRequestClose();
+  const input = document.getElementById('iaInput');
+  if (!input) return;
+  input.value = q + inCtx;
+  setTimeout(() => { sendIaMessage(); }, 60);
 }
 </script>
 
