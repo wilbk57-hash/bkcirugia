@@ -9039,7 +9039,8 @@ async function mmUpdateFromMessage(idx) {
     if (MM_STATE.open) {
       MM_STATE.map = map;
       MM_STATE.frozen = frozen;
-      mmRender(true);
+      /* Mantém as posições existentes, mas reenquadra para os novos nós ficarem visíveis. */
+      mmRender(false);
     }
     showToast(mmFmt('mm.update.done', { n: added }));
   } catch (e) {
