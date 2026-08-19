@@ -7882,10 +7882,11 @@ function myLibIndexable(b) {
 function myLibIndexLabel(b) {
   if (!myLibIndexable(b)) return '';
   const st = b.index_status || 'pending';
-  if (st === 'ready') return ' · ' + myLibT('pronto para o tutor','ready for the tutor','listo para el tutor');
-  if (st === 'indexing' || st === 'pending') return ' · ' + myLibT('a preparar para o tutor…','preparing for the tutor…','preparando para el tutor…');
-  if (st === 'no_text') return ' · ' + myLibT('sem texto pesquisável','no searchable text','sin texto buscable');
-  if (st === 'failed') return ' · ' + myLibT('não foi possível preparar','could not be prepared','no se pudo preparar');
+  const badge = (cls, icon, text) => `<span class="mylib-badge ${cls}">${icon} ${text}</span>`;
+  if (st === 'ready') return badge('ready','✓', myLibT('Pronto para o tutor','Ready for the tutor','Listo para el tutor'));
+  if (st === 'indexing' || st === 'pending') return badge('working','⏳', myLibT('A preparar para o tutor…','Preparing for the tutor…','Preparando para el tutor…'));
+  if (st === 'no_text') return badge('','⚠️', myLibT('Sem texto pesquisável','No searchable text','Sin texto buscable'));
+  if (st === 'failed') return badge('','⚠️', myLibT('Não foi possível preparar','Could not be prepared','No se pudo preparar'));
   return '';
 }
 
@@ -7922,7 +7923,8 @@ function renderMyLibList() {
       <div style="font-size:22px;">${b.mime_type === 'application/pdf' ? '📕' : '📗'}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.title}</div>
-        <div style="font-size:11.5px;color:var(--text3);">👤 ${myLibT('Livro pessoal','Personal book','Libro personal')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}${myLibIndexLabel(b)}</div>
+        <div style="font-size:11.5px;color:var(--text3);">👤 ${myLibT('Livro pessoal','Personal book','Libro personal')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
+        <div>${myLibIndexLabel(b)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
         <button class="icon-btn" title="${myLibT('Ler','Read','Leer')}" onclick="myLibReadBook('${b.id}')">📖</button>
