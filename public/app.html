@@ -7041,6 +7041,27 @@ const CALLOUT_META = {
   tip: { cls: 'callout-tip', icon: '💡', label: 'Dica' },
   warn: { cls: 'callout-warn', icon: '⚠️', label: 'Atenção' },
 };
+
+/* ── INFO BOX: componente reutilizável de destaque colorido ──
+   variantes: amber (definição/conceito-chave), red (atenção),
+   blue (dado técnico), green (positivo/favorável), purple (achado clínico).
+   Só usa classes CSS baseadas em tokens de tema. */
+const INFO_BOX_VARIANTS = ['amber', 'red', 'blue', 'green', 'purple'];
+function infoBox(variant, label, html, extraStyle) {
+  const v = INFO_BOX_VARIANTS.includes(variant) ? variant : 'blue';
+  return `<div class="info-box ${v}"${extraStyle ? ` style="${extraStyle}"` : ''}>` +
+    (label ? `<div class="label">${label}</div>` : '') +
+    `<div class="info-box-text">${html}</div></div>`;
+}
+window.infoBox = infoBox;
+/* Permite que qualquer tópico declare caixas de destaque nos dados:
+   box: { variant:'red', label:'Atenção', text:'…' }  ou uma lista delas. */
+function renderInfoBoxes(boxes) {
+  if (!boxes) return '';
+  return (Array.isArray(boxes) ? boxes : [boxes])
+    .map(b => infoBox(b.variant || b.type, b.label || '', b.text || b.body || ''))
+    .join('');
+}
 function renderLesson(tab, topicId) {
   let html = '';
 
