@@ -7920,11 +7920,93 @@ function myLibIndexLabel(b) {
   if (!myLibIndexable(b)) return '';
   const st = b.index_status || 'pending';
   const badge = (cls, icon, text) => `<span class="mylib-badge ${cls}">${icon} ${text}</span>`;
+  const oc = _myLibOcr[b.id];
+  if (oc && oc.running) {
+    return badge('working','🔍', myLibT('A ler as imagens…','Reading the images…','Leyendo las imágenes…') + ' ' + oc.done + '/' + oc.total);
+  }
   if (st === 'ready') return badge('ready','✓', myLibT('Pronto para o tutor','Ready for the tutor','Listo para el tutor'));
   if (st === 'indexing' || st === 'pending') return badge('working','⏳', myLibT('A preparar para o tutor…','Preparing for the tutor…','Preparando para el tutor…'));
+  if (st === 'ocr') return badge('working','🔍', myLibT('Leitura das imagens interrompida','Image reading paused','Lectura de imágenes pausada') + ' ' + (b.ocr_pages_done || 0) + '/' + (b.ocr_total_pages || '?'));
   if (st === 'no_text') return badge('','⚠️', myLibT('Sem texto pesquisável','No searchable text','Sin texto buscable'));
   if (st === 'failed') return badge('','⚠️', myLibT('Não foi possível preparar','Could not be prepared','No se pudo preparar'));
   return '';
+}
+
+/* ============================================================
+   OCR de PDFs digitalizados (Fase 4)
+   ------------------------------------------------------------
+   As páginas são desenhadas aqui no browser com o pdf.js, e cada
+   imagem é enviada ao servidor, que a lê com o modelo de visão e
+   guarda o texto no mesmo pipeline de pedaços/embeddings.
+   Manual: só corre quando o aluno carrega no botão.
+   ============================================================ */
+const MYLIB_OCR_MAX_PAGES = 1000;
+let _myLibOcr = {};   // bookId -> { running, done, total, cancel }
+
+function myLibOcrEligible(b) {
+  if ((b.mime_type || '') !== 'application/pdf') return false;
+  const st = b.index_status || 'pending';
+  return st === 'no_text' || st === 'ocr' || (st === 'failed' && (b.ocr_total_pages || 0) > 0);
+}
+
+function myLibOcrCancel(id) {
+  const s = _myLibOcr[id];
+  if (s) s.cancel = true;
+}
+
+async function myLibOcrBook(id) {
+  const book = _myBooksCache.find(b => b.id === id);
+  if (!book || (_myLibOcr[id] && _myLibOcr[id].running)) return;
+  const token = await getTutorAuthToken();
+  if (!token) { showToast(myLibT('Sessão expirada.','Session expired.','Sesión expirada.')); return; }
+
+  _myLibOcr[id] = { running: true, done: 0, total: 0, cancel: false };
+  renderMyLibList();
+  try {
+    const url = await myLibSignedUrl(book);
+    if (!url) throw new Error('url');
+    const resp = await fetch(url);
+    const buf = await resp.arrayBuffer();
+    await myLibLoadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+    const pdfjs = window.pdfjsLib;
+    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const total = Math.min(doc.numPages, MYLIB_OCR_MAX_PAGES);
+    _myLibOcr[id].total = total;
+    renderMyLibList();
+
+    for (let p = 1; p <= total; p++) {
+      if (_myLibOcr[id].cancel) break;
+      const page = await doc.getPage(p);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.min(3, Math.max(1, 1400 / base.width));
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      const image = canvas.toDataURL('image/jpeg', 0.75);
+
+      const r = await fetch('/api/books/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ bookId: id, page: p, totalPages: total, image, finish: p === total || _myLibOcr[id].cancel }),
+      });
+      const data = await r.json().catch(() => null);
+      if (!r.ok) {
+        const msg = (data && (data.message || data.error)) || ('HTTP ' + r.status);
+        showToast(myLibT('Leitura interrompida: ','Reading stopped: ','Lectura detenida: ') + msg);
+        break;
+      }
+      _myLibOcr[id].done = p;
+      renderMyLibList();
+    }
+  } catch (e) {
+    showToast(myLibT('Não foi possível ler as imagens deste livro.','Could not read the images of this book.','No se pudieron leer las imágenes de este libro.'));
+  } finally {
+    _myLibOcr[id].running = false;
+    await refreshMyBooks();
+  }
 }
 
 async function refreshMyBooks() {
@@ -7965,6 +8047,9 @@ function renderMyLibList() {
         <div>${myLibIndexLabel(b)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
+        ${myLibOcrEligible(b) ? (_myLibOcr[b.id] && _myLibOcr[b.id].running
+          ? `<button class="icon-btn" title="${myLibT('Parar leitura','Stop reading','Detener lectura')}" onclick="myLibOcrCancel('${b.id}')">⏹️</button>`
+          : `<button class="icon-btn" title="${myLibT('Ler texto das imagens (OCR)','Read text from images (OCR)','Leer texto de las imágenes (OCR)')}" onclick="myLibOcrBook('${b.id}')">🔍</button>`) : ''}
         <button class="icon-btn" title="${myLibT('Ler','Read','Leer')}" onclick="myLibReadBook('${b.id}')">📖</button>
         <button class="icon-btn" title="${myLibT('Baixar','Download','Descargar')}" onclick="myLibDownloadBook('${b.id}')">⬇️</button>
         <button class="icon-btn" title="${myLibT('Excluir','Delete','Eliminar')}" onclick="myLibDeleteBook('${b.id}')">🗑️</button>
