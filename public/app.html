@@ -7244,11 +7244,15 @@ function renderHero(topic) {
 }
 
 function renderSections(tab) {
-  let html = tab.sections.map(s => `
+  let html = tab.sections.map(s => {
+    const v = s.variant || guessVariant(s.h + ' ' + s.t);
+    return `
     <div class="card accent-teal">
       <h3>${s.h}</h3>
-      <p>${s.t}</p>
-    </div>`).join('');
+      ${infoBox(v, s.label || variantLabel(v), s.t)}
+      ${renderInfoBoxes(s.boxes || s.box)}
+    </div>`;
+  }).join('');
   if (tab.table) {
     html += `
     <div class="card">
@@ -7284,17 +7288,21 @@ function renderChecklist(tab) {
 }
 
 function renderAccordion(tab) {
-  return tab.items.map((it, i) => `
+  return tab.items.map((it, i) => {
+    const v = it.variant || guessVariant(it.title + ' ' + it.body);
+    return `
     <div class="acc-item" id="acc-${i}">
       <div class="acc-head" onclick="toggleAcc(${i})">
         <span>${it.title}</span>
         <span class="acc-chev">▾</span>
       </div>
       <div class="acc-panel">
-        <p>${it.body}</p>
-        ${it.extra ? `<div style="margin-top:10px;white-space:pre-line;">${it.extra}</div>` : ''}
+        ${infoBox(v, it.label || variantLabel(v), it.body)}
+        ${renderInfoBoxes(it.boxes || it.box)}
+        ${it.extra ? infoBox('blue', t('ib.clinical'), `<span style="white-space:pre-line;">${it.extra}</span>`) : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function toggleAcc(i) { document.getElementById('acc-' + i).classList.toggle('open'); }
 
