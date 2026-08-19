@@ -4602,7 +4602,7 @@ async function fetchMyBooksContext(question) {
     const resp = await fetch('/api/books/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ query: question, matchCount: 6 }),
+      body: JSON.stringify({ query: question, matchCount: 6, ...(IA_RAG_BOOK ? { bookId: IA_RAG_BOOK } : {}) }),
     });
     if (!resp.ok) return null;
     const data = await resp.json();
