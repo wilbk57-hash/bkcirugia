@@ -4444,6 +4444,41 @@ function iaProviderSelectorHtml() {
     + `</select>`;
 }
 
+/* ---- Seletor de livro para o RAG (todos os livros ou um específico) ---- */
+let IA_RAG_BOOK = '';           // '' = todos os meus livros
+let _iaRagBooks = [];           // livros indexados (index_status = 'ready')
+let _iaRagBooksLoaded = false;
+
+function setIaRagBook(v) { IA_RAG_BOOK = v || ''; }
+
+async function loadIaRagBooks(force) {
+  if (_iaRagBooksLoaded && !force) return;
+  try {
+    const { data } = await supabaseClient
+      .from('user_books').select('id, title, index_status')
+      .eq('index_status', 'ready').order('created_at', { ascending: false });
+    _iaRagBooks = data || [];
+  } catch (e) { _iaRagBooks = []; }
+  _iaRagBooksLoaded = true;
+  if (IA_RAG_BOOK && !_iaRagBooks.some(b => b.id === IA_RAG_BOOK)) IA_RAG_BOOK = '';
+  const hosts = document.querySelectorAll('.ia-books-row');
+  hosts.forEach(h => { h.innerHTML = iaBooksSelectorInner(); });
+}
+
+function iaBooksSelectorInner() {
+  if (!_iaRagBooks.length) return '';
+  const all = myLibT('Todos os meus livros','All my books','Todos mis libros');
+  return `<select class="settings-select ia-books-select" aria-label="${all}" onchange="setIaRagBook(this.value)">`
+    + `<option value="" ${IA_RAG_BOOK===''?'selected':''}>📚 ${all}</option>`
+    + _iaRagBooks.map(b => `<option value="${b.id}" ${IA_RAG_BOOK===b.id?'selected':''}>📖 ${escapeHtml(b.title)}</option>`).join('')
+    + `</select>`;
+}
+
+function iaBooksSelectorHtml() {
+  loadIaRagBooks();
+  return `<div class="ia-books-row">${iaBooksSelectorInner()}</div>`;
+}
+
 async function getTutorAuthToken() {
   try {
     const { data } = await supabaseClient.auth.getSession();
