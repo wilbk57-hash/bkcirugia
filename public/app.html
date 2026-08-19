@@ -7932,6 +7932,7 @@ async function refreshMyBooks() {
   if (!error) _myBooksCache = (data || []).filter(b => !b.status || b.status === 'ready');
   renderMyLibList();
   maybeIndexPendingBooks();
+  try { loadIaRagBooks(true); } catch (e) {}
   // atualizar também a barra de quota no topo, sem recriar o formulário em curso
   const used = _myBooksCache.reduce((sum, b) => sum + (b.size_bytes || 0), 0);
   const pct = Math.min(100, Math.round((used / MYLIB_QUOTA_BYTES) * 100));
