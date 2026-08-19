@@ -7818,7 +7818,7 @@ async function myLibConfirmUpload() {
   auditLog('book_uploaded', { title });
   btn.classList.remove('loading'); btn.disabled = false;
   _myLibPendingFile = null;
-  if (mime === 'application/pdf') myLibIndexBook(bookId); // preparação para o tutor, em segundo plano
+  myLibIndexBook(bookId); // preparação para o tutor, em segundo plano (PDF e EPUB)
   showToast(myLibT('Livro adicionado à tua Biblioteca Pessoal.','Book added to your Personal Library.','Libro añadido a tu Biblioteca Personal.'));
   await refreshMyBooks();
   setTimeout(() => { renderMyLibrary(); }, 1200); // garantir que a lista mostra o novo livro
@@ -7856,7 +7856,7 @@ async function myLibIndexBook(bookId) {
 let _myLibIndexing = new Set();
 function maybeIndexPendingBooks() {
   _myBooksCache
-    .filter(b => b.mime_type === 'application/pdf' && (b.index_status || 'pending') === 'pending')
+    .filter(b => myLibIndexable(b) && (b.index_status || 'pending') === 'pending')
     .slice(0, 2)
     .forEach(b => {
       if (_myLibIndexing.has(b.id)) return;
@@ -7865,8 +7865,13 @@ function maybeIndexPendingBooks() {
     });
 }
 
+function myLibIndexable(b) {
+  const m = b.mime_type || '';
+  return m === 'application/pdf' || m.includes('epub') || /\.epub$/i.test(b.file_path || '');
+}
+
 function myLibIndexLabel(b) {
-  if (b.mime_type !== 'application/pdf') return '';
+  if (!myLibIndexable(b)) return '';
   const st = b.index_status || 'pending';
   if (st === 'ready') return ' · ' + myLibT('pronto para o tutor','ready for the tutor','listo para el tutor');
   if (st === 'indexing' || st === 'pending') return ' · ' + myLibT('a preparar para o tutor…','preparing for the tutor…','preparando para el tutor…');
