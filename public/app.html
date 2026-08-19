@@ -4337,6 +4337,7 @@ function renderIaMessages() {
         <div class="ia-intro-title">${t('ia.intro.title')}</div>
         <div class="ia-intro-sub">${t('ia.intro.sub')}</div>
         <div class="ia-provider-row">${iaProviderSelectorHtml()}</div>
+        ${iaBooksSelectorHtml()}
         <div class="ia-suggestions">
           ${IA_SUGGESTIONS_KEYS.map(k => `<button class="ia-suggestion-chip" onclick="useIaSuggestion(this.textContent)">${t(k)}</button>`).join('')}
         </div>
@@ -4346,6 +4347,7 @@ function renderIaMessages() {
   const typingHtml = iaSending ? `<div class="ia-msg ia-msg-assistant"><div class="ia-msg-bubble"><div class="ia-typing"><span></span><span></span><span></span></div></div></div>` : '';
   host.innerHTML =
     `<div class="ia-toolbar"><span class="ia-toolbar-title">${t('ia.intro.title')}</span><span class="ia-toolbar-spacer">${iaProviderSelectorHtml()}</span><button class="ia-clear-btn" onclick="clearIaChat()">${t('ia.clear')}</button></div>` +
+    iaBooksSelectorHtml() +
     IA_MESSAGES.map((m, i) => {
       if (m.limitNotice) {
         /* Short, calm notice instead of a wall of raw API error text —
