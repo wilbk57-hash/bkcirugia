@@ -712,32 +712,6 @@
   .info-box.purple { --ib-accent: var(--ib-purple); }
   body.high-contrast .info-box { border-left-width: 5px; }
 
-  /* ── GRELHA DE CARTÕES DE ENTRADA DO TÓPICO (visão geral) ── */
-  .topic-overview { margin: 4px 0 18px; }
-  .topic-overview-title {
-    font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 10px;
-  }
-  .topic-overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 380px) { .topic-overview-grid { grid-template-columns: 1fr; } }
-  .topic-card {
-    text-align: left; width: 100%; cursor: pointer;
-    border-radius: var(--radius-lg); padding: 16px;
-    background: var(--panel); border: 1px solid var(--border); color: var(--text);
-    font-family: inherit; transition: border-color .16s ease, transform .16s ease, background .16s ease;
-  }
-  .topic-card:hover, .topic-card:focus-visible { border-color: var(--teal); transform: translateY(-2px); outline: none; }
-  .topic-card-index {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 7px; margin-bottom: 8px;
-    font-size: 11px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
-    background: var(--teal-dim); color: var(--teal-light);
-  }
-  body.theme-light .topic-card-index, body.theme-sepia .topic-card-index { color: var(--ib-green); }
-  .topic-card-title { font-weight: 600; font-size: 13.5px; margin-bottom: 6px; }
-  .topic-card-sub { font-size: 11.5px; line-height: 1.5; color: var(--text2); }
-  body.high-contrast .topic-card { border-width: 1.5px; }
-
   /* interactive glossary term */
   .term {
     color: var(--teal-light); text-decoration: underline; text-decoration-style: dotted;
@@ -5083,9 +5057,7 @@ const STR_TABLE = [
  ['ib.special','Achado especial','Special finding','Hallazgo especial'],
  ['ib.summary','Resumo','Summary','Resumen'],
  ['ib.generalsummary','Resumo geral','Overall summary','Resumen general'],
- ['topic.overview','Nesta seção','In this section','En esta sección'],
- ['topic.overview.sub','Toque num cartão para ir direto ao conteúdo.','Tap a card to jump straight to the content.','Toca una tarjeta para ir directo al contenido.'],
- ['item.fontsize.label','Tamanho da fonte','Font size','Tamaño de fuente'],
+   ['item.fontsize.label','Tamanho da fonte','Font size','Tamaño de fuente'],
  ['item.fontsize.sm','Pequeno','Small','Pequeño'],
  ['item.fontsize.md','Médio','Medium','Mediano'],
  ['item.fontsize.lg','Grande','Large','Grande'],
@@ -6854,7 +6826,7 @@ function openTopic(id, startTabId, fromPop) {
   nav.innerHTML = topic.tabs.map((tb, i) => `<button class="tab-btn ${i===startIdx?'active':''}" data-pane-id="${escapeHtml(tb.id)}" onclick="showPane('${tb.id}', this)">${tb.label}</button>`).join('');
 
   const host = document.getElementById('paneHost');
-  host.innerHTML = topic.tabs.map((tb, i) => `<div class="pane ${i===startIdx?'active':''}" id="pane-${tb.id}">${renderTopicOverview(topic, tb.id)}${renderTab(tb, topic)}</div>`).join('');
+  host.innerHTML = topic.tabs.map((tb, i) => `<div class="pane ${i===startIdx?'active':''}" id="pane-${tb.id}">${renderTab(tb, topic)}</div>`).join('');
 
   if (topic.tabs.some(tb => tb.type === 'quiz')) initQuiz(topic);
   if (topic.tabs.some(tb => tb.type === 'case')) initCaso(topic);
@@ -7092,36 +7064,6 @@ function variantLabel(v) {
   return t({ red: 'ib.attention', green: 'ib.positive', purple: 'ib.special', amber: 'ib.definition', blue: 'ib.clinical' }[v] || 'ib.clinical');
 }
 
-/* Grelha de cartões clicáveis no topo do tópico (visão geral das sub-abas).
-   Reutiliza showPane() — a arquitetura tab-nav + paneHost não muda. */
-/* Ícones em texto simples (sem emoji) para renderização estável em qualquer
-   sistema — o índice numérico da sub-aba serve de marcador visual. */
-function renderTopicOverview(topic, activeId) {
-  const all = topic.tabs || [];
-  const tabs = all.filter(tb => tb.id !== activeId);
-  if (tabs.length < 2) return '';
-  return `<div class="topic-overview">
-    <div class="topic-overview-title">${t('topic.overview')}</div>
-    <div class="topic-card-sub" style="margin-bottom:10px;">${t('topic.overview.sub')}</div>
-    <div class="topic-overview-grid">
-      ${tabs.map(tb => `
-        <button type="button" class="topic-card" onclick="showPane('${tb.id}')">
-          <span class="topic-card-index">${all.indexOf(tb) + 1}</span>
-          <div class="topic-card-title">${tb.label}</div>
-          <div class="topic-card-sub">${tabSummary(tb)}</div>
-        </button>`).join('')}
-    </div>
-  </div>`;
-}
-function tabSummary(tb) {
-  if (tb.type === 'lesson' && tb.sections) return `${tb.sections.length} seções · ${(tb.exercises || []).length} exercícios`;
-  if (tb.type === 'sections' && tb.sections) return tb.sections.map(s => s.h).slice(0, 3).join(' · ');
-  if (tb.type === 'checklist' && tb.groups) return tb.groups.map(g => g.title).slice(0, 3).join(' · ');
-  if (tb.type === 'accordion' && tb.items) return tb.items.map(i => i.title).slice(0, 3).join(' · ');
-  if (tb.type === 'case' && tb.steps) return `${tb.steps.length} etapas`;
-  if (tb.type === 'quiz' && tb.questions) return `${tb.questions.length} questões`;
-  return tb.label;
-}
 function renderLesson(tab, topicId) {
   let html = '';
 
