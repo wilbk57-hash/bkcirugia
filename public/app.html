@@ -7309,12 +7309,15 @@ function toggleAcc(i) { document.getElementById('acc-' + i).classList.toggle('op
 /* ── CASO CLÍNICO (stepper) ── */
 function renderCase(tab) {
   const dots = tab.steps.map((_, i) => `<div class="caso-dot ${i===0?'active':''}" onclick="gotoCaso(${i})"></div>`).join('');
-  const steps = tab.steps.map((s, i) => `
+  const steps = tab.steps.map((s, i) => {
+    const v = s.variant || guessVariant(s.title + ' ' + s.body);
+    return `
     <div class="caso-step ${i===0?'active':''}" id="caso-${i}">
       <span class="caso-tag">${s.tag}</span>
       <div class="caso-title">${s.title}</div>
-      <div class="caso-body"><p>${s.body}</p></div>
-    </div>`).join('');
+      <div class="caso-body">${infoBox(v, s.label || variantLabel(v), s.body)}${renderInfoBoxes(s.boxes || s.box)}</div>
+    </div>`;
+  }).join('');
   return `
     <div class="caso-bar" id="casoBar">${dots}</div>
     ${steps}
