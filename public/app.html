@@ -7074,6 +7074,52 @@ function renderInfoBoxes(boxes) {
     .map(b => infoBox(b.variant || b.type, b.label || '', b.text || b.body || ''))
     .join('');
 }
+
+/* Deduz a variante semântica quando o conteúdo curado não a declara,
+   para que TODOS os tópicos ganhem destaque colorido sem alterar os dados. */
+const IB_HINTS = [
+  { v: 'red',    re: /(aten[çc][ãa]o|alerta|risco|perig|contraindic|complica|urg[êe]nc|emerg[êe]nc|nunca|evitar|mortalidade|choque|hemorrag)/i },
+  { v: 'green',  re: /(prognóstic|progn[óo]stic|favor[áa]vel|benefíci|benefici|vantagem|recuperaç|melhora|reversí|reversi|sucesso|segur)/i },
+  { v: 'purple', re: /(neurol[óo]g|consci[êe]nc|exame f[íi]sic|achado|sinal|escala|glasgow|sens[íi]bil|reflex)/i },
+  { v: 'amber',  re: /(defini[çc][ãa]o|conceito|classifica|princípi|principi|o que [ée])/i },
+];
+function guessVariant(text) {
+  const s = String(text || '').replace(/<[^>]*>/g, '');
+  for (const h of IB_HINTS) if (h.re.test(s)) return h.v;
+  return 'blue';
+}
+function variantLabel(v) {
+  return t({ red: 'ib.attention', green: 'ib.positive', purple: 'ib.special', amber: 'ib.definition', blue: 'ib.clinical' }[v] || 'ib.clinical');
+}
+
+/* Grelha de cartões clicáveis no topo do tópico (visão geral das sub-abas).
+   Reutiliza showPane() — a arquitetura tab-nav + paneHost não muda. */
+const TAB_TYPE_ICON = { hero: '🧭', sections: '📚', checklist: '✅', accordion: '🗂️', case: '🩺', quiz: '🧠', lesson: '📖' };
+function renderTopicOverview(topic, activeId) {
+  const tabs = (topic.tabs || []).filter(tb => tb.id !== activeId);
+  if (tabs.length < 2) return '';
+  return `<div class="topic-overview">
+    <div class="topic-overview-title">${t('topic.overview')}</div>
+    <div class="topic-card-sub" style="margin-bottom:10px;">${t('topic.overview.sub')}</div>
+    <div class="topic-overview-grid">
+      ${tabs.map((tb, i) => `
+        <button type="button" class="topic-card" onclick="showPane('${tb.id}')">
+          <span class="topic-card-index">${TAB_TYPE_ICON[tb.type] || (i + 1)}</span>
+          <div class="topic-card-title">${tb.label}</div>
+          <div class="topic-card-sub">${tabSummary(tb)}</div>
+        </button>`).join('')}
+    </div>
+  </div>`;
+}
+function tabSummary(tb) {
+  if (tb.type === 'lesson' && tb.sections) return `${tb.sections.length} seções · ${(tb.exercises || []).length} exercícios`;
+  if (tb.type === 'sections' && tb.sections) return tb.sections.map(s => s.h).slice(0, 3).join(' · ');
+  if (tb.type === 'checklist' && tb.groups) return tb.groups.map(g => g.title).slice(0, 3).join(' · ');
+  if (tb.type === 'accordion' && tb.items) return tb.items.map(i => i.title).slice(0, 3).join(' · ');
+  if (tb.type === 'case' && tb.steps) return `${tb.steps.length} etapas`;
+  if (tb.type === 'quiz' && tb.questions) return `${tb.questions.length} questões`;
+  return tb.label;
+}
 function renderLesson(tab, topicId) {
   let html = '';
 
