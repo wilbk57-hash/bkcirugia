@@ -1,66 +1,54 @@
-# Tutor com RAG sobre os livros pessoais do aluno
+# Fase 4 do RAG — PDFs digitalizados (OCR)
 
 ## Respostas às tuas perguntas
 
-**1. pgvector?** Sim. Verifiquei na base de dados deste projeto: a extensão `vector` está disponível na versão 0.8.2 (ainda não ativada). Dá para usar armazenamento vetorial nativo, sem serviço externo. Ativamos com uma migração e usamos índice HNSW.
+**1. Que opções existem sem custo extra?**
 
-**2. Extrair texto no servidor.** O backend deste projeto corre num runtime tipo Cloudflare Worker: não há `child_process`, nem binários nativos (por isso `pdf-parse`, `poppler`, `sharp` estão fora). Funciona bem:
-- **PDF**: `unpdf` (JavaScript puro, feito para edge) — extrai o texto de PDFs com camada de texto.
-- **EPUB**: `fflate` (JS puro) para abrir o ZIP + leitura do OPF/XHTML e limpeza das tags. Sem dependências nativas.
-- **PDF digitalizado (imagem)**: não tem texto para extrair — precisa de OCR, que não corre neste runtime. Fica para uma fase posterior (ver fase 4).
+- **Serviço externo pago (Google Vision, AWS Textract, OCR.space):** não é necessário. Não vou implementar nada disto, nem pedir chaves novas.
+- **Tesseract.js no servidor:** inviável. O backend deste projeto corre num runtime tipo Cloudflare Worker: o Tesseract.js precisa de web workers com ficheiros WASM e dados de idioma resolvidos em runtime, e além disso seria preciso **rasterizar** as páginas do PDF em imagem — isso exige `canvas` nativo, que não existe neste runtime. Duas paredes.
+- **Modelo de visão do gateway do Lovable:** viável e é o caminho certo. O mesmo `google/gemini-3.1-flash-lite` que o tutor já usa aceita imagem como entrada e lê texto de páginas digitalizadas com boa qualidade. Usa a credencial que já existe no projeto (`LOVABLE_API_KEY`) — **nenhuma chave nova tua**.
+- **Onde rasterizar as páginas:** no browser do aluno, com o `pdf.js` que a app **já carrega** para o leitor integrado. Renderiza cada página para `<canvas>`, converte para JPEG e envia ao servidor. Zero dependências novas, zero infraestrutura.
 
-**3. Modelo de embeddings.** O gateway do Lovable já tem endpoint de embeddings e usa a credencial que já existe no projeto (`LOVABLE_API_KEY`) — nenhuma chave nova tua. Uso `openai/text-embedding-3-small` (1536 dimensões): é o mais barato por token e o mais indicado para pesquisa em volume, e cabe diretamente num índice HNSW normal.
+**2. Custo.** Não há chave nem subscrição nova. Há consumo dos **créditos de IA do projeto**, tal como os embeddings já consomem hoje: cada página digitalizada é uma chamada de visão. O Flash Lite é o modelo mais barato do gateway, mas 200 páginas são 200 chamadas — por isso o OCR fica **manual**, nunca automático no upload (ver limites abaixo).
 
-**4. Fluxo**
+**3. Fluxo proposto**
 
 ```text
-upload do livro (browser, como hoje)
+livro fica com index_status = 'no_text'
         v
- marca o livro como "a processar"
+ aparece botao "Ler texto das imagens (OCR)" na Minha Biblioteca
+        v            (o aluno decide; nunca automatico)
+ browser: pdf.js renderiza a pagina N -> canvas -> JPEG (~1400px, qualidade 0.75)
         v
- servidor descarrega o ficheiro do storage privado
+ POST /api/books/ocr  { bookId, page, imageBase64 }   (token verificado no servidor)
         v
- extrai texto (unpdf / fflate+OPF)
+ servidor: gateway Lovable, modelo de visao -> texto da pagina
         v
- divide em pedaços de ~1200 caracteres com sobreposição
+ servidor: chunk + embedding + insert em book_chunks (mesmo pipeline de hoje)
         v
- embeddings em lotes -> gateway Lovable
-        v
- guarda em book_chunks (user_id, book_id, texto, vetor)
-        v
- marca o livro como "pronto"
-
-aluno pergunta ao tutor
-        v
- embedding da pergunta (servidor)
-        v
- pesquisa vetorial FILTRADA por user_id do token
-        v
- top 6 pedaços -> injetados no prompt do tutor
-        v
- resposta com indicação do livro/página de origem
+ barra de progresso "pagina N de M"; ao fim -> index_status = 'ready'
 ```
 
-**Isolamento por aluno (regra rígida):** o `user_id` nunca vem do browser — vem do token verificado no servidor. A função de pesquisa filtra sempre por esse `user_id`, e a tabela tem RLS a permitir ler só as próprias linhas. Duas barreiras independentes; é impossível um aluno ver pedaços de outro.
+O aluno pode fechar e voltar: cada página guardada fica registada, e o processo retoma onde ficou.
 
-**5. Esforço e risco.** É a maior funcionalidade até agora. Proponho quatro fases entregáveis, com a fase 1 já útil sozinha:
+**Isolamento por aluno:** inalterado. O `user_id` vem do token verificado no servidor, e o RLS de `book_chunks` continua a ser a segunda barreira.
 
-- **Fase 1 — PDFs com texto (núcleo).** Tabela + pgvector + extração + embeddings + pesquisa + tutor a usar o contexto. Risco médio: livros grandes podem demorar; limito a ~400 páginas por livro nesta fase.
-- **Fase 2 — EPUB.** Reaproveita tudo; só muda o extrator. Risco baixo.
-- **Fase 3 — Interface.** Indicador "livro pronto para o tutor" na Minha Biblioteca, botão para reprocessar, e no tutor um seletor "perguntar sobre os meus livros". Risco baixo.
-- **Fase 4 — PDFs digitalizados (OCR).** Requer serviço externo de OCR (custo) ou OCR no browser do aluno. Decidimos só quando chegarmos lá; nesta fase o app apenas avisa "este livro não tem texto pesquisável".
+**4. Viabilidade e limitações**
 
-Riscos a vigiar: tempo de execução por pedido no servidor (resolvo processando por lotes, retomável), custo de embeddings (um livro de 300 páginas ≈ 150k tokens, valor baixo mas real, e é debitado dos créditos de IA do projeto), e espaço em base de dados.
+- **Tempo:** ~2 a 4 segundos por página (render + visão + embedding), com 2 páginas em paralelo. Um livro de 50 páginas: ~1 a 2 minutos com o separador aberto.
+- **Precisão:** muito boa em digitalizações limpas de texto impresso; razoável em fotocópias tortas ou com ruído; fraca em manuscrito. Tabelas e figuras vêm descritas, não reproduzidas.
+- **Limite proposto:** **150 páginas por livro** nesta fase (o limite de texto normal continua em 400), com aviso claro do número de páginas antes de começar e possibilidade de cancelar a meio.
+- **Restrição real:** o OCR só corre com a app aberta, porque a rasterização acontece no browser. Se o aluno fechar o separador, o progresso fica guardado e o botão passa a "Continuar OCR".
 
 ## Detalhes técnicos
 
-- Migração: `create extension vector`; tabela `book_chunks (id, user_id, book_id -> user_books, chunk_index, content, page int, embedding vector(1536), created_at)`; GRANTs para `authenticated`/`service_role`; RLS `auth.uid() = user_id` em select/insert/delete; índice HNSW `vector_cosine_ops`; colunas novas em `user_books`: `index_status`, `index_error`, `chunk_count`.
-- Função SQL `match_book_chunks(query_embedding, match_user_id, match_count, filter_book_id)` como `security invoker`, sempre com `where user_id = auth.uid()`.
-- Rotas: `src/routes/api/books/index.ts` (POST: processa um livro, em lotes retomáveis, verifica o token como já faz `/api/tutor`) e alteração em `src/routes/api/tutor.ts` para embutir os pedaços recuperados no system prompt, com uma secção "Excertos dos livros do aluno".
-- `public/app.html`: após upload chama a rota de indexação e mostra o estado; no tutor passa a enviar `useMyBooks: true`. Sem alterações de design nem de CSS.
-- Dependências novas: `unpdf`, `fflate`. Ambas JS puro, compatíveis com o runtime.
+- Migração: em `user_books`, colunas `ocr_pages_done int default 0` e `ocr_total_pages int`; permitir `index_status = 'ocr'`.
+- Nova rota `src/routes/api/books/ocr.ts`: valida token (mesmo `clientForRequest` das rotas RAG), aceita `{ bookId, page, image }`, chama o gateway com bloco `image_url` (data URL), reaproveita `chunkPages`/`embedTexts` de `src/lib/rag.server.ts` e faz upsert em `book_chunks` com `chunk_index` derivado da página. Trata 402/429 do gateway conforme o contrato do gateway (para e informa, sem repetir em loop).
+- `public/app.html`: botão de OCR na etiqueta "Sem texto pesquisável", loop de páginas com `pdf.js` (já carregado), progresso e cancelamento. Sem alterações de design nem de CSS novo além de reutilizar os estilos das etiquetas existentes.
+- Sem dependências novas.
 
 ## A confirmar
 
-1. Avanço já com a fase 1 (PDFs com texto) e as seguintes depois, ou queres tudo de uma vez?
-2. A indexação deve ser automática em cada upload, ou só quando o aluno carregar em "preparar para o tutor" (mais controlo sobre gastos)?
+1. Avanço com este caminho (visão do gateway + rasterização no browser, sem chaves novas)?
+2. Concordas com o OCR **manual por livro** (botão), em vez de automático no upload, para controlar gastos de créditos?
+3. O limite de 150 páginas por livro serve?
