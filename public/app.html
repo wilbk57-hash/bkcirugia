@@ -671,7 +671,72 @@
   .callout-example .callout-label { color: var(--blue); }
   .callout-def { background: var(--violet-dim); border: 1px solid rgba(185,139,224,0.25); }
   .callout-def .callout-label { color: var(--violet); }
-  .callout-text { color: #C6CEDA; }
+  .callout-text { color: var(--text); }
+
+  /* ── INFO BOX (componente reutilizável de destaque, 5 variantes) ──
+     Usa apenas tokens de tema, por isso acompanha claro/escuro/sépia/
+     AMOLED/alto contraste sem cores fixas nos componentes. */
+  :root {
+    --ib-amber: var(--amber);
+    --ib-red: var(--red);
+    --ib-blue: var(--blue);
+    --ib-green: var(--teal);
+    --ib-purple: var(--violet);
+    --ib-tint: 12%;
+  }
+  body.theme-light, body.theme-sepia {
+    --ib-amber: #B45309;
+    --ib-red: #C0332F;
+    --ib-blue: #1D5FBF;
+    --ib-green: #0F766E;
+    --ib-purple: #6D3FB5;
+    --ib-tint: 10%;
+  }
+  body.high-contrast { --ib-tint: 18%; }
+
+  .info-box {
+    border-radius: 10px; padding: 14px 16px; margin: 12px 0;
+    border-left: 3px solid var(--ib-accent, var(--border));
+    background: color-mix(in srgb, var(--ib-accent, var(--border)) var(--ib-tint), transparent);
+    font-size: 13px; line-height: 1.65; color: var(--text);
+  }
+  .info-box .label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 6px; color: var(--ib-accent, var(--text2));
+  }
+  .info-box .info-box-text { color: var(--text); }
+  .info-box.amber  { --ib-accent: var(--ib-amber); }
+  .info-box.red    { --ib-accent: var(--ib-red); }
+  .info-box.blue   { --ib-accent: var(--ib-blue); }
+  .info-box.green  { --ib-accent: var(--ib-green); }
+  .info-box.purple { --ib-accent: var(--ib-purple); }
+  body.high-contrast .info-box { border-left-width: 5px; }
+
+  /* ── GRELHA DE CARTÕES DE ENTRADA DO TÓPICO (visão geral) ── */
+  .topic-overview { margin: 4px 0 18px; }
+  .topic-overview-title {
+    font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 10px;
+  }
+  .topic-overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 380px) { .topic-overview-grid { grid-template-columns: 1fr; } }
+  .topic-card {
+    text-align: left; width: 100%; cursor: pointer;
+    border-radius: var(--radius-lg); padding: 16px;
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    font-family: inherit; transition: border-color .16s ease, transform .16s ease, background .16s ease;
+  }
+  .topic-card:hover, .topic-card:focus-visible { border-color: var(--teal); transform: translateY(-2px); outline: none; }
+  .topic-card-index {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 7px; margin-bottom: 8px;
+    font-size: 11px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+    background: var(--teal-dim); color: var(--teal-light);
+  }
+  body.theme-light .topic-card-index, body.theme-sepia .topic-card-index { color: var(--ib-green); }
+  .topic-card-title { font-weight: 600; font-size: 13.5px; margin-bottom: 6px; }
+  .topic-card-sub { font-size: 11.5px; line-height: 1.5; color: var(--text2); }
+  body.high-contrast .topic-card { border-width: 1.5px; }
 
   /* interactive glossary term */
   .term {
