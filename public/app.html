@@ -1146,6 +1146,92 @@
   .adm-mgmt-card .ic { font-size: 20px; margin-bottom: 6px; }
   .adm-mgmt-card .l { font-size: 11.5px; font-weight: 600; color: var(--text); }
 
+  /* ── MAPA MENTAL (Tutor de IA) ── */
+  .ia-msg-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .mm-cta {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600;
+    padding: 7px 12px; border-radius: 100px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  }
+  .mm-cta:hover { border-color: var(--teal); color: var(--teal); }
+  .mm-overlay { position: fixed; inset: 0; z-index: 4000; background: var(--bg); display: none; flex-direction: column; overflow: hidden; max-width: 100vw; }
+  .mm-overlay.show { display: flex; }
+  .mm-head {
+    display: flex; max-width: 100%; align-items: center; gap: 10px; padding: 10px 12px;
+    border-bottom: 1px solid var(--border); background: var(--panel2); flex: 0 0 auto;
+  }
+  .mm-head-title { font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 600; color: var(--text); flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mm-btn {
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+    border-radius: 8px; padding: 6px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .mm-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .mm-btn.icon { padding: 6px 9px; font-size: 13px; }
+  .mm-stage { position: relative; flex: 1 1 auto; overflow: hidden; touch-action: none; }
+  .mm-stage svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  .mm-stage svg.dragging { cursor: grabbing; }
+  .mm-summary {
+    position: absolute; left: 12px; top: 12px; max-width: min(340px, 60%);
+    font-size: 11px; line-height: 1.5; color: var(--text2);
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; pointer-events: none;
+  }
+  .mm-tools { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
+  .mm-node-box { fill: var(--panel); stroke: var(--border); stroke-width: 1.2px; }
+  .mm-node-root .mm-node-box { fill: var(--teal-dim); stroke: var(--teal); stroke-width: 2px; }
+  .mm-node-label { fill: var(--text); font-family: 'Inter', sans-serif; font-size: 11px; }
+  .mm-node-root .mm-node-label { font-size: 14px; font-weight: 700; }
+  .mm-imp-high .mm-node-label { font-weight: 700; }
+  .mm-imp-low .mm-node-label { fill: var(--text2); }
+  .mm-imp-low .mm-node-box { opacity: .82; }
+  .mm-t-warning .mm-node-box { stroke: var(--amber); }
+  .mm-t-decision .mm-node-box { stroke-dasharray: 4 3; }
+  .mm-t-definition .mm-node-box { stroke-dasharray: 1 3; }
+  .mm-t-clinical .mm-node-box { stroke-width: 2px; }
+  .mm-t-evidence .mm-node-box { stroke-dasharray: 8 3; }
+  .mm-node { cursor: pointer; }
+  .mm-node:focus { outline: none; }
+  .mm-node:focus .mm-node-box, .mm-node.selected .mm-node-box { stroke: var(--teal); stroke-width: 2.2px; }
+  .mm-link { fill: none; stroke: var(--border); stroke-width: 1.4px; }
+  .mm-rel { fill: none; stroke: var(--violet); stroke-width: 1.2px; stroke-dasharray: 5 4; opacity: .8; }
+  .mm-rel-label { fill: var(--violet); font-size: 9px; font-family: 'IBM Plex Mono', monospace; }
+  .mm-badge { font-size: 10px; }
+  .mm-panel {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 320px; z-index: 5;
+    background: var(--panel); border-left: 1px solid var(--border);
+    padding: 16px; overflow-y: auto; display: none; flex-direction: column; gap: 10px;
+  }
+  .mm-panel.show { display: flex; }
+  .mm-panel-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+  .mm-panel-kind { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--teal); font-weight: 700; }
+  .mm-panel-desc { font-size: 12.5px; line-height: 1.6; color: var(--text2); }
+  .mm-panel-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .mm-list { position: absolute; inset: 0; overflow-y: auto; padding: 16px; background: var(--bg); display: none; z-index: 4; }
+  .mm-list.show { display: block; }
+  .mm-list ul { list-style: none; margin: 0; padding-left: 16px; }
+  .mm-list > ul { padding-left: 0; }
+  .mm-list li { margin: 2px 0; }
+  .mm-list-item {
+    display: block; width: 100%; text-align: left; background: none; border: 1px solid transparent;
+    color: var(--text); font-size: 12.5px; padding: 5px 8px; border-radius: 8px; cursor: pointer;
+  }
+  .mm-list-item:hover, .mm-list-item:focus { border-color: var(--teal); outline: none; }
+  .mm-list-item .d { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .mm-error { padding: 24px; text-align: center; color: var(--text2); font-size: 12.5px; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; height: 100%; }
+  @media (max-width: 760px) {
+    .mm-head { padding: 8px 10px; gap: 6px; overflow: hidden; }
+    .mm-btn { padding: 6px 8px; font-size: 11px; }
+    .mm-head-title { font-size: 12.5px; min-width: 0; }
+    .mm-panel {
+      left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 62%;
+      border-left: none; border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
+    }
+    .mm-summary { max-width: calc(100% - 24px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mm-overlay *, .mm-overlay { transition: none !important; animation: none !important; }
+  }
+
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b1220">
@@ -4375,7 +4461,7 @@ function renderIaMessages() {
         : '';
       return `
       <div class="ia-msg ia-msg-${m.role}${m.error ? ' ia-msg-error' : ''}">
-        <div class="ia-msg-bubble">${searchedBadge}${formatMdLite(m.content)}${sourcesHtml}</div>
+        <div class="ia-msg-bubble">${searchedBadge}${formatMdLite(m.content)}${sourcesHtml}${(typeof mmMessageActionHtml === 'function') ? mmMessageActionHtml(m, i) : ''}</div>
         ${providerBadge}
         ${speakBtn}
       </div>`;
@@ -4656,6 +4742,9 @@ async function sendIaMessage() {
       searched: out.searched,
       sources: out.sources || [],
       provider: out.provider,
+      /* Oferece o mapa mental como complemento quando o aluno pediu
+         para organizar visualmente — a resposta em texto mantém-se. */
+      mindmapOffer: (typeof mmWantsMindMap === 'function') ? mmWantsMindMap(text) : false,
     });
     newAssistantIdx = IA_MESSAGES.length - 1;
   } catch (err) {
@@ -5279,6 +5368,30 @@ const STR_TABLE = [
  ['explain.label','Explicação','Explanation','Explicación'],
  ['explain.loading','Gerando explicação…','Generating explanation…','Generando explicación…'],
  ['explain.empty','Não consegui gerar uma explicação agora. Tente novamente.','Could not generate an explanation right now. Please try again.','No pude generar una explicación ahora. Intenta de nuevo.'],
+ ['mm.cta','Visualizar mapa mental','View mind map','Ver mapa mental'],
+ ['mm.title','Mapa mental','Mind map','Mapa mental'],
+ ['mm.loading','A criar o mapa mental…','Building the mind map…','Creando el mapa mental…'],
+ ['mm.error.title','Não foi possível criar o mapa mental.','Could not build the mind map.','No se pudo crear el mapa mental.'],
+ ['mm.retry','Tentar de novo','Try again','Intentar de nuevo'],
+ ['mm.close','Fechar','Close','Cerrar'],
+ ['mm.list.show','Ver como lista','View as list','Ver como lista'],
+ ['mm.list.hide','Ver como mapa','View as map','Ver como mapa'],
+ ['mm.fit','Ajustar','Fit','Ajustar'],
+ ['mm.zoomin','Aproximar','Zoom in','Acercar'],
+ ['mm.zoomout','Afastar','Zoom out','Alejar'],
+ ['mm.explain','Explicar com Tutor','Explain with Tutor','Explicar con el Tutor'],
+ ['mm.collapse','Recolher ramo','Collapse branch','Contraer rama'],
+ ['mm.expand','Expandir ramo','Expand branch','Expandir rama'],
+ ['mm.truncated','Mapa resumido aos conceitos mais importantes.','Map trimmed to the most important concepts.','Mapa resumido a los conceptos más importantes.'],
+ ['mm.nodesc','Sem descrição adicional.','No extra description.','Sin descripción adicional.'],
+ ['mm.tree.aria','Estrutura do mapa mental em lista','Mind map structure as a list','Estructura del mapa mental en lista'],
+ ['mm.type.concept','Conceito','Concept','Concepto'],
+ ['mm.type.definition','Definição','Definition','Definición'],
+ ['mm.type.warning','Atenção','Warning','Atención'],
+ ['mm.type.clinical','Clínico','Clinical','Clínico'],
+ ['mm.type.example','Exemplo','Example','Ejemplo'],
+ ['mm.type.decision','Decisão','Decision','Decisión'],
+ ['mm.type.evidence','Evidência','Evidence','Evidencia'],
  ['explain.error.label','Não foi possível explicar','Could not explain','No se pudo explicar'],
 ];
 const STRINGS = { pt: {}, en: {}, es: {} };
@@ -8561,5 +8674,505 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ── MAPA MENTAL (Tutor de IA) — camada aditiva ── -->
+<div class="mm-overlay" id="mmOverlay" role="dialog" aria-modal="true" aria-labelledby="mmHeadTitle">
+  <div class="mm-head">
+    <button class="mm-btn icon" id="mmCloseBtn" onclick="mmRequestClose()" aria-label="Fechar">✕</button>
+    <div class="mm-head-title" id="mmHeadTitle">Mapa mental</div>
+    <button class="mm-btn" id="mmListBtn" onclick="mmToggleList()"></button>
+  </div>
+  <div class="mm-stage" id="mmStage">
+    <div class="mm-summary" id="mmSummary" style="display:none"></div>
+    <div class="mm-tools">
+      <button class="mm-btn icon" id="mmZoomOutBtn" onclick="mmZoomBy(0.8)">−</button>
+      <button class="mm-btn icon" id="mmZoomInBtn" onclick="mmZoomBy(1.25)">+</button>
+      <button class="mm-btn" id="mmFitBtn" onclick="mmFit()"></button>
+    </div>
+    <div class="mm-list" id="mmList"></div>
+    <aside class="mm-panel" id="mmPanel" aria-live="polite"></aside>
+  </div>
+</div>
+<script>
+/* ============================================================
+   MAPA MENTAL DO TUTOR — SVG desenhado à mão, sem dependências.
+   Aditivo: não altera auth, navegação principal nem conteúdos.
+   ============================================================ */
+const MM_STORAGE = 'bkcirurgia_mindmaps_v1';
+const MM_TYPES = ['concept','definition','warning','clinical','example','decision','evidence'];
+let MM_STATE = { map: null, id: null, collapsed: {}, zoom: 1, tx: 0, ty: 0, nodes: [], selected: null, listMode: false, pushedHistory: false, open: false, sourceIdx: null };
+
+function mmLoadAll() {
+  try { const raw = localStorage.getItem(MM_STORAGE); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (e) {}
+  return {};
+}
+function mmSaveMap(id, map) {
+  try { const all = mmLoadAll(); all[id] = map; localStorage.setItem(MM_STORAGE, JSON.stringify(all)); } catch (e) {}
+}
+function mmGetMap(id) { const all = mmLoadAll(); return id && all[id] ? all[id] : null; }
+
+/* ---- Gatilho: o aluno pediu um mapa mental? ---- */
+function mmWantsMindMap(text) {
+  const s = String(text || '').toLowerCase();
+  return /mapa[\s-]?(mental|conceitual|conceptual)|mind[\s-]?map|organiz(a|e|ar|za|ce)[^.]{0,24}(visual|esquema)|esquema visual|visualmente/.test(s);
+}
+
+/* ---- Botão de ação nas mensagens do tutor ---- */
+function mmMessageActionHtml(m, i) {
+  if (!m || m.role !== 'assistant' || m.error || m.limitNotice || !m.mindmapOffer) return '';
+  return '<div class="ia-msg-actions"><button class="mm-cta" onclick="mmFromMessage(' + i + ')">🧠 ' + escapeHtml(t('mm.cta')) + '</button></div>';
+}
+
+function mmLangName() { return { pt: 'português', en: 'English', es: 'español' }[currentLang] || 'português'; }
+
+function mmSystemPrompt() {
+  return 'Devolve APENAS um objeto JSON válido (sem texto antes ou depois, sem cercas de código) que represente um mapa mental do conteúdo pedido, em ' + mmLangName() + '.\n'
+    + 'Formato exato:\n'
+    + '{"type":"mind_map","version":1,"title":"","summary":"","root":{"id":"root","label":""},'
+    + '"nodes":[{"id":"","parentId":"","label":"máx 40 caracteres","type":"concept|definition|warning|clinical|example|decision|evidence","importance":"high|medium|low","description":"opcional, 1-2 frases"}],'
+    + '"relations":[{"from":"","to":"","type":"causes|leads_to|associated_with|compares_to|precedes|risk_of|prevents|diagnoses|treats|complication_of","label":"opcional"}]}\n'
+    + 'Regras: máximo 7 ramos ligados à raiz; máximo 3 níveis de profundidade; máximo 40 nós no total. '
+    + 'Se o conteúdo for maior, resume pelos conceitos mais importantes em vez de forçar tudo. '
+    + 'Os ids dos nós devem ser curtos e únicos (n1, n2, ...) e parentId deve ser "root" ou o id de outro nó.';
+}
+
+/* ---- Parsing tolerante: remove cercas ```json e reparseia ---- */
+function mmParseJson(raw) {
+  const txt = String(raw || '').trim();
+  const tries = [];
+  tries.push(txt);
+  const fence = txt.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) tries.push(fence[1].trim());
+  const first = txt.indexOf('{'), last = txt.lastIndexOf('}');
+  if (first !== -1 && last > first) tries.push(txt.slice(first, last + 1));
+  for (const cand of tries) {
+    try { const obj = JSON.parse(cand); if (obj && typeof obj === 'object') return obj; } catch (e) {}
+  }
+  return null;
+}
+
+/* ---- Normalização + limites (7 ramos, 3 níveis, 40 nós) ---- */
+function mmNormalize(obj, mapId) {
+  if (!obj || typeof obj !== 'object' || !Array.isArray(obj.nodes)) return null;
+  const pfx = mapId + '_';
+  const rootLabel = String((obj.root && obj.root.label) || obj.title || '').slice(0, 60) || t('mm.title');
+  const byOld = {};
+  const raw = obj.nodes.filter(n => n && n.id != null && String(n.label || '').trim());
+  raw.forEach((n, idx) => { byOld[String(n.id)] = pfx + 'n' + idx; });
+  const rootOld = obj.root && obj.root.id != null ? String(obj.root.id) : 'root';
+  const rootId = pfx + 'root';
+  const nodes = raw.map((n, idx) => {
+    const po = n.parentId == null ? rootOld : String(n.parentId);
+    const parentId = (po === rootOld || !byOld[po] || byOld[po] === byOld[String(n.id)]) ? rootId : byOld[po];
+    return {
+      id: pfx + 'n' + idx,
+      parentId: parentId,
+      label: String(n.label).trim().slice(0, 40),
+      type: MM_TYPES.indexOf(n.type) !== -1 ? n.type : 'concept',
+      importance: ['high','medium','low'].indexOf(n.importance) !== -1 ? n.importance : 'medium',
+      description: n.description ? String(n.description).slice(0, 400) : '',
+    };
+  });
+  const byId = {}; nodes.forEach(n => { byId[n.id] = n; });
+  const kept = []; const keptSet = { [rootId]: true }; let truncated = false;
+  const depthOf = (n) => { let d = 1, cur = n, guard = 0; while (cur.parentId !== rootId && byId[cur.parentId] && guard++ < 10) { cur = byId[cur.parentId]; d++; } return d; };
+  const rank = { high: 0, medium: 1, low: 2 };
+  const ordered = nodes.slice().sort((a, b) => (depthOf(a) - depthOf(b)) || (rank[a.importance] - rank[b.importance]));
+  let rootBranches = 0;
+  ordered.forEach(n => {
+    if (kept.length >= 40) { truncated = true; return; }
+    if (depthOf(n) > 3) { truncated = true; return; }
+    if (!keptSet[n.parentId]) { truncated = true; return; }
+    if (n.parentId === rootId) {
+      if (rootBranches >= 7) { truncated = true; return; }
+      rootBranches++;
+    }
+    keptSet[n.id] = true; kept.push(n);
+  });
+  const relations = (Array.isArray(obj.relations) ? obj.relations : [])
+    .map(r => ({ from: byOld[String(r && r.from)], to: byOld[String(r && r.to)], type: String((r && r.type) || ''), label: r && r.label ? String(r.label).slice(0, 30) : '' }))
+    .filter(r => r.from && r.to && keptSet[r.from] && keptSet[r.to] && r.from !== r.to)
+    .slice(0, 20);
+  if (!kept.length) return null;
+  return {
+    type: 'mind_map', version: 1, id: mapId,
+    title: String(obj.title || rootLabel).slice(0, 80),
+    summary: obj.summary ? String(obj.summary).slice(0, 300) : '',
+    root: { id: rootId, label: rootLabel },
+    nodes: kept, relations: relations, truncated: truncated,
+  };
+}
+
+/* ---- Geração a partir de uma mensagem do tutor ---- */
+async function mmFromMessage(idx) {
+  const msg = IA_MESSAGES[idx];
+  if (!msg) return;
+  const existing = msg.mindmapId ? mmGetMap(msg.mindmapId) : null;
+  if (existing) { mmOpen(existing, idx); return; }
+  mmOpen(null, idx);
+  mmShowLoading();
+  const askedFor = (IA_MESSAGES[idx - 1] && IA_MESSAGES[idx - 1].role === 'user') ? IA_MESSAGES[idx - 1].content : '';
+  const mapId = 'map' + Date.now().toString(36);
+  try {
+    const out = await runTutorRequest({
+      system: mmSystemPrompt(),
+      messages: [{ role: 'user', content: 'Pedido do aluno: ' + String(askedFor).slice(0, 2000) + '\n\nConteúdo a mapear:\n' + String(msg.content || '').slice(0, 12000) }],
+      maxTokens: 2000,
+    });
+    const parsed = mmParseJson(out && out.text);
+    const map = mmNormalize(parsed, mapId);
+    if (!map) throw new Error('parse');
+    msg.mindmapId = mapId;
+    saveIaChat();
+    mmSaveMap(mapId, map);
+    if (MM_STATE.open) mmOpen(map, idx);
+  } catch (e) {
+    mmShowError(idx);
+  }
+}
+
+function mmShowLoading() {
+  const stage = document.getElementById('mmStage');
+  mmClearStage();
+  const d = document.createElement('div');
+  d.className = 'mm-error';
+  d.textContent = t('mm.loading');
+  d.id = 'mmStatus';
+  stage.appendChild(d);
+}
+function mmShowError(idx) {
+  const stage = document.getElementById('mmStage');
+  mmClearStage();
+  const wrap = document.createElement('div');
+  wrap.className = 'mm-error'; wrap.id = 'mmStatus';
+  const p = document.createElement('div'); p.textContent = t('mm.error.title');
+  const btn = document.createElement('button'); btn.className = 'mm-btn'; btn.textContent = t('mm.retry');
+  btn.onclick = () => { const m = IA_MESSAGES[idx]; if (m) { m.mindmapId = null; } mmFromMessage(idx); };
+  wrap.appendChild(p); wrap.appendChild(btn);
+  stage.appendChild(wrap);
+}
+function mmClearStage() {
+  const stage = document.getElementById('mmStage');
+  const svg = document.getElementById('mmSvg'); if (svg) svg.remove();
+  const st = document.getElementById('mmStatus'); if (st) st.remove();
+  document.getElementById('mmPanel').classList.remove('show');
+  document.getElementById('mmList').classList.remove('show');
+  document.getElementById('mmSummary').style.display = 'none';
+}
+
+/* ---- Abrir / fechar (integra-se com o History API existente) ---- */
+function mmOpen(map, sourceIdx) {
+  const ov = document.getElementById('mmOverlay');
+  MM_STATE.map = map; MM_STATE.sourceIdx = sourceIdx == null ? MM_STATE.sourceIdx : sourceIdx;
+  MM_STATE.collapsed = {}; MM_STATE.selected = null; MM_STATE.listMode = false;
+  document.getElementById('mmListBtn').textContent = t('mm.list.show');
+  document.getElementById('mmFitBtn').textContent = t('mm.fit');
+  document.getElementById('mmCloseBtn').setAttribute('aria-label', t('mm.close'));
+  document.getElementById('mmHeadTitle').textContent = (map && map.title) || t('mm.title');
+  if (!MM_STATE.open) {
+    ov.classList.add('show');
+    MM_STATE.open = true;
+    MM_STATE.pushedHistory = safeHistoryCall(() => history.pushState({ view: 'mindmap' }, '', '#mindmap'));
+  }
+  mmClearStage();
+  if (map) mmRender();
+}
+function mmRequestClose() {
+  if (MM_STATE.pushedHistory && history.state && history.state.view === 'mindmap') {
+    const ok = safeHistoryCall(() => history.back());
+    if (ok) return;
+  }
+  mmClose();
+}
+function mmClose() {
+  MM_STATE.open = false; MM_STATE.pushedHistory = false;
+  document.getElementById('mmOverlay').classList.remove('show');
+  mmClearStage();
+}
+window.addEventListener('popstate', () => { if (MM_STATE.open) mmClose(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && MM_STATE.open) { e.preventDefault(); mmRequestClose(); }
+});
+
+/* ---- Layout radial escrito à mão ---- */
+function mmBuildTree() {
+  const map = MM_STATE.map;
+  const children = {};
+  children[map.root.id] = [];
+  map.nodes.forEach(n => { (children[n.parentId] = children[n.parentId] || []).push(n); });
+  const measure = (label, isRoot) => {
+    const len = String(label).length;
+    const w = Math.max(isRoot ? 120 : 76, Math.min(isRoot ? 260 : 186, len * (isRoot ? 9 : 6.6) + 30));
+    return { w: w, h: isRoot ? 46 : 34 };
+  };
+  const positions = [];
+  const rootBox = measure(map.root.label, true);
+  const rootNode = { id: map.root.id, label: map.root.label, isRoot: true, x: 0, y: 0, w: rootBox.w, h: rootBox.h, type: 'concept', importance: 'high', description: map.summary || '', depth: 0, hasChildren: (children[map.root.id] || []).length > 0, collapsed: false };
+  positions.push(rootNode);
+  const leafCount = (id) => {
+    if (MM_STATE.collapsed[id]) return 1;
+    const kids = children[id] || [];
+    if (!kids.length) return 1;
+    return kids.reduce((a, k) => a + leafCount(k.id), 0);
+  };
+  const RAD = [0, 230, 400, 545];
+  const place = (parentId, a0, a1, depth) => {
+    if (MM_STATE.collapsed[parentId]) return;
+    const kids = children[parentId] || [];
+    if (!kids.length) return;
+    const total = kids.reduce((a, k) => a + leafCount(k.id), 0) || 1;
+    let cur = a0;
+    kids.forEach(k => {
+      const span = (a1 - a0) * (leafCount(k.id) / total);
+      const ang = cur + span / 2;
+      const r = RAD[Math.min(depth, 3)];
+      const box = measure(k.label, false);
+      positions.push({
+        id: k.id, label: k.label, parentId: parentId, isRoot: false,
+        x: Math.cos(ang) * r, y: Math.sin(ang) * r * 0.82,
+        w: box.w, h: box.h, type: k.type, importance: k.importance, description: k.description,
+        depth: depth, hasChildren: (children[k.id] || []).length > 0, collapsed: !!MM_STATE.collapsed[k.id],
+      });
+      place(k.id, cur, cur + span, depth + 1);
+      cur += span;
+    });
+  };
+  place(map.root.id, -Math.PI / 2, Math.PI * 1.5, 1);
+  MM_STATE.nodes = positions;
+  return positions;
+}
+
+function mmSvgEl(name, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', name);
+  if (attrs) Object.keys(attrs).forEach(k => el.setAttribute(k, attrs[k]));
+  return el;
+}
+
+function mmRender(keepView) {
+  const stage = document.getElementById('mmStage');
+  const old = document.getElementById('mmSvg'); if (old) old.remove();
+  const st = document.getElementById('mmStatus'); if (st) st.remove();
+  const nodes = mmBuildTree();
+  const byId = {}; nodes.forEach(n => { byId[n.id] = n; });
+  const svg = mmSvgEl('svg', { id: 'mmSvg', role: 'img', 'aria-label': MM_STATE.map.title || t('mm.title') });
+  const g = mmSvgEl('g', { id: 'mmViewport' });
+  svg.appendChild(g);
+  const linkLayer = mmSvgEl('g'); const relLayer = mmSvgEl('g'); const nodeLayer = mmSvgEl('g');
+  g.appendChild(linkLayer); g.appendChild(relLayer); g.appendChild(nodeLayer);
+
+  nodes.forEach(n => {
+    if (n.isRoot) return;
+    const p = byId[n.parentId]; if (!p) return;
+    const mx = (p.x + n.x) / 2;
+    linkLayer.appendChild(mmSvgEl('path', { class: 'mm-link', d: 'M' + p.x + ',' + p.y + ' C' + mx + ',' + p.y + ' ' + mx + ',' + n.y + ' ' + n.x + ',' + n.y }));
+  });
+  (MM_STATE.map.relations || []).forEach(r => {
+    const a = byId[r.from], b = byId[r.to]; if (!a || !b) return;
+    const my = Math.min(a.y, b.y) - 40;
+    relLayer.appendChild(mmSvgEl('path', { class: 'mm-rel', d: 'M' + a.x + ',' + a.y + ' Q' + ((a.x + b.x) / 2) + ',' + my + ' ' + b.x + ',' + b.y }));
+    if (r.label) {
+      const txt = mmSvgEl('text', { class: 'mm-rel-label', x: (a.x + b.x) / 2, y: my + 12, 'text-anchor': 'middle' });
+      txt.textContent = r.label;
+      relLayer.appendChild(txt);
+    }
+  });
+
+  nodes.forEach(n => {
+    const grp = mmSvgEl('g', {
+      class: 'mm-node mm-t-' + n.type + ' mm-imp-' + n.importance + (n.isRoot ? ' mm-node-root' : '') + (MM_STATE.selected === n.id ? ' selected' : ''),
+      transform: 'translate(' + (n.x - n.w / 2) + ',' + (n.y - n.h / 2) + ')',
+      tabindex: '0', role: 'button',
+    });
+    grp.setAttribute('aria-label', n.label);
+    grp.appendChild(mmSvgEl('rect', { class: 'mm-node-box', width: n.w, height: n.h, rx: 10, ry: 10 }));
+    const label = mmSvgEl('text', { class: 'mm-node-label', x: n.w / 2, y: n.h / 2 + 4, 'text-anchor': 'middle' });
+    /* Diferenciação de tipo é feita pela borda/peso do texto (CSS), não por
+       ícones — evita glifos em falta em alguns dispositivos. */
+    label.textContent = n.label + (n.collapsed ? ' …' : '');
+    grp.appendChild(label);
+    const activate = () => mmSelectNode(n.id);
+    grp.addEventListener('click', (ev) => { ev.stopPropagation(); if (!mmDragMoved) activate(); });
+    grp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); activate(); } });
+    nodeLayer.appendChild(grp);
+  });
+
+  stage.insertBefore(svg, stage.firstChild);
+  mmAttachStageEvents(svg);
+  const sum = document.getElementById('mmSummary');
+  const summaryText = (MM_STATE.map.summary || '') + (MM_STATE.map.truncated ? (MM_STATE.map.summary ? ' — ' : '') + t('mm.truncated') : '');
+  if (summaryText) { sum.textContent = summaryText; sum.style.display = 'block'; } else { sum.style.display = 'none'; }
+  if (!keepView) mmFit(); else mmApplyTransform();
+  mmRenderList();
+}
+
+function mmApplyTransform() {
+  const g = document.getElementById('mmViewport');
+  if (g) g.setAttribute('transform', 'translate(' + MM_STATE.tx + ',' + MM_STATE.ty + ') scale(' + MM_STATE.zoom + ')');
+}
+function mmFit() {
+  const svg = document.getElementById('mmSvg'); if (!svg || !MM_STATE.nodes.length) return;
+  const rect = svg.getBoundingClientRect();
+  const xs = MM_STATE.nodes.map(n => n.x - n.w / 2), xe = MM_STATE.nodes.map(n => n.x + n.w / 2);
+  const ys = MM_STATE.nodes.map(n => n.y - n.h / 2), ye = MM_STATE.nodes.map(n => n.y + n.h / 2);
+  const minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xe);
+  const minY = Math.min.apply(null, ys) - 30, maxY = Math.max.apply(null, ye);
+  const bw = Math.max(1, maxX - minX), bh = Math.max(1, maxY - minY);
+  const pad = 28;
+  const z = Math.max(0.15, Math.min(1.3, Math.min((rect.width - pad * 2) / bw, (rect.height - pad * 2) / bh)));
+  MM_STATE.zoom = z;
+  MM_STATE.tx = rect.width / 2 - ((minX + maxX) / 2) * z;
+  MM_STATE.ty = rect.height / 2 - ((minY + maxY) / 2) * z;
+  mmApplyTransform();
+}
+function mmZoomBy(k, cx, cy) {
+  const svg = document.getElementById('mmSvg'); if (!svg) return;
+  const rect = svg.getBoundingClientRect();
+  const px = cx == null ? rect.width / 2 : cx, py = cy == null ? rect.height / 2 : cy;
+  const next = Math.max(0.15, Math.min(3, MM_STATE.zoom * k));
+  const ratio = next / MM_STATE.zoom;
+  MM_STATE.tx = px - (px - MM_STATE.tx) * ratio;
+  MM_STATE.ty = py - (py - MM_STATE.ty) * ratio;
+  MM_STATE.zoom = next;
+  mmApplyTransform();
+}
+let mmDragMoved = false;
+function mmAttachStageEvents(svg) {
+  let dragging = false, lastX = 0, lastY = 0;
+  let captured = null;
+  svg.addEventListener('pointerdown', (e) => {
+    dragging = true; mmDragMoved = false; lastX = e.clientX; lastY = e.clientY;
+    svg.classList.add('dragging');
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (Math.abs(dx) + Math.abs(dy) > 3) {
+      mmDragMoved = true;
+      /* Só captura o ponteiro quando o gesto é mesmo um arrasto — capturar
+         desde o pointerdown faria o clique seguinte ir parar ao <svg> em vez
+         do nó tocado. */
+      if (captured === null) { try { svg.setPointerCapture(e.pointerId); captured = e.pointerId; } catch (err) {} }
+    }
+    lastX = e.clientX; lastY = e.clientY;
+    MM_STATE.tx += dx; MM_STATE.ty += dy;
+    mmApplyTransform();
+  });
+  /* mmDragMoved é reposto no próximo pointerdown: em ecrãs táteis o clique
+     chega depois do pointerup e um reset imediato aqui deixaria passar
+     cliques falsos no fim de um arrasto. */
+  const end = () => {
+    dragging = false; svg.classList.remove('dragging');
+    if (captured !== null) { try { svg.releasePointerCapture(captured); } catch (err) {} captured = null; }
+  };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+  svg.addEventListener('pointerleave', end);
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+    const rect = svg.getBoundingClientRect();
+    mmZoomBy(Math.exp(-dy * 0.0015), e.clientX - rect.left, e.clientY - rect.top);
+  }, { passive: false });
+  svg.addEventListener('click', () => { if (!mmDragMoved) mmClosePanel(); });
+}
+
+/* ---- Painel do nó (lateral no desktop, bottom sheet no telemóvel) ---- */
+function mmClosePanel() {
+  MM_STATE.selected = null;
+  document.getElementById('mmPanel').classList.remove('show');
+  document.querySelectorAll('#mmSvg .mm-node.selected').forEach(el => el.classList.remove('selected'));
+}
+function mmSelectNode(id) {
+  const n = MM_STATE.nodes.find(x => x.id === id); if (!n) return;
+  MM_STATE.selected = id;
+  document.querySelectorAll('#mmSvg .mm-node.selected').forEach(el => el.classList.remove('selected'));
+  const panel = document.getElementById('mmPanel');
+  panel.textContent = '';
+  const kind = document.createElement('div'); kind.className = 'mm-panel-kind';
+  kind.textContent = n.isRoot ? t('mm.title') : t('mm.type.' + n.type);
+  const title = document.createElement('div'); title.className = 'mm-panel-title'; title.textContent = n.label;
+  const desc = document.createElement('div'); desc.className = 'mm-panel-desc';
+  desc.textContent = n.description || t('mm.nodesc');
+  const actions = document.createElement('div'); actions.className = 'mm-panel-actions';
+  const explain = document.createElement('button'); explain.className = 'mm-btn'; explain.textContent = '💬 ' + t('mm.explain');
+  explain.onclick = () => mmExplainNode(n.id);
+  actions.appendChild(explain);
+  if (n.hasChildren) {
+    const col = document.createElement('button'); col.className = 'mm-btn';
+    col.textContent = (MM_STATE.collapsed[n.id] ? '▸ ' + t('mm.expand') : '▾ ' + t('mm.collapse'));
+    col.onclick = () => { MM_STATE.collapsed[n.id] = !MM_STATE.collapsed[n.id]; mmRender(true); mmSelectNode(n.id); };
+    actions.appendChild(col);
+  }
+  const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = '✕ ' + t('mm.close');
+  close.onclick = mmClosePanel;
+  actions.appendChild(close);
+  panel.appendChild(kind); panel.appendChild(title); panel.appendChild(desc); panel.appendChild(actions);
+  panel.classList.add('show');
+  mmRender(true);
+}
+function mmExplainNode(id) {
+  const n = MM_STATE.nodes.find(x => x.id === id); if (!n) return;
+  const title = (MM_STATE.map && MM_STATE.map.title) || '';
+  const q = { pt: 'Explique "' + n.label + '" dentro de "' + title + '".',
+              en: 'Explain "' + n.label + '" within "' + title + '".',
+              es: 'Explica "' + n.label + '" dentro de "' + title + '".' }[currentLang]
+            || 'Explique "' + n.label + '" dentro de "' + title + '".';
+  mmRequestClose();
+  const input = document.getElementById('iaInput');
+  if (!input) return;
+  input.value = q;
+  setTimeout(() => { sendIaMessage(); }, 60);
+}
+
+/* ---- Acessibilidade: mesma estrutura como lista em árvore ---- */
+function mmToggleList() {
+  MM_STATE.listMode = !MM_STATE.listMode;
+  document.getElementById('mmList').classList.toggle('show', MM_STATE.listMode);
+  document.getElementById('mmListBtn').textContent = MM_STATE.listMode ? t('mm.list.hide') : t('mm.list.show');
+  if (MM_STATE.listMode) { mmClosePanel(); mmRenderList(); const first = document.querySelector('#mmList .mm-list-item'); if (first) first.focus(); }
+}
+function mmRenderList() {
+  const host = document.getElementById('mmList');
+  if (!host || !MM_STATE.map) return;
+  host.textContent = '';
+  host.setAttribute('role', 'tree');
+  host.setAttribute('aria-label', t('mm.tree.aria'));
+  const map = MM_STATE.map;
+  const children = {};
+  map.nodes.forEach(n => { (children[n.parentId] = children[n.parentId] || []).push(n); });
+  const makeItem = (id, label, type, description, hasKids) => {
+    const li = document.createElement('li');
+    li.setAttribute('role', 'treeitem');
+    if (hasKids) li.setAttribute('aria-expanded', MM_STATE.collapsed[id] ? 'false' : 'true');
+    const btn = document.createElement('button');
+    btn.className = 'mm-list-item'; btn.type = 'button';
+    btn.textContent = (type ? t('mm.type.' + type) + ' · ' : '') + label;
+    if (description) { const d = document.createElement('span'); d.className = 'd'; d.textContent = description; btn.appendChild(d); }
+    btn.onclick = () => { MM_STATE.listMode = false; document.getElementById('mmList').classList.remove('show'); document.getElementById('mmListBtn').textContent = t('mm.list.show'); mmSelectNode(id); };
+    li.appendChild(btn);
+    return li;
+  };
+  const build = (parentId, depth) => {
+    const kids = (children[parentId] || []);
+    if (!kids.length || MM_STATE.collapsed[parentId]) return null;
+    const ul = document.createElement('ul');
+    ul.setAttribute('role', 'group');
+    kids.forEach(k => {
+      const li = makeItem(k.id, k.label, k.type, k.description, !!(children[k.id] || []).length);
+      const sub = build(k.id, depth + 1);
+      if (sub) li.appendChild(sub);
+      ul.appendChild(li);
+    });
+    return ul;
+  };
+  const rootUl = document.createElement('ul');
+  const rootLi = makeItem(map.root.id, map.root.label, '', map.summary, !!(children[map.root.id] || []).length);
+  const sub = build(map.root.id, 1);
+  if (sub) rootLi.appendChild(sub);
+  rootUl.appendChild(rootLi);
+  host.appendChild(rootUl);
+}
+</script>
+
 </body>
 </html>
