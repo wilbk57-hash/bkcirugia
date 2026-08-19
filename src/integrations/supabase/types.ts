@@ -164,6 +164,8 @@ export type Database = {
           indexed_at: string | null
           language: string | null
           mime_type: string | null
+          ocr_pages_done: number
+          ocr_total_pages: number | null
           page_count: number | null
           size_bytes: number | null
           status: string
@@ -186,6 +188,8 @@ export type Database = {
           indexed_at?: string | null
           language?: string | null
           mime_type?: string | null
+          ocr_pages_done?: number
+          ocr_total_pages?: number | null
           page_count?: number | null
           size_bytes?: number | null
           status?: string
@@ -208,6 +212,8 @@ export type Database = {
           indexed_at?: string | null
           language?: string | null
           mime_type?: string | null
+          ocr_pages_done?: number
+          ocr_total_pages?: number | null
           page_count?: number | null
           size_bytes?: number | null
           status?: string
