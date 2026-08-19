@@ -7090,9 +7090,10 @@ function renderLesson(tab, topicId) {
       <div class="lesson-section-text">${s.explanation}</div>
       ${s.image ? `<div class="lesson-img-suggestion">🖼️ <span><strong>Sugestão visual:</strong> ${s.image}</span></div>` : ''}
       ${s.table ? `<div class="card" style="margin:10px 0;"><h3 style="font-size:12.5px;">${s.table.title}</h3><table class="data">${s.table.rows.map(r => `<tr><td style="font-weight:600;color:var(--text);white-space:nowrap;">${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div>` : ''}
-      <div class="callout callout-example"><span class="callout-icon">🔍</span><div><span class="callout-label">Exemplo</span><div class="callout-text">${s.example}</div></div></div>
-      ${s.note ? `<div class="callout ${CALLOUT_META[s.note.type].cls}"><span class="callout-icon">${CALLOUT_META[s.note.type].icon}</span><div><span class="callout-label">${CALLOUT_META[s.note.type].label}</span><div class="callout-text">${s.note.text}</div></div></div>` : ''}
-      <div class="callout callout-summary"><span class="callout-icon">📌</span><div><span class="callout-label">Resumo</span><div class="callout-text">${s.summary}</div></div></div>
+      ${renderInfoBoxes(s.boxes || s.box)}
+      ${infoBox('blue', 'Dado técnico · Exemplo', s.example)}
+      ${s.note ? infoBox(s.note.type === 'warn' ? 'red' : 'green', CALLOUT_META[s.note.type] ? CALLOUT_META[s.note.type].label : 'Nota', s.note.text) : ''}
+      ${infoBox('amber', 'Conceito-chave · Resumo', s.summary)}
     </div>`).join('');
 
   // 4/5. Exercícios (do fácil ao difícil, resposta sempre explicada)
@@ -7113,7 +7114,7 @@ function renderLesson(tab, topicId) {
       <div class="mindmap-root">🔹 ${b.root}</div>
       <div class="mindmap-children">${b.children.map(c => `<div class="mindmap-child">${c}</div>`).join('')}</div>
     </div>`).join('');
-  html += `<div class="callout callout-summary" style="margin-top:6px;"><span class="callout-icon">📌</span><div><span class="callout-label">Resumo geral</span><div class="callout-text">${tab.review.summary}</div></div></div>`;
+  html += infoBox('purple', 'Resumo geral', tab.review.summary, 'margin-top:6px;');
   html += `<div class="keyword-chips">${tab.review.keywords.map(k => `<span class="keyword-chip">${k}</span>`).join('')}</div>`;
   html += `</div>`;
 
