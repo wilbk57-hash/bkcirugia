@@ -671,7 +671,72 @@
   .callout-example .callout-label { color: var(--blue); }
   .callout-def { background: var(--violet-dim); border: 1px solid rgba(185,139,224,0.25); }
   .callout-def .callout-label { color: var(--violet); }
-  .callout-text { color: #C6CEDA; }
+  .callout-text { color: var(--text); }
+
+  /* ── INFO BOX (componente reutilizável de destaque, 5 variantes) ──
+     Usa apenas tokens de tema, por isso acompanha claro/escuro/sépia/
+     AMOLED/alto contraste sem cores fixas nos componentes. */
+  :root {
+    --ib-amber: var(--amber);
+    --ib-red: var(--red);
+    --ib-blue: var(--blue);
+    --ib-green: var(--teal);
+    --ib-purple: var(--violet);
+    --ib-tint: 12%;
+  }
+  body.theme-light, body.theme-sepia {
+    --ib-amber: #B45309;
+    --ib-red: #C0332F;
+    --ib-blue: #1D5FBF;
+    --ib-green: #0F766E;
+    --ib-purple: #6D3FB5;
+    --ib-tint: 10%;
+  }
+  body.high-contrast { --ib-tint: 18%; }
+
+  .info-box {
+    border-radius: 10px; padding: 14px 16px; margin: 12px 0;
+    border-left: 3px solid var(--ib-accent, var(--border));
+    background: color-mix(in srgb, var(--ib-accent, var(--border)) var(--ib-tint), transparent);
+    font-size: 13px; line-height: 1.65; color: var(--text);
+  }
+  .info-box .label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 6px; color: var(--ib-accent, var(--text2));
+  }
+  .info-box .info-box-text { color: var(--text); }
+  .info-box.amber  { --ib-accent: var(--ib-amber); }
+  .info-box.red    { --ib-accent: var(--ib-red); }
+  .info-box.blue   { --ib-accent: var(--ib-blue); }
+  .info-box.green  { --ib-accent: var(--ib-green); }
+  .info-box.purple { --ib-accent: var(--ib-purple); }
+  body.high-contrast .info-box { border-left-width: 5px; }
+
+  /* ── GRELHA DE CARTÕES DE ENTRADA DO TÓPICO (visão geral) ── */
+  .topic-overview { margin: 4px 0 18px; }
+  .topic-overview-title {
+    font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 10px;
+  }
+  .topic-overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 380px) { .topic-overview-grid { grid-template-columns: 1fr; } }
+  .topic-card {
+    text-align: left; width: 100%; cursor: pointer;
+    border-radius: var(--radius-lg); padding: 16px;
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    font-family: inherit; transition: border-color .16s ease, transform .16s ease, background .16s ease;
+  }
+  .topic-card:hover, .topic-card:focus-visible { border-color: var(--teal); transform: translateY(-2px); outline: none; }
+  .topic-card-index {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 7px; margin-bottom: 8px;
+    font-size: 11px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+    background: var(--teal-dim); color: var(--teal-light);
+  }
+  body.theme-light .topic-card-index, body.theme-sepia .topic-card-index { color: var(--ib-green); }
+  .topic-card-title { font-weight: 600; font-size: 13.5px; margin-bottom: 6px; }
+  .topic-card-sub { font-size: 11.5px; line-height: 1.5; color: var(--text2); }
+  body.high-contrast .topic-card { border-width: 1.5px; }
 
   /* interactive glossary term */
   .term {
@@ -5008,6 +5073,18 @@ const STR_TABLE = [
  ['item.amoled.label','Modo AMOLED','AMOLED mode','Modo AMOLED'],
  ['item.amoled.desc','Preto puro no tema escuro — economiza bateria.','Pure black in dark theme — saves battery.','Negro puro en el tema oscuro: ahorra batería.'],
  ['sec.text','Texto','Text','Texto'],
+ ['ib.definition','Definição','Definition','Definición'],
+ ['ib.keyconcept','Conceito-chave','Key concept','Concepto clave'],
+ ['ib.attention','Atenção','Warning','Atención'],
+ ['ib.clinical','Dado clínico','Clinical data','Dato clínico'],
+ ['ib.example','Exemplo','Example','Ejemplo'],
+ ['ib.positive','Prognóstico favorável','Favorable outlook','Pronóstico favorable'],
+ ['ib.tip','Dica','Tip','Consejo'],
+ ['ib.special','Achado especial','Special finding','Hallazgo especial'],
+ ['ib.summary','Resumo','Summary','Resumen'],
+ ['ib.generalsummary','Resumo geral','Overall summary','Resumen general'],
+ ['topic.overview','Nesta seção','In this section','En esta sección'],
+ ['topic.overview.sub','Toque num cartão para ir direto ao conteúdo.','Tap a card to jump straight to the content.','Toca una tarjeta para ir directo al contenido.'],
  ['item.fontsize.label','Tamanho da fonte','Font size','Tamaño de fuente'],
  ['item.fontsize.sm','Pequeno','Small','Pequeño'],
  ['item.fontsize.md','Médio','Medium','Mediano'],
@@ -6777,7 +6854,7 @@ function openTopic(id, startTabId, fromPop) {
   nav.innerHTML = topic.tabs.map((tb, i) => `<button class="tab-btn ${i===startIdx?'active':''}" data-pane-id="${escapeHtml(tb.id)}" onclick="showPane('${tb.id}', this)">${tb.label}</button>`).join('');
 
   const host = document.getElementById('paneHost');
-  host.innerHTML = topic.tabs.map((tb, i) => `<div class="pane ${i===startIdx?'active':''}" id="pane-${tb.id}">${renderTab(tb, topic)}</div>`).join('');
+  host.innerHTML = topic.tabs.map((tb, i) => `<div class="pane ${i===startIdx?'active':''}" id="pane-${tb.id}">${renderTopicOverview(topic, tb.id)}${renderTab(tb, topic)}</div>`).join('');
 
   if (topic.tabs.some(tb => tb.type === 'quiz')) initQuiz(topic);
   if (topic.tabs.some(tb => tb.type === 'case')) initCaso(topic);
@@ -6976,6 +7053,75 @@ const CALLOUT_META = {
   tip: { cls: 'callout-tip', icon: '💡', label: 'Dica' },
   warn: { cls: 'callout-warn', icon: '⚠️', label: 'Atenção' },
 };
+
+/* ── INFO BOX: componente reutilizável de destaque colorido ──
+   variantes: amber (definição/conceito-chave), red (atenção),
+   blue (dado técnico), green (positivo/favorável), purple (achado clínico).
+   Só usa classes CSS baseadas em tokens de tema. */
+const INFO_BOX_VARIANTS = ['amber', 'red', 'blue', 'green', 'purple'];
+function infoBox(variant, label, html, extraStyle) {
+  const v = INFO_BOX_VARIANTS.includes(variant) ? variant : 'blue';
+  return `<div class="info-box ${v}"${extraStyle ? ` style="${extraStyle}"` : ''}>` +
+    (label ? `<div class="label">${label}</div>` : '') +
+    `<div class="info-box-text">${html}</div></div>`;
+}
+window.infoBox = infoBox;
+/* Permite que qualquer tópico declare caixas de destaque nos dados:
+   box: { variant:'red', label:'Atenção', text:'…' }  ou uma lista delas. */
+function renderInfoBoxes(boxes) {
+  if (!boxes) return '';
+  return (Array.isArray(boxes) ? boxes : [boxes])
+    .map(b => infoBox(b.variant || b.type, b.label || '', b.text || b.body || ''))
+    .join('');
+}
+
+/* Deduz a variante semântica quando o conteúdo curado não a declara,
+   para que TODOS os tópicos ganhem destaque colorido sem alterar os dados. */
+const IB_HINTS = [
+  { v: 'red',    re: /(aten[çc][ãa]o|alerta|risco|perig|contraindic|complica|urg[êe]nc|emerg[êe]nc|nunca|evitar|mortalidade|choque|hemorrag)/i },
+  { v: 'green',  re: /(prognóstic|progn[óo]stic|favor[áa]vel|benefíci|benefici|vantagem|recuperaç|melhora|reversí|reversi|sucesso|segur)/i },
+  { v: 'purple', re: /(neurol[óo]g|consci[êe]nc|exame f[íi]sic|achado|sinal|escala|glasgow|sens[íi]bil|reflex)/i },
+  { v: 'amber',  re: /(defini[çc][ãa]o|conceito|classifica|princípi|principi|o que [ée])/i },
+];
+function guessVariant(text) {
+  const s = String(text || '').replace(/<[^>]*>/g, '');
+  for (const h of IB_HINTS) if (h.re.test(s)) return h.v;
+  return 'blue';
+}
+function variantLabel(v) {
+  return t({ red: 'ib.attention', green: 'ib.positive', purple: 'ib.special', amber: 'ib.definition', blue: 'ib.clinical' }[v] || 'ib.clinical');
+}
+
+/* Grelha de cartões clicáveis no topo do tópico (visão geral das sub-abas).
+   Reutiliza showPane() — a arquitetura tab-nav + paneHost não muda. */
+/* Ícones em texto simples (sem emoji) para renderização estável em qualquer
+   sistema — o índice numérico da sub-aba serve de marcador visual. */
+function renderTopicOverview(topic, activeId) {
+  const all = topic.tabs || [];
+  const tabs = all.filter(tb => tb.id !== activeId);
+  if (tabs.length < 2) return '';
+  return `<div class="topic-overview">
+    <div class="topic-overview-title">${t('topic.overview')}</div>
+    <div class="topic-card-sub" style="margin-bottom:10px;">${t('topic.overview.sub')}</div>
+    <div class="topic-overview-grid">
+      ${tabs.map(tb => `
+        <button type="button" class="topic-card" onclick="showPane('${tb.id}')">
+          <span class="topic-card-index">${all.indexOf(tb) + 1}</span>
+          <div class="topic-card-title">${tb.label}</div>
+          <div class="topic-card-sub">${tabSummary(tb)}</div>
+        </button>`).join('')}
+    </div>
+  </div>`;
+}
+function tabSummary(tb) {
+  if (tb.type === 'lesson' && tb.sections) return `${tb.sections.length} seções · ${(tb.exercises || []).length} exercícios`;
+  if (tb.type === 'sections' && tb.sections) return tb.sections.map(s => s.h).slice(0, 3).join(' · ');
+  if (tb.type === 'checklist' && tb.groups) return tb.groups.map(g => g.title).slice(0, 3).join(' · ');
+  if (tb.type === 'accordion' && tb.items) return tb.items.map(i => i.title).slice(0, 3).join(' · ');
+  if (tb.type === 'case' && tb.steps) return `${tb.steps.length} etapas`;
+  if (tb.type === 'quiz' && tb.questions) return `${tb.questions.length} questões`;
+  return tb.label;
+}
 function renderLesson(tab, topicId) {
   let html = '';
 
@@ -7004,9 +7150,10 @@ function renderLesson(tab, topicId) {
       <div class="lesson-section-text">${s.explanation}</div>
       ${s.image ? `<div class="lesson-img-suggestion">🖼️ <span><strong>Sugestão visual:</strong> ${s.image}</span></div>` : ''}
       ${s.table ? `<div class="card" style="margin:10px 0;"><h3 style="font-size:12.5px;">${s.table.title}</h3><table class="data">${s.table.rows.map(r => `<tr><td style="font-weight:600;color:var(--text);white-space:nowrap;">${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div>` : ''}
-      <div class="callout callout-example"><span class="callout-icon">🔍</span><div><span class="callout-label">Exemplo</span><div class="callout-text">${s.example}</div></div></div>
-      ${s.note ? `<div class="callout ${CALLOUT_META[s.note.type].cls}"><span class="callout-icon">${CALLOUT_META[s.note.type].icon}</span><div><span class="callout-label">${CALLOUT_META[s.note.type].label}</span><div class="callout-text">${s.note.text}</div></div></div>` : ''}
-      <div class="callout callout-summary"><span class="callout-icon">📌</span><div><span class="callout-label">Resumo</span><div class="callout-text">${s.summary}</div></div></div>
+      ${renderInfoBoxes(s.boxes || s.box)}
+      ${infoBox('blue', t('ib.example'), s.example)}
+      ${s.note ? infoBox(s.note.type === 'warn' ? 'red' : 'green', t(s.note.type === 'warn' ? 'ib.attention' : 'ib.tip'), s.note.text) : ''}
+      ${infoBox('amber', t('ib.keyconcept') + ' · ' + t('ib.summary'), s.summary)}
     </div>`).join('');
 
   // 4/5. Exercícios (do fácil ao difícil, resposta sempre explicada)
@@ -7027,7 +7174,7 @@ function renderLesson(tab, topicId) {
       <div class="mindmap-root">🔹 ${b.root}</div>
       <div class="mindmap-children">${b.children.map(c => `<div class="mindmap-child">${c}</div>`).join('')}</div>
     </div>`).join('');
-  html += `<div class="callout callout-summary" style="margin-top:6px;"><span class="callout-icon">📌</span><div><span class="callout-label">Resumo geral</span><div class="callout-text">${tab.review.summary}</div></div></div>`;
+  html += infoBox('purple', t('ib.generalsummary'), tab.review.summary, 'margin-top:6px;');
   html += `<div class="keyword-chips">${tab.review.keywords.map(k => `<span class="keyword-chip">${k}</span>`).join('')}</div>`;
   html += `</div>`;
 
@@ -7099,11 +7246,15 @@ function renderHero(topic) {
 }
 
 function renderSections(tab) {
-  let html = tab.sections.map(s => `
+  let html = tab.sections.map(s => {
+    const v = s.variant || guessVariant(s.h + ' ' + s.t);
+    return `
     <div class="card accent-teal">
       <h3>${s.h}</h3>
-      <p>${s.t}</p>
-    </div>`).join('');
+      ${infoBox(v, s.label || variantLabel(v), s.t)}
+      ${renderInfoBoxes(s.boxes || s.box)}
+    </div>`;
+  }).join('');
   if (tab.table) {
     html += `
     <div class="card">
@@ -7139,29 +7290,36 @@ function renderChecklist(tab) {
 }
 
 function renderAccordion(tab) {
-  return tab.items.map((it, i) => `
+  return tab.items.map((it, i) => {
+    const v = it.variant || guessVariant(it.title + ' ' + it.body);
+    return `
     <div class="acc-item" id="acc-${i}">
       <div class="acc-head" onclick="toggleAcc(${i})">
         <span>${it.title}</span>
         <span class="acc-chev">▾</span>
       </div>
       <div class="acc-panel">
-        <p>${it.body}</p>
-        ${it.extra ? `<div style="margin-top:10px;white-space:pre-line;">${it.extra}</div>` : ''}
+        ${infoBox(v, it.label || variantLabel(v), it.body)}
+        ${renderInfoBoxes(it.boxes || it.box)}
+        ${it.extra ? infoBox('blue', t('ib.clinical'), `<span style="white-space:pre-line;">${it.extra}</span>`) : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function toggleAcc(i) { document.getElementById('acc-' + i).classList.toggle('open'); }
 
 /* ── CASO CLÍNICO (stepper) ── */
 function renderCase(tab) {
   const dots = tab.steps.map((_, i) => `<div class="caso-dot ${i===0?'active':''}" onclick="gotoCaso(${i})"></div>`).join('');
-  const steps = tab.steps.map((s, i) => `
+  const steps = tab.steps.map((s, i) => {
+    const v = s.variant || guessVariant(s.title + ' ' + s.body);
+    return `
     <div class="caso-step ${i===0?'active':''}" id="caso-${i}">
       <span class="caso-tag">${s.tag}</span>
       <div class="caso-title">${s.title}</div>
-      <div class="caso-body"><p>${s.body}</p></div>
-    </div>`).join('');
+      <div class="caso-body">${infoBox(v, s.label || variantLabel(v), s.body)}${renderInfoBoxes(s.boxes || s.box)}</div>
+    </div>`;
+  }).join('');
   return `
     <div class="caso-bar" id="casoBar">${dots}</div>
     ${steps}
