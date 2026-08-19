@@ -7094,17 +7094,19 @@ function variantLabel(v) {
 
 /* Grelha de cartões clicáveis no topo do tópico (visão geral das sub-abas).
    Reutiliza showPane() — a arquitetura tab-nav + paneHost não muda. */
-const TAB_TYPE_ICON = { hero: '🧭', sections: '📚', checklist: '✅', accordion: '🗂️', case: '🩺', quiz: '🧠', lesson: '📖' };
+/* Ícones em texto simples (sem emoji) para renderização estável em qualquer
+   sistema — o índice numérico da sub-aba serve de marcador visual. */
 function renderTopicOverview(topic, activeId) {
-  const tabs = (topic.tabs || []).filter(tb => tb.id !== activeId);
+  const all = topic.tabs || [];
+  const tabs = all.filter(tb => tb.id !== activeId);
   if (tabs.length < 2) return '';
   return `<div class="topic-overview">
     <div class="topic-overview-title">${t('topic.overview')}</div>
     <div class="topic-card-sub" style="margin-bottom:10px;">${t('topic.overview.sub')}</div>
     <div class="topic-overview-grid">
-      ${tabs.map((tb, i) => `
+      ${tabs.map(tb => `
         <button type="button" class="topic-card" onclick="showPane('${tb.id}')">
-          <span class="topic-card-index">${TAB_TYPE_ICON[tb.type] || (i + 1)}</span>
+          <span class="topic-card-index">${all.indexOf(tb) + 1}</span>
           <div class="topic-card-title">${tb.label}</div>
           <div class="topic-card-sub">${tabSummary(tb)}</div>
         </button>`).join('')}
