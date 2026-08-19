@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiTutorRouteImport } from './routes/api/tutor'
+import { Route as ApiBooksOcrRouteImport } from './routes/api/books/ocr'
 import { Route as ApiBooksReindexRouteImport } from './routes/api/books/reindex'
 import { Route as ApiBooksSearchRouteImport } from './routes/api/books/search'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiTutorRoute = ApiTutorRouteImport.update({
   id: '/api/tutor',
   path: '/api/tutor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBooksOcrRoute = ApiBooksOcrRouteImport.update({
+  id: '/api/books/ocr',
+  path: '/api/books/ocr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBooksReindexRoute = ApiBooksReindexRouteImport.update({
@@ -38,12 +44,14 @@ const ApiBooksSearchRoute = ApiBooksSearchRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/tutor': typeof ApiTutorRoute
+  '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/tutor': typeof ApiTutorRoute
+  '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
 }
@@ -51,21 +59,38 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/tutor': typeof ApiTutorRoute
+  '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/tutor' | '/api/books/reindex' | '/api/books/search'
+  fullPaths:
+    | '/'
+    | '/api/tutor'
+    | '/api/books/ocr'
+    | '/api/books/reindex'
+    | '/api/books/search'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/tutor' | '/api/books/reindex' | '/api/books/search'
+  to:
+    | '/'
+    | '/api/tutor'
+    | '/api/books/ocr'
+    | '/api/books/reindex'
+    | '/api/books/search'
   id:
-    '__root__' | '/' | '/api/tutor' | '/api/books/reindex' | '/api/books/search'
+    | '__root__'
+    | '/'
+    | '/api/tutor'
+    | '/api/books/ocr'
+    | '/api/books/reindex'
+    | '/api/books/search'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiTutorRoute: typeof ApiTutorRoute
+  ApiBooksOcrRoute: typeof ApiBooksOcrRoute
   ApiBooksReindexRoute: typeof ApiBooksReindexRoute
   ApiBooksSearchRoute: typeof ApiBooksSearchRoute
 }
@@ -84,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/api/tutor'
       fullPath: '/api/tutor'
       preLoaderRoute: typeof ApiTutorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/books/ocr': {
+      id: '/api/books/ocr'
+      path: '/api/books/ocr'
+      fullPath: '/api/books/ocr'
+      preLoaderRoute: typeof ApiBooksOcrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/books/reindex': {
@@ -106,6 +138,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiTutorRoute: ApiTutorRoute,
+  ApiBooksOcrRoute: ApiBooksOcrRoute,
   ApiBooksReindexRoute: ApiBooksReindexRoute,
   ApiBooksSearchRoute: ApiBooksSearchRoute,
 }
