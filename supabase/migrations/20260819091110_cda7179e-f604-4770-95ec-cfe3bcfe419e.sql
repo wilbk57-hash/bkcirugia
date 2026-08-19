@@ -1,0 +1,1 @@
+CREATE POLICY book_chunks_update_own ON public.book_chunks FOR UPDATE TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());

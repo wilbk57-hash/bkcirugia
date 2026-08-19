@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { clientForRequest } from '@/lib/rag-auth.server'
-import { MAX_PAGES, chunkPages, embedTexts, extractPdfPages } from '@/lib/rag.server'
+import { MAX_PAGES, chunkPages, embedTexts, extractEpubPages, extractPdfPages } from '@/lib/rag.server'
 
 const BUCKET = 'user-books'
 const BATCH_SIZE = 24
@@ -46,10 +46,13 @@ export const Route = createFileRoute('/api/books/reindex')({
           .maybeSingle()
         if (bookErr || !book || book.user_id !== userId) return json({ error: 'not_found' }, 404)
 
-        if (book.mime_type !== 'application/pdf') {
+        const isPdf = book.mime_type === 'application/pdf'
+        const isEpub =
+          (book.mime_type || '').includes('epub') || /\.epub$/i.test(book.file_path || '')
+        if (!isPdf && !isEpub) {
           await supabase
             .from('user_books')
-            .update({ index_status: 'unsupported', index_error: 'Only text PDFs are supported in this phase.' })
+            .update({ index_status: 'unsupported', index_error: 'Only PDF and EPUB books are supported.' })
             .eq('id', book.id)
           return json({ status: 'unsupported', done: true })
         }
@@ -74,7 +77,8 @@ export const Route = createFileRoute('/api/books/reindex')({
           const { data: file, error: dlErr } = await supabase.storage.from(BUCKET).download(book.file_path)
           if (dlErr || !file) return await fail(dlErr?.message || 'download failed')
 
-          const pages = await extractPdfPages(await file.arrayBuffer())
+          const bytes = await file.arrayBuffer()
+          const pages = isPdf ? await extractPdfPages(bytes) : await extractEpubPages(bytes)
           const chunks = chunkPages(pages)
 
           if (!chunks.length) {
@@ -82,7 +86,9 @@ export const Route = createFileRoute('/api/books/reindex')({
               .from('user_books')
               .update({
                 index_status: 'no_text',
-                index_error: 'No text layer found (scanned PDF).',
+                index_error: isPdf
+                  ? 'No text layer found (scanned PDF).'
+                  : 'No readable text found in this EPUB.',
                 page_count: pages.length,
               })
               .eq('id', book.id)
