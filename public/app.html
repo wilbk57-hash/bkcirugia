@@ -1260,6 +1260,24 @@
   .mm-quiz-opt.wrong { border-color: var(--amber); color: var(--amber); }
   .mm-quiz-exp { font-size: 12.5px; line-height: 1.6; color: var(--text2); border-left: 2px solid var(--teal); padding-left: 10px; }
   .mm-quiz-score { font-family: 'IBM Plex Mono', monospace; font-size: 32px; color: var(--teal); text-align: center; }
+  /* — Copiloto de IA: sugestões, verificação, comparação — */
+  .mm-sug { border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; background: var(--panel); display: flex; flex-direction: column; gap: 7px; }
+  .mm-sug-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); }
+  .mm-sug-why { font-size: 12.5px; line-height: 1.6; color: var(--text2); }
+  .mm-sug-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: var(--violet); }
+  .mm-sug-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mm-sug.done { opacity: .6; }
+  .mm-sug-state { font-size: 11.5px; color: var(--text2); }
+  .mm-note { font-size: 11.5px; line-height: 1.6; color: var(--text2); border-left: 2px solid var(--amber); padding-left: 10px; }
+  .mm-cmp-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 780px) { .mm-cmp-grid { grid-template-columns: 1fr 1fr; } }
+  .mm-cmp-col { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--panel); overflow-x: auto; }
+  .mm-cmp-h { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .mm-tree, .mm-tree ul { list-style: none; margin: 0; padding-left: 14px; }
+  .mm-tree > li { padding-left: 0; }
+  .mm-tree li { font-size: 12px; color: var(--text2); line-height: 1.9; border-left: 1px solid var(--border); padding-left: 8px; }
+  .mm-tree li > span.node { display: inline-block; border: 1px solid var(--border); border-radius: 8px; padding: 1px 8px; color: var(--text); }
+  .mm-tree li.lv0 > span.node { border-color: var(--teal); color: var(--teal); font-weight: 700; }
   @media (max-width: 760px) {
     .mm-head { padding: 8px 10px; gap: 6px; overflow: hidden; }
     .mm-btn { padding: 6px 8px; font-size: 11px; }
@@ -5484,6 +5502,35 @@ const STR_TABLE = [
 ['mm.quiz.result','Resultado','Result','Resultado'],
 ['mm.quiz.again','Refazer','Retry','Rehacer'],
 ['mm.quiz.explain','Explicação','Explanation','Explicación'],
+['mm.cp.improve','Melhorar mapa','Improve map','Mejorar mapa'],
+['mm.cp.verify','Verificar mapa','Check map','Verificar mapa'],
+['mm.cp.compare','Comparar','Compare','Comparar'],
+['mm.cp.png','Exportar PNG','Export PNG','Exportar PNG'],
+['mm.cp.improve.title','Sugestões do Tutor','Tutor suggestions','Sugerencias del Tutor'],
+['mm.cp.improve.lead','Nada é aplicado ao mapa sem o seu aceite.','Nothing is applied to the map without your approval.','Nada se aplica al mapa sin tu aprobación.'],
+['mm.cp.accept','Aceitar','Accept','Aceptar'],
+['mm.cp.reject','Rejeitar','Reject','Rechazar'],
+['mm.cp.accepted','Aplicado ao mapa.','Applied to the map.','Aplicado al mapa.'],
+['mm.cp.rejected','Sugestão rejeitada.','Suggestion rejected.','Sugerencia rechazada.'],
+['mm.cp.failed','Não foi possível aplicar esta sugestão.','This suggestion could not be applied.','No se pudo aplicar esta sugerencia.'],
+['mm.cp.none','Sem sugestões para este mapa.','No suggestions for this map.','Sin sugerencias para este mapa.'],
+['mm.cp.kind.add','Novo nó','New node','Nodo nuevo'],
+['mm.cp.kind.detail','Detalhe','Detail','Detalle'],
+['mm.cp.kind.relation','Relação','Relation','Relación'],
+['mm.cp.verify.title','Verificação do mapa','Map check','Verificación del mapa'],
+['mm.cp.verify.lead','Pontos a considerar — sugestões do Tutor, não factos confirmados. Confirme sempre na bibliografia.','Points to consider — Tutor suggestions, not confirmed facts. Always confirm in the literature.','Puntos a considerar — sugerencias del Tutor, no hechos confirmados. Confirma siempre en la bibliografía.'],
+['mm.cp.verify.low','Baixa confiança: tema fora dos módulos carregados.','Low confidence: topic outside the loaded modules.','Baja confianza: tema fuera de los módulos cargados.'],
+['mm.cp.verify.none','O Tutor não apontou pontos a rever.','The Tutor found no points to review.','El Tutor no señaló puntos a revisar.'],
+['mm.cp.ask','Perguntar ao Tutor','Ask the Tutor','Preguntar al Tutor'],
+['mm.cp.compare.title','Comparar mapas','Compare maps','Comparar mapas'],
+['mm.cp.compare.pick','Escolha o segundo mapa','Choose the second map','Elige el segundo mapa'],
+['mm.cp.compare.empty','Ainda não há outro mapa guardado para comparar.','There is no other saved map to compare yet.','Aún no hay otro mapa guardado para comparar.'],
+['mm.cp.compare.common','Em comum','In common','En común'],
+['mm.cp.compare.onlya','Só no mapa A','Only in map A','Solo en el mapa A'],
+['mm.cp.compare.onlyb','Só no mapa B','Only in map B','Solo en el mapa B'],
+['mm.cp.compare.diffs','Diferenças e semelhanças','Differences and similarities','Diferencias y semejanzas'],
+['mm.cp.png.done','Imagem exportada.','Image exported.','Imagen exportada.'],
+['mm.cp.png.error','Não foi possível exportar a imagem.','Could not export the image.','No se pudo exportar la imagen.'],
 ['act.tpl.mmquiz','Questões do mapa','Map questions','Preguntas del mapa'],
 ['act.tpl.mmreview','Revisão do mapa','Map review','Revisión del mapa'],
  ['explain.error.label','Não foi possível explicar','Could not explain','No se pudo explicar'],
@@ -8790,6 +8837,10 @@ if ('serviceWorker' in navigator) {
       <button class="mm-btn" id="mmSummaryBtn" onclick="mmSummaryMenu()"></button>
       <button class="mm-btn" id="mmQuizBtn" onclick="mmGenerateQuiz()"></button>
       <button class="mm-btn" id="mmReviewBtn" onclick="mmToggleReview()"></button>
+      <button class="mm-btn" id="mmImproveBtn" onclick="mmImproveMap()"></button>
+      <button class="mm-btn" id="mmVerifyBtn" onclick="mmVerifyMap()"></button>
+      <button class="mm-btn" id="mmCompareBtn" onclick="mmComparePick()"></button>
+      <button class="mm-btn" id="mmPngBtn" onclick="mmExportPng()"></button>
     </div>
     <div class="mm-modebar" id="mmModeBar">
       <button class="mm-btn" id="mmFocusBtn" onclick="mmSetFocus(true)"></button>
@@ -8811,6 +8862,7 @@ if ('serviceWorker' in navigator) {
     <div class="mm-list" id="mmList"></div>
     <aside class="mm-panel" id="mmPanel" aria-live="polite"></aside>
     <div class="mm-quiz" id="mmQuiz" aria-live="polite"></div>
+    <div class="mm-quiz" id="mmCopilot" aria-live="polite"></div>
   </div>
 </div>
 <script>
@@ -9139,6 +9191,7 @@ function mmClearStage() {
   const bar = document.getElementById('mmModeBar'); if (bar) bar.style.display = 'none';
   const sb = document.getElementById('mmStepBar'); if (sb) sb.classList.remove('show');
   const stb = document.getElementById('mmStudyBar'); if (stb) stb.style.display = 'none';
+  const cp = document.getElementById('mmCopilot'); if (cp) { cp.classList.remove('show'); cp.textContent = ''; }
 }
 
 /* ---- Abrir / fechar (integra-se com o History API existente) ---- */
@@ -9303,6 +9356,10 @@ function mmSyncModeUi() {
   set('mmSummaryBtn', t('mm.study.summary'), false);
   set('mmQuizBtn', t('mm.study.quiz'), false);
   set('mmReviewBtn', t('mm.study.review'), MM_STATE.review);
+  set('mmImproveBtn', t('mm.cp.improve'), false);
+  set('mmVerifyBtn', t('mm.cp.verify'), false);
+  set('mmCompareBtn', t('mm.cp.compare'), false);
+  set('mmPngBtn', t('mm.cp.png'), false);
   const bar = document.getElementById('mmStepBar');
   if (bar) {
     const on = MM_STATE.mode === 'present';
@@ -10002,6 +10059,329 @@ function mmAskReview() {
   if (!input) return;
   input.value = q + inCtx;
   setTimeout(() => { sendIaMessage(); }, 60);
+}
+
+/* ============================================================
+   COPILOTO DE IA (fase final) — melhorar / verificar / comparar / PNG
+   Regra: nada é aplicado ao mapa sem aceite explícito do aluno.
+   ============================================================ */
+function mmCopilotHost() { return document.getElementById('mmCopilot'); }
+function mmCopilotClose() {
+  const h = mmCopilotHost(); if (!h) return;
+  h.classList.remove('show'); h.textContent = '';
+}
+function mmCopilotOpen(title, leadText) {
+  const h = mmCopilotHost(); if (!h) return null;
+  mmClosePanel();
+  if (typeof mmQuizClose === 'function') mmQuizClose();
+  h.textContent = '';
+  const inner = document.createElement('div'); inner.className = 'mm-quiz-inner';
+  const head = document.createElement('div'); head.className = 'mm-quiz-head';
+  const kicker = document.createElement('div'); kicker.className = 'mm-quiz-kicker'; kicker.textContent = title;
+  const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = t('mm.close'); close.onclick = mmCopilotClose;
+  head.appendChild(kicker); head.appendChild(close);
+  inner.appendChild(head);
+  if (leadText) { const lead = document.createElement('div'); lead.className = 'mm-note'; lead.textContent = leadText; inner.appendChild(lead); }
+  const body = document.createElement('div'); body.className = 'mm-copilot-body';
+  body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '10px';
+  inner.appendChild(body);
+  h.appendChild(inner);
+  h.classList.add('show');
+  h.scrollTop = 0;
+  return body;
+}
+function mmCopilotStatus(body, text) {
+  if (!body) return;
+  body.textContent = '';
+  const d = document.createElement('div'); d.className = 'mm-panel-body'; d.textContent = text;
+  body.appendChild(d);
+}
+
+/* ---- 1) ✨ Melhorar mapa: sugestões com aceitar/rejeitar individual ---- */
+function mmImprovePrompt() {
+  return 'És um tutor de cirurgia. Analisa o mapa mental fornecido em JSON e propõe melhorias em ' + mmLangName() + '. '
+    + 'Devolve APENAS JSON válido, sem texto à volta: '
+    + '{"suggestions":[{"kind":"add|detail|relation","title":"resumo curto da mudança","rationale":"porquê, 1-2 frases",'
+    + '"node":{"label":"máx 40 caracteres","parent":"label EXATO de um nó existente ou da raiz","type":"concept|definition|warning|clinical|example|decision|evidence","importance":"high|medium|low","description":"1-2 frases"},'
+    + '"target":"label EXATO de um nó existente (só para kind=detail)","description":"nova descrição (só para kind=detail)",'
+    + '"relation":{"from":"label EXATO","to":"label EXATO","type":"causes|leads_to|risk_of|complication_of|prevents|treats|diagnoses","label":"máx 30 caracteres"}}]} '
+    + 'Máximo 6 sugestões, ordenadas por utilidade pedagógica. Usa só labels que existem no mapa nos campos parent/target/from/to.';
+}
+async function mmImproveMap() {
+  const map = MM_STATE.map; if (!map) return;
+  const body = mmCopilotOpen(t('mm.cp.improve.title'), t('mm.cp.improve.lead'));
+  mmCopilotStatus(body, t('mm.study.loading'));
+  let list = [];
+  try {
+    const out = await runTutorRequest({
+      system: mmImprovePrompt(),
+      messages: [{ role: 'user', content: 'Mapa mental (JSON):\n' + mmContextJson(map) }],
+      maxTokens: 1400,
+    });
+    const parsed = mmParseJson(out && out.text);
+    list = (parsed && Array.isArray(parsed.suggestions) ? parsed.suggestions : []).filter(s => s && (s.title || s.node || s.relation));
+  } catch (e) {
+    mmCopilotStatus(body, t('mm.study.error'));
+    return;
+  }
+  if (!list.length) { mmCopilotStatus(body, t('mm.cp.none')); return; }
+  body.textContent = '';
+  list.slice(0, 6).forEach(s => body.appendChild(mmSuggestionCard(s)));
+}
+function mmSuggestionKind(s) {
+  const k = String(s.kind || '').toLowerCase();
+  if (k === 'relation' || (!k && s.relation)) return 'relation';
+  if (k === 'detail' || (!k && s.target)) return 'detail';
+  return 'add';
+}
+function mmSuggestionCard(s) {
+  const kind = mmSuggestionKind(s);
+  const card = document.createElement('div'); card.className = 'mm-sug';
+  const tag = document.createElement('div'); tag.className = 'mm-sug-tag'; tag.textContent = t('mm.cp.kind.' + kind);
+  const ti = document.createElement('div'); ti.className = 'mm-sug-title';
+  ti.textContent = String(s.title || (kind === 'relation'
+    ? ((s.relation && s.relation.from) || '') + ' → ' + ((s.relation && s.relation.to) || '')
+    : (kind === 'detail' ? String(s.target || '') : ((s.node && s.node.label) || ''))));
+  const why = document.createElement('div'); why.className = 'mm-sug-why';
+  why.textContent = String(s.rationale || (kind === 'detail' ? (s.description || '') : ((s.node && s.node.description) || '')));
+  const acts = document.createElement('div'); acts.className = 'mm-sug-acts';
+  const state = document.createElement('div'); state.className = 'mm-sug-state';
+  const finish = (msg) => { card.classList.add('done'); acts.textContent = ''; state.textContent = msg; };
+  const ok = document.createElement('button'); ok.className = 'mm-btn'; ok.textContent = t('mm.cp.accept');
+  ok.onclick = () => { finish(mmApplySuggestion(s, kind) ? t('mm.cp.accepted') : t('mm.cp.failed')); };
+  const no = document.createElement('button'); no.className = 'mm-btn'; no.textContent = t('mm.cp.reject');
+  no.onclick = () => finish(t('mm.cp.rejected'));
+  acts.appendChild(ok); acts.appendChild(no);
+  card.appendChild(tag); card.appendChild(ti); card.appendChild(why); card.appendChild(acts); card.appendChild(state);
+  return card;
+}
+function mmFindNodeByLabel(map, label) {
+  const norm = (x) => String(x || '').trim().toLowerCase();
+  const key = norm(label);
+  if (!key) return null;
+  if (norm(map.root.label) === key) return { id: map.root.id, root: true };
+  return map.nodes.find(n => norm(n.label) === key) || null;
+}
+function mmApplySuggestion(s, kind) {
+  const map = MM_STATE.map; if (!map) return false;
+  try {
+    if (kind === 'detail') {
+      const target = mmFindNodeByLabel(map, s.target);
+      if (!target || target.root || !s.description) return false;
+      target.description = String(s.description).slice(0, 400);
+    } else if (kind === 'relation') {
+      const r = s.relation || {};
+      const a = mmFindNodeByLabel(map, r.from), b = mmFindNodeByLabel(map, r.to);
+      if (!a || !b || a.id === b.id) return false;
+      const before = (map.relations || []).length;
+      if (!mmMergeAdditions(map, { nodes: [], relations: [{ from: r.from, to: r.to, type: r.type, label: r.label }] })
+        && (map.relations || []).length === before) return false;
+    } else {
+      const n = s.node || {};
+      if (!String(n.label || '').trim()) return false;
+      if (mmFindNodeByLabel(map, n.label)) return false;
+      const added = mmMergeAdditions(map, {
+        nodes: [{ id: 'sug1', parentId: n.parent || map.root.label, label: n.label, type: n.type, importance: n.importance, description: n.description }],
+        relations: [],
+      });
+      if (!added) return false;
+    }
+    mmSaveMap(map.id, map);
+    mmRender(true);
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ---- 2) 🔎 Verificar mapa: lacunas como sugestão, nunca como facto ---- */
+function mmVerifyPrompt() {
+  return 'És um tutor de cirurgia. Verifica o mapa mental fornecido em JSON em ' + mmLangName() + '. '
+    + 'Aponta conceitos que possam estar em falta, relações importantes não representadas e pontos que o aluno deve rever. '
+    + 'Nunca afirmes uma lacuna como facto: se o tema estiver fora do que consegues confirmar, marca confidence "low" e diz isso no detalhe. '
+    + 'Devolve APENAS JSON válido: {"items":[{"title":"","detail":"","confidence":"high|low"}],"note":"observação geral opcional"} com no máximo 6 itens.';
+}
+async function mmVerifyMap() {
+  const map = MM_STATE.map; if (!map) return;
+  const body = mmCopilotOpen(t('mm.cp.verify.title'), t('mm.cp.verify.lead'));
+  mmCopilotStatus(body, t('mm.study.loading'));
+  let items = [], note = '';
+  try {
+    const out = await runTutorRequest({
+      system: mmVerifyPrompt(),
+      messages: [{ role: 'user', content: 'Mapa mental (JSON):\n' + mmContextJson(map) }],
+      maxTokens: 1200,
+    });
+    const parsed = mmParseJson(out && out.text);
+    items = (parsed && Array.isArray(parsed.items) ? parsed.items : []).filter(i => i && (i.title || i.detail));
+    note = parsed && parsed.note ? String(parsed.note) : '';
+  } catch (e) {
+    mmCopilotStatus(body, t('mm.study.error'));
+    return;
+  }
+  if (!items.length) { mmCopilotStatus(body, t('mm.cp.verify.none')); return; }
+  body.textContent = '';
+  items.slice(0, 6).forEach(it => {
+    const card = document.createElement('div'); card.className = 'mm-sug';
+    const ti = document.createElement('div'); ti.className = 'mm-sug-title'; ti.textContent = String(it.title || '').slice(0, 120);
+    const de = document.createElement('div'); de.className = 'mm-sug-why'; de.textContent = String(it.detail || '').slice(0, 600);
+    card.appendChild(ti); card.appendChild(de);
+    if (String(it.confidence || '').toLowerCase() === 'low') {
+      const low = document.createElement('div'); low.className = 'mm-note'; low.textContent = t('mm.cp.verify.low');
+      card.appendChild(low);
+    }
+    const acts = document.createElement('div'); acts.className = 'mm-sug-acts';
+    const ask = document.createElement('button'); ask.className = 'mm-btn'; ask.textContent = t('mm.cp.ask');
+    ask.onclick = () => mmAskFromCopilot(String(it.title || it.detail || ''));
+    acts.appendChild(ask); card.appendChild(acts);
+    body.appendChild(card);
+  });
+  if (note) { const n = document.createElement('div'); n.className = 'mm-note'; n.textContent = note; body.appendChild(n); }
+}
+function mmAskFromCopilot(topic) {
+  const map = MM_STATE.map;
+  if (!topic || !map) return;
+  const inCtx = { pt: ' no contexto de "', en: ' within "', es: ' en el contexto de "' }[currentLang] || ' no contexto de "';
+  const lead = { pt: 'Sobre o mapa mental: ', en: 'About the mind map: ', es: 'Sobre el mapa mental: ' }[currentLang] || 'Sobre o mapa mental: ';
+  mmCopilotClose();
+  mmRequestClose();
+  const input = document.getElementById('iaInput');
+  if (!input) return;
+  input.value = lead + topic + inCtx + map.title + '".';
+  setTimeout(() => { sendIaMessage(); }, 60);
+}
+
+/* ---- 3) Comparar (MVP): duas árvores lado a lado + diferenças textuais ---- */
+function mmComparePick() {
+  const map = MM_STATE.map; if (!map) return;
+  const all = mmLoadAll();
+  const others = Object.keys(all).filter(k => k !== map.id && all[k] && Array.isArray(all[k].nodes));
+  const body = mmCopilotOpen(t('mm.cp.compare.title'), '');
+  if (!others.length) { mmCopilotStatus(body, t('mm.cp.compare.empty')); return; }
+  body.textContent = '';
+  const lead = document.createElement('div'); lead.className = 'mm-panel-body'; lead.textContent = t('mm.cp.compare.pick');
+  body.appendChild(lead);
+  const acts = document.createElement('div'); acts.className = 'mm-sug-acts';
+  others.slice(0, 12).forEach(k => {
+    const b = document.createElement('button'); b.className = 'mm-btn';
+    b.textContent = (all[k].title || k).slice(0, 40);
+    b.onclick = () => mmCompareRender(map, all[k]);
+    acts.appendChild(b);
+  });
+  body.appendChild(acts);
+}
+function mmTreeEl(map) {
+  const kids = {};
+  map.nodes.forEach(n => { (kids[n.parentId] = kids[n.parentId] || []).push(n); });
+  const build = (id, label, depth) => {
+    const li = document.createElement('li');
+    if (depth === 0) li.className = 'lv0';
+    const sp = document.createElement('span'); sp.className = 'node'; sp.textContent = label;
+    li.appendChild(sp);
+    const children = kids[id] || [];
+    if (children.length && depth < 3) {
+      const ul = document.createElement('ul');
+      children.slice(0, 10).forEach(c => ul.appendChild(build(c.id, c.label, depth + 1)));
+      li.appendChild(ul);
+    }
+    return li;
+  };
+  const root = document.createElement('ul'); root.className = 'mm-tree';
+  root.appendChild(build(map.root.id, map.root.label, 0));
+  return root;
+}
+function mmCompareRender(a, b) {
+  const body = mmCopilotOpen(t('mm.cp.compare.title'), '');
+  if (!body) return;
+  body.textContent = '';
+  const grid = document.createElement('div'); grid.className = 'mm-cmp-grid';
+  [a, b].forEach(m => {
+    const col = document.createElement('div'); col.className = 'mm-cmp-col';
+    const h = document.createElement('div'); h.className = 'mm-cmp-h'; h.textContent = m.title || m.root.label;
+    col.appendChild(h); col.appendChild(mmTreeEl(m));
+    grid.appendChild(col);
+  });
+  body.appendChild(grid);
+
+  const norm = (s) => String(s || '').trim().toLowerCase();
+  const setA = {}, setB = {};
+  a.nodes.forEach(n => { setA[norm(n.label)] = n.label; });
+  b.nodes.forEach(n => { setB[norm(n.label)] = n.label; });
+  const common = Object.keys(setA).filter(k => setB[k]).map(k => setA[k]);
+  const onlyA = Object.keys(setA).filter(k => !setB[k]).map(k => setA[k]);
+  const onlyB = Object.keys(setB).filter(k => !setA[k]).map(k => setB[k]);
+  const diff = document.createElement('div'); diff.className = 'mm-sug';
+  const dh = document.createElement('div'); dh.className = 'mm-sug-title'; dh.textContent = t('mm.cp.compare.diffs');
+  diff.appendChild(dh);
+  [[t('mm.cp.compare.common'), common], [t('mm.cp.compare.onlya'), onlyA], [t('mm.cp.compare.onlyb'), onlyB]].forEach(pair => {
+    const line = document.createElement('div'); line.className = 'mm-sug-why';
+    line.textContent = pair[0] + ' (' + pair[1].length + '): ' + (pair[1].slice(0, 18).join(' · ') || '—');
+    diff.appendChild(line);
+  });
+  body.appendChild(diff);
+}
+
+/* ---- 4) Exportação: só PNG do canvas atual ---- */
+function mmInlineStyles(src, dst) {
+  const props = ['fill','fill-opacity','stroke','stroke-width','stroke-dasharray','stroke-linecap','stroke-opacity','opacity','font-family','font-size','font-weight','letter-spacing','text-anchor','display'];
+  const walk = (s, d) => {
+    if (s.nodeType === 1) {
+      const cs = window.getComputedStyle(s);
+      let css = '';
+      props.forEach(p => { const v = cs.getPropertyValue(p); if (v) css += p + ':' + v + ';'; });
+      d.setAttribute('style', css);
+      d.removeAttribute('class');
+    }
+    const sc = s.childNodes, dc = d.childNodes;
+    for (let i = 0; i < sc.length && i < dc.length; i++) walk(sc[i], dc[i]);
+  };
+  walk(src, dst);
+}
+async function mmExportPng() {
+  const svg = document.getElementById('mmSvg');
+  const map = MM_STATE.map;
+  if (!svg || !map || !MM_STATE.nodes.length) return;
+  try {
+    const pad = 40;
+    const xs = MM_STATE.nodes.map(n => n.x - n.w / 2), xe = MM_STATE.nodes.map(n => n.x + n.w / 2);
+    const ys = MM_STATE.nodes.map(n => n.y - n.h / 2), ye = MM_STATE.nodes.map(n => n.y + n.h / 2);
+    const minX = Math.min.apply(null, xs) - pad, maxX = Math.max.apply(null, xe) + pad;
+    const minY = Math.min.apply(null, ys) - pad - 30, maxY = Math.max.apply(null, ye) + pad;
+    const w = Math.max(1, Math.round(maxX - minX)), h = Math.max(1, Math.round(maxY - minY));
+    const clone = svg.cloneNode(true);
+    mmInlineStyles(svg, clone);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', w); clone.setAttribute('height', h);
+    clone.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    clone.removeAttribute('style');
+    const vp = clone.querySelector('#mmViewport');
+    if (vp) vp.setAttribute('transform', 'translate(' + (-minX) + ',' + (-minY) + ')');
+    const bg = window.getComputedStyle(document.getElementById('mmOverlay')).backgroundColor || '#0b0f14';
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', '0'); rect.setAttribute('y', '0');
+    rect.setAttribute('width', String(w)); rect.setAttribute('height', String(h));
+    rect.setAttribute('style', 'fill:' + (bg === 'rgba(0, 0, 0, 0)' ? '#0b0f14' : bg));
+    clone.insertBefore(rect, clone.firstChild);
+    const xml = new XMLSerializer().serializeToString(clone);
+    const url = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const scale = Math.min(2, Math.max(1, 1600 / w));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('blob');
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = (String(map.title || 'mapa-mental').replace(/[^\w\-]+/g, '_').slice(0, 60) || 'mapa-mental') + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 4000);
+    if (typeof showToast === 'function') showToast(t('mm.cp.png.done'));
+  } catch (e) {
+    if (typeof showToast === 'function') showToast(t('mm.cp.png.error'), 'error');
+  }
 }
 </script>
 
