@@ -1218,6 +1218,28 @@
   .mm-list-item:hover, .mm-list-item:focus { border-color: var(--teal); outline: none; }
   .mm-list-item .d { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; }
   .mm-error { padding: 24px; text-align: center; color: var(--text2); font-size: 12.5px; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; height: 100%; }
+  /* — Densidade progressiva + modos de estudo — */
+  .mm-plus { cursor: pointer; }
+  .mm-plus-box { fill: var(--teal-dim); stroke: var(--teal); stroke-width: 1.2px; }
+  .mm-plus-label { fill: var(--teal); font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700; }
+  .mm-node.mm-dim { opacity: .22; }
+  .mm-link.mm-dim, .mm-rel.mm-dim { opacity: .12; }
+  .mm-node.mm-hidden-label .mm-node-label { fill: var(--text2); letter-spacing: .08em; }
+  .mm-btn.active { border-color: var(--teal); color: var(--teal); }
+  .mm-overlay.mm-focus .mm-head { display: none; }
+  .mm-focus-exit { position: absolute; left: 12px; top: 12px; z-index: 6; display: none; }
+  .mm-overlay.mm-focus .mm-focus-exit { display: block; }
+  .mm-overlay.mm-focus .mm-summary { display: none !important; }
+  .mm-overlay.mm-focus .mm-modebar { display: none; }
+  .mm-modebar { position: absolute; left: 12px; bottom: 12px; z-index: 6; display: flex; gap: 6px; flex-wrap: wrap; max-width: calc(100% - 150px); }
+  .mm-stepbar {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 56px; z-index: 7;
+    display: none; align-items: center; gap: 8px; padding: 6px 10px;
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    border: 1px solid var(--border); border-radius: 100px;
+  }
+  .mm-stepbar.show { display: flex; }
+  .mm-step-label { font-size: 11.5px; color: var(--text2); max-width: 42vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 760px) {
     .mm-head { padding: 8px 10px; gap: 6px; overflow: hidden; }
     .mm-btn { padding: 6px 8px; font-size: 11px; }
@@ -1227,6 +1249,9 @@
       border-left: none; border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
     }
     .mm-summary { max-width: calc(100% - 24px); }
+    .mm-modebar { max-width: calc(100% - 100px); bottom: 56px; }
+    .mm-stepbar { bottom: 10px; max-width: calc(100% - 20px); }
+    .mm-step-label { max-width: 38vw; }
   }
   @media (prefers-reduced-motion: reduce) {
     .mm-overlay *, .mm-overlay { transition: none !important; animation: none !important; }
@@ -4745,6 +4770,9 @@ async function sendIaMessage() {
       /* Oferece o mapa mental como complemento quando o aluno pediu
          para organizar visualmente — a resposta em texto mantém-se. */
       mindmapOffer: (typeof mmWantsMindMap === 'function') ? mmWantsMindMap(text) : false,
+      /* Pedido do tipo "acrescente complicações": atualiza o mapa existente
+         em vez de gerar um mapa novo. */
+      mindmapUpdateOf: (typeof mmUpdateTargetFor === 'function') ? mmUpdateTargetFor(text) : null,
     });
     newAssistantIdx = IA_MESSAGES.length - 1;
   } catch (err) {
@@ -5392,6 +5420,26 @@ const STR_TABLE = [
  ['mm.type.example','Exemplo','Example','Ejemplo'],
  ['mm.type.decision','Decisão','Decision','Decisión'],
  ['mm.type.evidence','Evidência','Evidence','Evidencia'],
+['mm.overview','Visão geral: abra os ramos para ver o detalhe.','Overview: open branches to see detail.','Vista general: abre las ramas para ver el detalle.'],
+['mm.expandN','Expandir mais {n}','Expand {n} more','Expandir {n} más'],
+['mm.expandall','Expandir tudo','Expand all','Expandir todo'],
+['mm.collapseall','Visão geral','Overview','Vista general'],
+['mm.focus','Modo Foco','Focus mode','Modo Enfoque'],
+['mm.focus.exit','Sair do foco','Exit focus','Salir del enfoque'],
+['mm.present','Apresentação','Presentation','Presentación'],
+['mm.present.exit','Sair da apresentação','Exit presentation','Salir de la presentación'],
+['mm.present.prev','Anterior','Previous','Anterior'],
+['mm.present.next','Seguinte','Next','Siguiente'],
+['mm.present.intro','Introdução','Introduction','Introducción'],
+['mm.present.conclusion','Conclusão','Conclusion','Conclusión'],
+['mm.memo','Memorização','Memorisation','Memorización'],
+['mm.memo.exit','Sair da memorização','Exit memorisation','Salir de la memorización'],
+['mm.memo.hint','Toque nos nós para revelar.','Tap nodes to reveal.','Toca los nodos para revelar.'],
+['mm.memo.count','Revelados {a} de {b}','Revealed {a} of {b}','Revelados {a} de {b}'],
+['mm.update.cta','Atualizar mapa mental','Update mind map','Actualizar mapa mental'],
+['mm.update.loading','A atualizar o mapa mental…','Updating the mind map…','Actualizando el mapa mental…'],
+['mm.update.done','Mapa mental atualizado com {n} nó(s).','Mind map updated with {n} node(s).','Mapa mental actualizado con {n} nodo(s).'],
+['mm.update.none','Nada de novo para acrescentar ao mapa.','Nothing new to add to the map.','Nada nuevo que añadir al mapa.'],
  ['explain.error.label','Não foi possível explicar','Could not explain','No se pudo explicar'],
 ];
 const STRINGS = { pt: {}, en: {}, es: {} };
@@ -8684,6 +8732,19 @@ if ('serviceWorker' in navigator) {
   </div>
   <div class="mm-stage" id="mmStage">
     <div class="mm-summary" id="mmSummary" style="display:none"></div>
+    <button class="mm-btn mm-focus-exit" id="mmFocusExitBtn" onclick="mmSetFocus(false)"></button>
+    <div class="mm-modebar" id="mmModeBar">
+      <button class="mm-btn" id="mmFocusBtn" onclick="mmSetFocus(true)"></button>
+      <button class="mm-btn" id="mmPresentBtn" onclick="mmTogglePresent()"></button>
+      <button class="mm-btn" id="mmMemoBtn" onclick="mmToggleMemo()"></button>
+      <button class="mm-btn" id="mmDensityBtn" onclick="mmToggleDensity()"></button>
+    </div>
+    <div class="mm-stepbar" id="mmStepBar">
+      <button class="mm-btn icon" id="mmStepPrev" onclick="mmPresentStep(-1)">‹</button>
+      <span class="mm-step-label" id="mmStepLabel"></span>
+      <button class="mm-btn icon" id="mmStepNext" onclick="mmPresentStep(1)">›</button>
+      <button class="mm-btn" id="mmStepExit" onclick="mmTogglePresent()"></button>
+    </div>
     <div class="mm-tools">
       <button class="mm-btn icon" id="mmZoomOutBtn" onclick="mmZoomBy(0.8)">−</button>
       <button class="mm-btn icon" id="mmZoomInBtn" onclick="mmZoomBy(1.25)">+</button>
@@ -8700,7 +8761,18 @@ if ('serviceWorker' in navigator) {
    ============================================================ */
 const MM_STORAGE = 'bkcirurgia_mindmaps_v1';
 const MM_TYPES = ['concept','definition','warning','clinical','example','decision','evidence'];
-let MM_STATE = { map: null, id: null, collapsed: {}, zoom: 1, tx: 0, ty: 0, nodes: [], selected: null, listMode: false, pushedHistory: false, open: false, sourceIdx: null };
+const MM_MAX_NODES = 120, MM_MAX_DEPTH = 5, MM_MAX_BRANCH = 9;
+let MM_STATE = {
+  map: null, id: null, collapsed: {}, zoom: 1, tx: 0, ty: 0, nodes: [], selected: null,
+  listMode: false, pushedHistory: false, open: false, sourceIdx: null,
+  /* modos de estudo (aditivos, nunca alteram o JSON do mapa) */
+  focus: false, mode: 'normal', presentIdx: 0, revealed: {}, overview: false, frozen: {},
+};
+function mmFmt(key, vars) {
+  let s = t(key);
+  Object.keys(vars || {}).forEach(k => { s = s.split('{' + k + '}').join(String(vars[k])); });
+  return s;
+}
 
 function mmLoadAll() {
   try { const raw = localStorage.getItem(MM_STORAGE); const p = raw ? JSON.parse(raw) : null; if (p && typeof p === 'object') return p; } catch (e) {}
@@ -8719,8 +8791,25 @@ function mmWantsMindMap(text) {
 
 /* ---- Botão de ação nas mensagens do tutor ---- */
 function mmMessageActionHtml(m, i) {
-  if (!m || m.role !== 'assistant' || m.error || m.limitNotice || !m.mindmapOffer) return '';
-  return '<div class="ia-msg-actions"><button class="mm-cta" onclick="mmFromMessage(' + i + ')">🧠 ' + escapeHtml(t('mm.cta')) + '</button></div>';
+  if (!m || m.role !== 'assistant' || m.error || m.limitNotice) return '';
+  if (!m.mindmapOffer && !m.mindmapUpdateOf) return '';
+  const label = (m.mindmapUpdateOf && !m.mindmapId) ? t('mm.update.cta') : t('mm.cta');
+  return '<div class="ia-msg-actions"><button class="mm-cta" onclick="mmFromMessage(' + i + ')">🧠 ' + escapeHtml(label) + '</button></div>';
+}
+
+/* ---- Gatilho: pedido de acrescento a um mapa já existente ---- */
+function mmWantsUpdate(text) {
+  const s = String(text || '').toLowerCase();
+  return /acrescent|adicion|inclu[ií]|a[ñn]ad|agrega|add\s|complementa|completa[r]?\s+o\s+mapa|atualiz|actualiz|update\s+the\s+map/.test(s);
+}
+/* Devolve o id do último mapa gerado no chat, se o pedido for de acrescento. */
+function mmUpdateTargetFor(text) {
+  if (!mmWantsUpdate(text)) return null;
+  for (let i = IA_MESSAGES.length - 1; i >= 0; i--) {
+    const id = IA_MESSAGES[i] && IA_MESSAGES[i].mindmapId;
+    if (id && mmGetMap(id)) return id;
+  }
+  return null;
 }
 
 function mmLangName() { return { pt: 'português', en: 'English', es: 'español' }[currentLang] || 'português'; }
@@ -8780,11 +8869,11 @@ function mmNormalize(obj, mapId) {
   const ordered = nodes.slice().sort((a, b) => (depthOf(a) - depthOf(b)) || (rank[a.importance] - rank[b.importance]));
   let rootBranches = 0;
   ordered.forEach(n => {
-    if (kept.length >= 40) { truncated = true; return; }
-    if (depthOf(n) > 3) { truncated = true; return; }
+    if (kept.length >= MM_MAX_NODES) { truncated = true; return; }
+    if (depthOf(n) > MM_MAX_DEPTH) { truncated = true; return; }
     if (!keptSet[n.parentId]) { truncated = true; return; }
     if (n.parentId === rootId) {
-      if (rootBranches >= 7) { truncated = true; return; }
+      if (rootBranches >= MM_MAX_BRANCH) { truncated = true; return; }
       rootBranches++;
     }
     keptSet[n.id] = true; kept.push(n);
@@ -8809,6 +8898,7 @@ async function mmFromMessage(idx) {
   if (!msg) return;
   const existing = msg.mindmapId ? mmGetMap(msg.mindmapId) : null;
   if (existing) { mmOpen(existing, idx); return; }
+  if (msg.mindmapUpdateOf && mmGetMap(msg.mindmapUpdateOf)) { return mmUpdateFromMessage(idx); }
   mmOpen(null, idx);
   mmShowLoading();
   const askedFor = (IA_MESSAGES[idx - 1] && IA_MESSAGES[idx - 1].role === 'user') ? IA_MESSAGES[idx - 1].content : '';
@@ -8840,6 +8930,132 @@ function mmShowLoading() {
   d.id = 'mmStatus';
   stage.appendChild(d);
 }
+
+/* ============================================================
+   ATUALIZAÇÃO INCREMENTAL DO MAPA
+   Reutiliza o mesmo JSON: só acrescenta nós/relações novos,
+   com ids no prefixo do mapa e o próximo índice livre.
+   ============================================================ */
+function mmNextIndex(map) {
+  let max = -1;
+  const scan = (id) => {
+    const m = String(id || '').match(/_n(\d+)$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  };
+  map.nodes.forEach(n => scan(n.id));
+  return max + 1;
+}
+function mmMergeAdditions(map, obj) {
+  if (!obj || !Array.isArray(obj.nodes)) return 0;
+  const pfx = map.id + '_';
+  const taken = {}; map.nodes.forEach(n => { taken[n.id] = true; }); taken[map.root.id] = true;
+  const byLabel = {};
+  const norm = (s) => String(s || '').trim().toLowerCase();
+  map.nodes.forEach(n => { byLabel[norm(n.label)] = n.id; });
+  byLabel[norm(map.root.label)] = map.root.id;
+  const suffix = {}; map.nodes.forEach(n => { suffix[n.id.slice(pfx.length)] = n.id; });
+
+  let next = mmNextIndex(map);
+  const allocate = () => {
+    let id;
+    do { id = pfx + 'n' + next; next++; } while (taken[id]);
+    taken[id] = true;
+    return id;
+  };
+  const raw = obj.nodes.filter(n => n && String(n.label || '').trim());
+  const newIds = {};
+  raw.forEach(n => { newIds[String(n.id)] = allocate(); });
+
+  const resolveParent = (p) => {
+    const key = String(p == null ? '' : p);
+    if (!key || key === 'root' || key === map.root.id) return map.root.id;
+    if (taken[key] && key !== newIds[key]) return key;
+    if (suffix[key]) return suffix[key];
+    if (newIds[key]) return newIds[key];
+    if (byLabel[norm(key)]) return byLabel[norm(key)];
+    return map.root.id;
+  };
+
+  let added = 0;
+  raw.forEach(n => {
+    if (map.nodes.length >= MM_MAX_NODES) { map.truncated = true; return; }
+    const id = newIds[String(n.id)];
+    let parentId = resolveParent(n.parentId);
+    if (parentId === id) parentId = map.root.id;
+    map.nodes.push({
+      id: id, parentId: parentId,
+      label: String(n.label).trim().slice(0, 40),
+      type: MM_TYPES.indexOf(n.type) !== -1 ? n.type : 'concept',
+      importance: ['high','medium','low'].indexOf(n.importance) !== -1 ? n.importance : 'medium',
+      description: n.description ? String(n.description).slice(0, 400) : '',
+    });
+    byLabel[norm(n.label)] = id;
+    added++;
+  });
+
+  const known = {}; map.nodes.forEach(n => { known[n.id] = true; }); known[map.root.id] = true;
+  (Array.isArray(obj.relations) ? obj.relations : []).forEach(r => {
+    if (!r) return;
+    const from = resolveParent(r.from), to = resolveParent(r.to);
+    if (!known[from] || !known[to] || from === to) return;
+    map.relations = map.relations || [];
+    if (map.relations.some(x => x.from === from && x.to === to)) return;
+    map.relations.push({ from: from, to: to, type: String(r.type || ''), label: r.label ? String(r.label).slice(0, 30) : '' });
+  });
+  return added;
+}
+
+function mmUpdatePrompt(map) {
+  const lines = map.nodes.map(n => '- ' + n.id + ' | ' + n.label + ' | pai: ' + n.parentId).join('\n');
+  return 'Vais ATUALIZAR um mapa mental existente em ' + mmLangName() + '. NÃO recries o mapa.\n'
+    + 'Mapa atual — raiz: ' + map.root.id + ' | ' + map.root.label + '\n' + lines + '\n\n'
+    + 'Devolve APENAS um JSON válido com os nós NOVOS a acrescentar (sem repetir os existentes):\n'
+    + '{"nodes":[{"id":"tmp1","parentId":"<id de um nó existente ou de outro nó novo>","label":"máx 40 caracteres","type":"concept|definition|warning|clinical|example|decision|evidence","importance":"high|medium|low","description":"1-2 frases"}],"relations":[{"from":"","to":"","type":"","label":""}]}\n'
+    + 'Usa ids temporários (tmp1, tmp2, …) só para os nós novos. Máximo 14 nós novos. Sem texto fora do JSON.';
+}
+
+async function mmUpdateFromMessage(idx) {
+  const msg = IA_MESSAGES[idx]; if (!msg) return;
+  const map = mmGetMap(msg.mindmapUpdateOf); if (!map) return;
+  mmOpen(map, idx);
+  showToast(t('mm.update.loading'));
+  /* Preserva as posições já calculadas dos nós existentes. */
+  const frozen = {};
+  MM_STATE.nodes.forEach(n => { if (!n.isRoot) frozen[n.id] = { x: n.x, y: n.y }; });
+  const askedFor = (IA_MESSAGES[idx - 1] && IA_MESSAGES[idx - 1].role === 'user') ? IA_MESSAGES[idx - 1].content : '';
+  try {
+    const out = await runTutorRequest({
+      system: mmUpdatePrompt(map),
+      messages: [{ role: 'user', content: 'Pedido do aluno: ' + String(askedFor).slice(0, 1500) + '\n\nConteúdo novo a integrar:\n' + String(msg.content || '').slice(0, 10000) }],
+      maxTokens: 1500,
+    });
+    const parsed = mmParseJson(out && out.text);
+    const added = mmMergeAdditions(map, parsed);
+    if (!added) { showToast(t('mm.update.none')); return; }
+    mmSaveMap(map.id, map);
+    msg.mindmapId = map.id;
+    saveIaChat();
+    renderIaMessages();
+    if (MM_STATE.open) {
+      MM_STATE.map = map;
+      MM_STATE.frozen = frozen;
+      mmRender(true);
+    }
+    showToast(mmFmt('mm.update.done', { n: added }));
+  } catch (e) {
+    showToast(t('mm.error.title'));
+  }
+}
+
+function mmShowLoadingLegacy() {
+  const stage = document.getElementById('mmStage');
+  mmClearStage();
+  const d = document.createElement('div');
+  d.className = 'mm-error';
+  d.textContent = t('mm.loading');
+  d.id = 'mmStatus';
+  stage.appendChild(d);
+}
 function mmShowError(idx) {
   const stage = document.getElementById('mmStage');
   mmClearStage();
@@ -8858,6 +9074,8 @@ function mmClearStage() {
   document.getElementById('mmPanel').classList.remove('show');
   document.getElementById('mmList').classList.remove('show');
   document.getElementById('mmSummary').style.display = 'none';
+  const bar = document.getElementById('mmModeBar'); if (bar) bar.style.display = 'none';
+  const sb = document.getElementById('mmStepBar'); if (sb) sb.classList.remove('show');
 }
 
 /* ---- Abrir / fechar (integra-se com o History API existente) ---- */
@@ -8865,10 +9083,17 @@ function mmOpen(map, sourceIdx) {
   const ov = document.getElementById('mmOverlay');
   MM_STATE.map = map; MM_STATE.sourceIdx = sourceIdx == null ? MM_STATE.sourceIdx : sourceIdx;
   MM_STATE.collapsed = {}; MM_STATE.selected = null; MM_STATE.listMode = false;
+  MM_STATE.mode = 'normal'; MM_STATE.presentIdx = 0; MM_STATE.revealed = {}; MM_STATE.frozen = {};
+  mmSetFocus(false, true);
+  /* Densidade progressiva: mapas grandes ou profundos abrem só com
+     raiz + nível 1; o resto fica atrás dos contadores "+N". */
+  MM_STATE.overview = map ? mmIsDense(map) : false;
+  if (MM_STATE.overview) mmCollapseToOverview();
   document.getElementById('mmListBtn').textContent = t('mm.list.show');
   document.getElementById('mmFitBtn').textContent = t('mm.fit');
   document.getElementById('mmCloseBtn').setAttribute('aria-label', t('mm.close'));
   document.getElementById('mmHeadTitle').textContent = (map && map.title) || t('mm.title');
+  mmSyncModeUi();
   if (!MM_STATE.open) {
     ov.classList.add('show');
     MM_STATE.open = true;
@@ -8876,6 +9101,154 @@ function mmOpen(map, sourceIdx) {
   }
   mmClearStage();
   if (map) mmRender();
+}
+
+/* ---- Densidade progressiva ---- */
+function mmDepthMap(map) {
+  const byId = {}; map.nodes.forEach(n => { byId[n.id] = n; });
+  const depths = {};
+  map.nodes.forEach(n => {
+    let d = 1, cur = n, guard = 0;
+    while (cur.parentId !== map.root.id && byId[cur.parentId] && guard++ < 12) { cur = byId[cur.parentId]; d++; }
+    depths[n.id] = d;
+  });
+  return depths;
+}
+function mmIsDense(map) {
+  if (!map || !Array.isArray(map.nodes)) return false;
+  if (map.nodes.length > 40) return true;
+  const depths = mmDepthMap(map);
+  return Object.keys(depths).some(k => depths[k] > 3);
+}
+function mmCollapseToOverview() {
+  const map = MM_STATE.map; if (!map) return;
+  const hasKids = {};
+  map.nodes.forEach(n => { hasKids[n.parentId] = true; });
+  MM_STATE.collapsed = {};
+  map.nodes.forEach(n => { if (n.parentId === map.root.id && hasKids[n.id]) MM_STATE.collapsed[n.id] = true; });
+}
+function mmExpandAll() {
+  MM_STATE.collapsed = {}; MM_STATE.overview = false;
+}
+function mmToggleDensity() {
+  if (MM_STATE.overview) mmExpandAll();
+  else { MM_STATE.overview = true; mmCollapseToOverview(); }
+  MM_STATE.frozen = {};
+  mmSyncModeUi();
+  mmRender();
+}
+function mmExpandNode(id) {
+  MM_STATE.collapsed[id] = false;
+  mmRender(true);
+}
+
+/* ---- Modo Foco ---- */
+function mmSetFocus(on, silent) {
+  MM_STATE.focus = !!on;
+  const ov = document.getElementById('mmOverlay');
+  if (ov) ov.classList.toggle('mm-focus', MM_STATE.focus);
+  mmSyncModeUi();
+  if (!silent) setTimeout(() => mmFit(), 30);
+}
+
+/* ---- Modo Apresentação ---- */
+function mmPresentSteps() {
+  const map = MM_STATE.map; if (!map) return [];
+  const steps = [{ kind: 'root', id: map.root.id, label: map.root.label }];
+  map.nodes.filter(n => n.parentId === map.root.id).forEach(n => steps.push({ kind: 'branch', id: n.id, label: n.label }));
+  steps.push({ kind: 'end', id: null, label: t('mm.present.conclusion') });
+  return steps;
+}
+function mmTogglePresent() {
+  if (MM_STATE.mode === 'present') { MM_STATE.mode = 'normal'; }
+  else { MM_STATE.mode = 'present'; MM_STATE.presentIdx = 0; mmClosePanel(); }
+  mmApplyPresentStep();
+}
+function mmPresentStep(delta) {
+  const steps = mmPresentSteps();
+  MM_STATE.presentIdx = Math.max(0, Math.min(steps.length - 1, MM_STATE.presentIdx + delta));
+  mmApplyPresentStep();
+}
+function mmApplyPresentStep() {
+  const steps = mmPresentSteps();
+  if (MM_STATE.mode === 'present') {
+    const step = steps[MM_STATE.presentIdx] || steps[0];
+    if (step.kind === 'branch') { MM_STATE.collapsed[step.id] = false; }
+    else if (step.kind === 'end') { mmExpandAll(); }
+  }
+  mmSyncModeUi();
+  mmRender(MM_STATE.mode !== 'present');
+  if (MM_STATE.mode === 'present') {
+    const step = steps[MM_STATE.presentIdx] || steps[0];
+    const ids = step.kind === 'end' ? null : mmSubtreeIds(step.id);
+    mmFit(ids);
+  }
+}
+function mmSubtreeIds(id) {
+  const out = {}; out[id] = true;
+  const map = MM_STATE.map; if (!map) return out;
+  const kids = {};
+  map.nodes.forEach(n => { (kids[n.parentId] = kids[n.parentId] || []).push(n.id); });
+  const walk = (x) => { (kids[x] || []).forEach(k => { out[k] = true; walk(k); }); };
+  walk(id);
+  if (id !== map.root.id) out[map.root.id] = true;
+  return out;
+}
+function mmActiveSet() {
+  if (MM_STATE.mode !== 'present') return null;
+  const steps = mmPresentSteps();
+  const step = steps[MM_STATE.presentIdx] || steps[0];
+  if (step.kind === 'end') return null;
+  if (step.kind === 'root') { const s = {}; s[step.id] = true; return s; }
+  return mmSubtreeIds(step.id);
+}
+
+/* ---- Modo Memorização ---- */
+function mmToggleMemo() {
+  if (MM_STATE.mode === 'memo') {
+    MM_STATE.mode = 'normal';
+  } else {
+    MM_STATE.mode = 'memo'; MM_STATE.revealed = {}; mmClosePanel();
+  }
+  mmSyncModeUi();
+  mmRender(true);
+}
+function mmMemoHidable() {
+  const map = MM_STATE.map; if (!map) return [];
+  const depths = mmDepthMap(map);
+  return map.nodes.filter(n => depths[n.id] >= 2).map(n => n.id);
+}
+function mmMemoIsHidden(n) {
+  return MM_STATE.mode === 'memo' && !n.isRoot && n.depth >= 2 && !MM_STATE.revealed[n.id];
+}
+
+function mmSyncModeUi() {
+  const set = (id, txt, active) => {
+    const el = document.getElementById(id); if (!el) return;
+    el.textContent = txt;
+    el.classList.toggle('active', !!active);
+  };
+  set('mmFocusBtn', t('mm.focus'), MM_STATE.focus);
+  set('mmFocusExitBtn', t('mm.focus.exit'), false);
+  set('mmPresentBtn', t('mm.present'), MM_STATE.mode === 'present');
+  set('mmMemoBtn', t('mm.memo'), MM_STATE.mode === 'memo');
+  set('mmDensityBtn', MM_STATE.overview ? t('mm.expandall') : t('mm.collapseall'), MM_STATE.overview);
+  set('mmStepExit', t('mm.present.exit'), false);
+  const bar = document.getElementById('mmStepBar');
+  if (bar) {
+    const on = MM_STATE.mode === 'present';
+    bar.classList.toggle('show', on);
+    if (on) {
+      const steps = mmPresentSteps();
+      const step = steps[MM_STATE.presentIdx] || steps[0];
+      const label = step.kind === 'root' ? t('mm.present.intro') + ' · ' + step.label : step.label;
+      const lbl = document.getElementById('mmStepLabel');
+      if (lbl) lbl.textContent = (MM_STATE.presentIdx + 1) + '/' + steps.length + ' · ' + label;
+      const prev = document.getElementById('mmStepPrev'), next = document.getElementById('mmStepNext');
+      if (prev) prev.disabled = MM_STATE.presentIdx === 0;
+      if (next) next.disabled = MM_STATE.presentIdx >= steps.length - 1;
+    }
+  }
 }
 function mmRequestClose() {
   if (MM_STATE.pushedHistory && history.state && history.state.view === 'mindmap') {
@@ -8891,7 +9264,19 @@ function mmClose() {
 }
 window.addEventListener('popstate', () => { if (MM_STATE.open) mmClose(); });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && MM_STATE.open) { e.preventDefault(); mmRequestClose(); }
+  if (!MM_STATE.open) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (MM_STATE.mode === 'present') { mmTogglePresent(); return; }
+    if (MM_STATE.mode === 'memo') { mmToggleMemo(); return; }
+    if (MM_STATE.focus) { mmSetFocus(false); return; }
+    mmRequestClose();
+    return;
+  }
+  if (MM_STATE.mode === 'present' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+    e.preventDefault();
+    mmPresentStep(e.key === 'ArrowRight' ? 1 : -1);
+  }
 });
 
 /* ---- Layout radial escrito à mão ---- */
@@ -8915,6 +9300,10 @@ function mmBuildTree() {
     if (!kids.length) return 1;
     return kids.reduce((a, k) => a + leafCount(k.id), 0);
   };
+  const descCount = (id) => {
+    const kids = children[id] || [];
+    return kids.reduce((a, k) => a + 1 + descCount(k.id), 0);
+  };
   const RAD = [0, 230, 400, 545];
   const place = (parentId, a0, a1, depth) => {
     if (MM_STATE.collapsed[parentId]) return;
@@ -8922,16 +9311,33 @@ function mmBuildTree() {
     if (!kids.length) return;
     const total = kids.reduce((a, k) => a + leafCount(k.id), 0) || 1;
     let cur = a0;
+    const parentPos = positions.find(p => p.id === parentId);
+    const preserving = Object.keys(MM_STATE.frozen).length > 0;
+    let freshIdx = 0;
     kids.forEach(k => {
       const span = (a1 - a0) * (leafCount(k.id) / total);
       const ang = cur + span / 2;
       const r = RAD[Math.min(depth, 3)];
       const box = measure(k.label, false);
+      const frozen = MM_STATE.frozen[k.id];
+      /* Num mapa atualizado, os nós novos nascem junto do seu pai para não
+         deslocar o que já estava plotado. */
+      let nx = Math.cos(ang) * r, ny = Math.sin(ang) * r * 0.82;
+      if (!frozen && preserving && parentPos) {
+        const base = (parentPos.x || parentPos.y) ? Math.atan2(parentPos.y, parentPos.x) : ang;
+        const off = base + (freshIdx - ((kids.length - 1) / 2)) * 0.6;
+        const rr = 180 + (freshIdx % 2) * 70;
+        nx = parentPos.x + Math.cos(off) * rr;
+        ny = parentPos.y + Math.sin(off) * rr * 0.75;
+        freshIdx++;
+      }
       positions.push({
         id: k.id, label: k.label, parentId: parentId, isRoot: false,
-        x: Math.cos(ang) * r, y: Math.sin(ang) * r * 0.82,
+        x: frozen ? frozen.x : nx,
+        y: frozen ? frozen.y : ny,
         w: box.w, h: box.h, type: k.type, importance: k.importance, description: k.description,
         depth: depth, hasChildren: (children[k.id] || []).length > 0, collapsed: !!MM_STATE.collapsed[k.id],
+        hidden: MM_STATE.collapsed[k.id] ? descCount(k.id) : 0,
       });
       place(k.id, cur, cur + span, depth + 1);
       cur += span;
@@ -8954,6 +9360,8 @@ function mmRender(keepView) {
   const st = document.getElementById('mmStatus'); if (st) st.remove();
   const nodes = mmBuildTree();
   const byId = {}; nodes.forEach(n => { byId[n.id] = n; });
+  const active = mmActiveSet();
+  const isActive = (id) => !active || !!active[id];
   const svg = mmSvgEl('svg', { id: 'mmSvg', role: 'img', 'aria-label': MM_STATE.map.title || t('mm.title') });
   const g = mmSvgEl('g', { id: 'mmViewport' });
   svg.appendChild(g);
@@ -8964,12 +9372,12 @@ function mmRender(keepView) {
     if (n.isRoot) return;
     const p = byId[n.parentId]; if (!p) return;
     const mx = (p.x + n.x) / 2;
-    linkLayer.appendChild(mmSvgEl('path', { class: 'mm-link', d: 'M' + p.x + ',' + p.y + ' C' + mx + ',' + p.y + ' ' + mx + ',' + n.y + ' ' + n.x + ',' + n.y }));
+    linkLayer.appendChild(mmSvgEl('path', { class: 'mm-link' + ((isActive(n.id) && isActive(p.id)) ? '' : ' mm-dim'), d: 'M' + p.x + ',' + p.y + ' C' + mx + ',' + p.y + ' ' + mx + ',' + n.y + ' ' + n.x + ',' + n.y }));
   });
   (MM_STATE.map.relations || []).forEach(r => {
     const a = byId[r.from], b = byId[r.to]; if (!a || !b) return;
     const my = Math.min(a.y, b.y) - 40;
-    relLayer.appendChild(mmSvgEl('path', { class: 'mm-rel', d: 'M' + a.x + ',' + a.y + ' Q' + ((a.x + b.x) / 2) + ',' + my + ' ' + b.x + ',' + b.y }));
+    relLayer.appendChild(mmSvgEl('path', { class: 'mm-rel' + ((isActive(a.id) && isActive(b.id)) ? '' : ' mm-dim'), d: 'M' + a.x + ',' + a.y + ' Q' + ((a.x + b.x) / 2) + ',' + my + ' ' + b.x + ',' + b.y }));
     if (r.label) {
       const txt = mmSvgEl('text', { class: 'mm-rel-label', x: (a.x + b.x) / 2, y: my + 12, 'text-anchor': 'middle' });
       txt.textContent = r.label;
@@ -8978,42 +9386,80 @@ function mmRender(keepView) {
   });
 
   nodes.forEach(n => {
+    const masked = mmMemoIsHidden(n);
     const grp = mmSvgEl('g', {
-      class: 'mm-node mm-t-' + n.type + ' mm-imp-' + n.importance + (n.isRoot ? ' mm-node-root' : '') + (MM_STATE.selected === n.id ? ' selected' : ''),
+      class: 'mm-node mm-t-' + n.type + ' mm-imp-' + n.importance + (n.isRoot ? ' mm-node-root' : '')
+        + (MM_STATE.selected === n.id ? ' selected' : '') + (isActive(n.id) ? '' : ' mm-dim') + (masked ? ' mm-hidden-label' : ''),
       transform: 'translate(' + (n.x - n.w / 2) + ',' + (n.y - n.h / 2) + ')',
       tabindex: '0', role: 'button',
     });
-    grp.setAttribute('aria-label', n.label);
+    grp.setAttribute('aria-label', masked ? t('mm.memo.hint') : n.label);
     grp.appendChild(mmSvgEl('rect', { class: 'mm-node-box', width: n.w, height: n.h, rx: 10, ry: 10 }));
     const label = mmSvgEl('text', { class: 'mm-node-label', x: n.w / 2, y: n.h / 2 + 4, 'text-anchor': 'middle' });
     /* Diferenciação de tipo é feita pela borda/peso do texto (CSS), não por
        ícones — evita glifos em falta em alguns dispositivos. */
-    label.textContent = n.label + (n.collapsed ? ' …' : '');
+    label.textContent = masked ? '______' : n.label;
     grp.appendChild(label);
-    const activate = () => mmSelectNode(n.id);
+    const activate = () => {
+      if (mmMemoIsHidden(n)) { MM_STATE.revealed[n.id] = true; mmRender(true); return; }
+      mmSelectNode(n.id);
+    };
     grp.addEventListener('click', (ev) => { ev.stopPropagation(); if (!mmDragMoved) activate(); });
     grp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); activate(); } });
     nodeLayer.appendChild(grp);
+    /* Contador "+N" para ramos ainda por abrir (densidade progressiva). */
+    if (n.collapsed && n.hidden > 0) {
+      const bw = 18 + String(n.hidden).length * 7;
+      const bg = mmSvgEl('g', {
+        class: 'mm-plus' + (isActive(n.id) ? '' : ' mm-dim'),
+        transform: 'translate(' + (n.x + n.w / 2 - 4) + ',' + (n.y - 9) + ')',
+        tabindex: '0', role: 'button',
+      });
+      bg.setAttribute('aria-label', mmFmt('mm.expandN', { n: n.hidden }));
+      bg.appendChild(mmSvgEl('rect', { class: 'mm-plus-box', width: bw, height: 18, rx: 9, ry: 9 }));
+      const pl = mmSvgEl('text', { class: 'mm-plus-label', x: bw / 2, y: 12.5, 'text-anchor': 'middle' });
+      pl.textContent = '+' + n.hidden;
+      bg.appendChild(pl);
+      const expand = () => mmExpandNode(n.id);
+      bg.addEventListener('click', (ev) => { ev.stopPropagation(); if (!mmDragMoved) expand(); });
+      bg.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); expand(); } });
+      nodeLayer.appendChild(bg);
+    }
   });
 
   stage.insertBefore(svg, stage.firstChild);
   mmAttachStageEvents(svg);
+  const modeBar = document.getElementById('mmModeBar'); if (modeBar) modeBar.style.display = 'flex';
   const sum = document.getElementById('mmSummary');
-  const summaryText = (MM_STATE.map.summary || '') + (MM_STATE.map.truncated ? (MM_STATE.map.summary ? ' — ' : '') + t('mm.truncated') : '');
+  let summaryText = (MM_STATE.map.summary || '') + (MM_STATE.map.truncated ? (MM_STATE.map.summary ? ' — ' : '') + t('mm.truncated') : '');
+  if (MM_STATE.mode === 'memo') {
+    const hidable = mmMemoHidable();
+    const done = hidable.filter(id => MM_STATE.revealed[id]).length;
+    summaryText = mmFmt('mm.memo.count', { a: done, b: hidable.length }) + ' · ' + t('mm.memo.hint');
+  } else if (MM_STATE.mode === 'present') {
+    const steps = mmPresentSteps();
+    const step = steps[MM_STATE.presentIdx] || steps[0];
+    summaryText = step.kind === 'root' ? (MM_STATE.map.summary || step.label) : step.label;
+  } else if (MM_STATE.overview) {
+    summaryText = (summaryText ? summaryText + ' — ' : '') + t('mm.overview');
+  }
   if (summaryText) { sum.textContent = summaryText; sum.style.display = 'block'; } else { sum.style.display = 'none'; }
   if (!keepView) mmFit(); else mmApplyTransform();
   mmRenderList();
+  mmSyncModeUi();
 }
 
 function mmApplyTransform() {
   const g = document.getElementById('mmViewport');
   if (g) g.setAttribute('transform', 'translate(' + MM_STATE.tx + ',' + MM_STATE.ty + ') scale(' + MM_STATE.zoom + ')');
 }
-function mmFit() {
+function mmFit(onlyIds) {
   const svg = document.getElementById('mmSvg'); if (!svg || !MM_STATE.nodes.length) return;
   const rect = svg.getBoundingClientRect();
-  const xs = MM_STATE.nodes.map(n => n.x - n.w / 2), xe = MM_STATE.nodes.map(n => n.x + n.w / 2);
-  const ys = MM_STATE.nodes.map(n => n.y - n.h / 2), ye = MM_STATE.nodes.map(n => n.y + n.h / 2);
+  const pool = onlyIds ? MM_STATE.nodes.filter(n => onlyIds[n.id]) : MM_STATE.nodes;
+  const use = pool.length ? pool : MM_STATE.nodes;
+  const xs = use.map(n => n.x - n.w / 2), xe = use.map(n => n.x + n.w / 2);
+  const ys = use.map(n => n.y - n.h / 2), ye = use.map(n => n.y + n.h / 2);
   const minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xe);
   const minY = Math.min.apply(null, ys) - 30, maxY = Math.max.apply(null, ye);
   const bw = Math.max(1, maxX - minX), bh = Math.max(1, maxY - minY);
