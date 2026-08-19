@@ -309,6 +309,71 @@
   /* ── REDUCED MOTION ── */
   body.reduce-motion * { animation: none !important; transition: none !important; }
 
+  /* ══ FUNDO EM CAMADAS (profundidade, glow discreto, textura) ══
+     Tudo derivado das variáveis de cada tema — nenhuma cor fixa nova. */
+  :root {
+    --bgx-a: color-mix(in oklab, var(--teal) 13%, transparent);
+    --bgx-b: color-mix(in oklab, var(--violet) 11%, transparent);
+    --bgx-c: color-mix(in oklab, var(--blue) 9%, transparent);
+    --bgx-veil: color-mix(in oklab, var(--panel) 55%, transparent);
+    --bgx-noise: 0.05;
+    --bgx-vignette: color-mix(in oklab, #000 34%, transparent);
+  }
+  body.theme-light, body.theme-sepia {
+    --bgx-a: color-mix(in oklab, var(--teal) 16%, transparent);
+    --bgx-b: color-mix(in oklab, var(--violet) 12%, transparent);
+    --bgx-c: color-mix(in oklab, var(--amber) 12%, transparent);
+    --bgx-veil: color-mix(in oklab, var(--panel) 70%, transparent);
+    --bgx-noise: 0.035;
+    --bgx-vignette: color-mix(in oklab, var(--text) 10%, transparent);
+  }
+  body.amoled:not(.theme-light) {
+    --bgx-a: color-mix(in oklab, var(--teal) 9%, transparent);
+    --bgx-b: color-mix(in oklab, var(--violet) 8%, transparent);
+    --bgx-c: color-mix(in oklab, var(--blue) 6%, transparent);
+    --bgx-veil: transparent;
+    --bgx-noise: 0.03;
+    --bgx-vignette: color-mix(in oklab, #000 60%, transparent);
+  }
+  body.high-contrast {
+    --bgx-a: transparent; --bgx-b: transparent; --bgx-c: transparent;
+    --bgx-veil: transparent; --bgx-noise: 0; --bgx-vignette: transparent;
+  }
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(120% 80% at 8% -10%, var(--bgx-a) 0%, transparent 55%),
+      radial-gradient(100% 70% at 100% 4%, var(--bgx-b) 0%, transparent 58%),
+      radial-gradient(120% 90% at 50% 118%, var(--bgx-c) 0%, transparent 60%),
+      linear-gradient(180deg, var(--bgx-veil) 0%, transparent 34%);
+    background-attachment: fixed, fixed, fixed, fixed;
+    background-repeat: no-repeat;
+  }
+  /* camada de textura/ruído fina + vinheta — puramente decorativa */
+  body::before {
+    content: ''; position: fixed; inset: -20%; z-index: 0; pointer-events: none;
+    opacity: var(--bgx-noise);
+    background-image:
+      repeating-linear-gradient(37deg, currentColor 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(-51deg, currentColor 0 1px, transparent 1px 4px);
+    mix-blend-mode: overlay;
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(115% 85% at 50% 42%, transparent 55%, var(--bgx-vignette) 100%);
+  }
+  body > * { position: relative; z-index: 1; }
+  /* superfícies com mais profundidade sobre o novo fundo */
+  .card, .tema-card, .check-group, .acc-item {
+    background-image: linear-gradient(180deg, color-mix(in oklab, var(--panel) 88%, transparent) 0%, color-mix(in oklab, var(--panel2) 92%, transparent) 100%);
+    box-shadow: 0 1px 0 color-mix(in oklab, var(--text) 6%, transparent) inset,
+                0 10px 26px -18px color-mix(in oklab, #000 70%, transparent);
+  }
+  body.high-contrast .card, body.high-contrast .tema-card,
+  body.high-contrast .check-group, body.high-contrast .acc-item {
+    background-image: none; box-shadow: none;
+  }
+
   /* ── TEXT SPACING ── */
   body.text-spacing p, body.text-spacing li, body.text-spacing .card p { line-height: 1.95; letter-spacing: 0.01em; }
 
