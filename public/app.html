@@ -8047,6 +8047,9 @@ function renderMyLibList() {
         <div>${myLibIndexLabel(b)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
+        ${myLibOcrEligible(b) ? (_myLibOcr[b.id] && _myLibOcr[b.id].running
+          ? `<button class="icon-btn" title="${myLibT('Parar leitura','Stop reading','Detener lectura')}" onclick="myLibOcrCancel('${b.id}')">⏹️</button>`
+          : `<button class="icon-btn" title="${myLibT('Ler texto das imagens (OCR)','Read text from images (OCR)','Leer texto de las imágenes (OCR)')}" onclick="myLibOcrBook('${b.id}')">🔍</button>`) : ''}
         <button class="icon-btn" title="${myLibT('Ler','Read','Leer')}" onclick="myLibReadBook('${b.id}')">📖</button>
         <button class="icon-btn" title="${myLibT('Baixar','Download','Descargar')}" onclick="myLibDownloadBook('${b.id}')">⬇️</button>
         <button class="icon-btn" title="${myLibT('Excluir','Delete','Eliminar')}" onclick="myLibDeleteBook('${b.id}')">🗑️</button>
