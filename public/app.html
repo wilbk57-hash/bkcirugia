@@ -9094,16 +9094,16 @@ function mmSelectNode(id) {
   const desc = document.createElement('div'); desc.className = 'mm-panel-desc';
   desc.textContent = n.description || t('mm.nodesc');
   const actions = document.createElement('div'); actions.className = 'mm-panel-actions';
-  const explain = document.createElement('button'); explain.className = 'mm-btn'; explain.textContent = '💬 ' + t('mm.explain');
+  const explain = document.createElement('button'); explain.className = 'mm-btn'; explain.textContent = t('mm.explain');
   explain.onclick = () => mmExplainNode(n.id);
   actions.appendChild(explain);
   if (n.hasChildren) {
     const col = document.createElement('button'); col.className = 'mm-btn';
-    col.textContent = (MM_STATE.collapsed[n.id] ? '▸ ' + t('mm.expand') : '▾ ' + t('mm.collapse'));
+    col.textContent = MM_STATE.collapsed[n.id] ? t('mm.expand') : t('mm.collapse');
     col.onclick = () => { MM_STATE.collapsed[n.id] = !MM_STATE.collapsed[n.id]; mmRender(true); mmSelectNode(n.id); };
     actions.appendChild(col);
   }
-  const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = '✕ ' + t('mm.close');
+  const close = document.createElement('button'); close.className = 'mm-btn'; close.textContent = t('mm.close');
   close.onclick = mmClosePanel;
   actions.appendChild(close);
   panel.appendChild(kind); panel.appendChild(title); panel.appendChild(desc); panel.appendChild(actions);
