@@ -148,6 +148,81 @@ export type Database = {
         }
         Relationships: []
       }
+      study_events: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          done: boolean
+          id: string
+          reminder_offset: number
+          time: string | null
+          title: string
+          topic_id: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          done?: boolean
+          id?: string
+          reminder_offset?: number
+          time?: string | null
+          title: string
+          topic_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          done?: boolean
+          id?: string
+          reminder_offset?: number
+          time?: string | null
+          title?: string
+          topic_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lesson_step_id: string | null
+          topic_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lesson_step_id?: string | null
+          topic_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lesson_step_id?: string | null
+          topic_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_progress: {
         Row: {
           attempts: number
