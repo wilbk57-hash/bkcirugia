@@ -9589,19 +9589,63 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ---- Layout radial escrito à mão ---- */
+/* Quebra o rótulo em 1-3 linhas; corta com reticências se não couber. */
+function mmWrapLabel(label, isRoot) {
+  const maxChars = isRoot ? 22 : 19, maxLines = 3;
+  const words = String(label == null ? '' : label).trim().split(/\s+/).filter(Boolean);
+  const raw = [];
+  let cur = '';
+  words.forEach(w => {
+    if (!cur) { cur = w; return; }
+    if ((cur + ' ' + w).length <= maxChars) cur += ' ' + w; else { raw.push(cur); cur = w; }
+  });
+  if (cur) raw.push(cur);
+  const lines = [];
+  raw.forEach(l => { let s = l; while (s.length > maxChars + 3) { lines.push(s.slice(0, maxChars)); s = s.slice(maxChars); } lines.push(s); });
+  if (!lines.length) return [''];
+  if (lines.length > maxLines) {
+    const keep = lines.slice(0, maxLines);
+    keep[maxLines - 1] = keep[maxLines - 1].slice(0, Math.max(1, maxChars - 1)).replace(/\s+$/, '') + '…';
+    return keep;
+  }
+  return lines;
+}
+/* Caixa dimensionada pelo texto já quebrado (largura da maior linha + altura por nº de linhas). */
+function mmMeasure(label, isRoot) {
+  const lines = mmWrapLabel(label, isRoot);
+  const charW = isRoot ? 8.6 : 6.6, lineH = isRoot ? 17 : 14;
+  const longest = lines.reduce((a, l) => Math.max(a, l.length), 0);
+  const w = Math.max(isRoot ? 120 : 76, Math.min(isRoot ? 260 : 190, longest * charW + 28));
+  const h = Math.max(isRoot ? 46 : 34, lines.length * lineH + (isRoot ? 20 : 16));
+  return { w: w, h: h, lines: lines, lineH: lineH };
+}
+/* Raio por profundidade: continua a crescer além do nível 3 em vez de saturar. */
+function mmRadius(depth) {
+  const RAD = [0, 230, 400, 545];
+  return depth <= 3 ? RAD[depth] : RAD[3] + (depth - 3) * 185;
+}
+/* Reparte `total` pelos pesos, garantindo o mínimo angular de cada caixa. */
+function mmShare(total, weights, mins) {
+  const sumW = weights.reduce((a, b) => a + b, 0) || 1;
+  let out = weights.map(w => total * w / sumW);
+  for (let it = 0; it < 5; it++) {
+    let need = 0, free = 0;
+    out.forEach((v, i) => { if (v < mins[i]) need += mins[i] - v; else free += v - mins[i]; });
+    if (need <= 0.0001 || free <= 0.0001) break;
+    const take = Math.min(need, free);
+    out = out.map((v, i) => v < mins[i] ? v + (mins[i] - v) * (take / need) : v - (v - mins[i]) * (take / free));
+  }
+  return out;
+}
 function mmBuildTree() {
   const map = MM_STATE.map;
   const children = {};
   children[map.root.id] = [];
   map.nodes.forEach(n => { (children[n.parentId] = children[n.parentId] || []).push(n); });
-  const measure = (label, isRoot) => {
-    const len = String(label).length;
-    const w = Math.max(isRoot ? 120 : 76, Math.min(isRoot ? 260 : 186, len * (isRoot ? 9 : 6.6) + 30));
-    return { w: w, h: isRoot ? 46 : 34 };
-  };
+  const measure = mmMeasure;
   const positions = [];
   const rootBox = measure(map.root.label, true);
-  const rootNode = { id: map.root.id, label: map.root.label, isRoot: true, x: 0, y: 0, w: rootBox.w, h: rootBox.h, type: 'concept', importance: 'high', description: map.summary || '', depth: 0, hasChildren: (children[map.root.id] || []).length > 0, collapsed: false };
+  const rootNode = { id: map.root.id, label: map.root.label, isRoot: true, x: 0, y: 0, w: rootBox.w, h: rootBox.h, lines: rootBox.lines, lineH: rootBox.lineH, type: 'concept', importance: 'high', description: map.summary || '', depth: 0, hasChildren: (children[map.root.id] || []).length > 0, collapsed: false };
   positions.push(rootNode);
   const leafCount = (id) => {
     if (MM_STATE.collapsed[id]) return 1;
@@ -9613,21 +9657,24 @@ function mmBuildTree() {
     const kids = children[id] || [];
     return kids.reduce((a, k) => a + 1 + descCount(k.id), 0);
   };
-  const RAD = [0, 230, 400, 545];
   const place = (parentId, a0, a1, depth) => {
     if (MM_STATE.collapsed[parentId]) return;
     const kids = children[parentId] || [];
     if (!kids.length) return;
-    const total = kids.reduce((a, k) => a + leafCount(k.id), 0) || 1;
     let cur = a0;
     const parentPos = positions.find(p => p.id === parentId);
     const preserving = Object.keys(MM_STATE.frozen).length > 0;
     let freshIdx = 0;
-    kids.forEach(k => {
-      const span = (a1 - a0) * (leafCount(k.id) / total);
+    const r = mmRadius(Math.min(depth, 12));
+    const boxes = kids.map(k => measure(k.label, false));
+    /* O espaçamento angular tem de acomodar a largura real da caixa a este
+       raio, não só o número de folhas — senão ramos desequilibrados colidem. */
+    const mins = boxes.map(b => Math.min((a1 - a0) / kids.length * 1.6, (Math.max(b.w, b.h * 1.4) + 34) / Math.max(r, 1)));
+    const spans = mmShare(a1 - a0, kids.map(k => leafCount(k.id)), mins);
+    kids.forEach((k, ki) => {
+      const span = spans[ki];
       const ang = cur + span / 2;
-      const r = RAD[Math.min(depth, 3)];
-      const box = measure(k.label, false);
+      const box = boxes[ki];
       const frozen = MM_STATE.frozen[k.id];
       /* Num mapa atualizado, os nós novos nascem junto do seu pai para não
          deslocar o que já estava plotado. */
@@ -9644,7 +9691,8 @@ function mmBuildTree() {
         id: k.id, label: k.label, parentId: parentId, isRoot: false,
         x: frozen ? frozen.x : nx,
         y: frozen ? frozen.y : ny,
-        w: box.w, h: box.h, type: k.type, importance: k.importance, description: k.description,
+        w: box.w, h: box.h, lines: box.lines, lineH: box.lineH,
+        type: k.type, importance: k.importance, description: k.description,
         depth: depth, hasChildren: (children[k.id] || []).length > 0, collapsed: !!MM_STATE.collapsed[k.id],
         hidden: MM_STATE.collapsed[k.id] ? descCount(k.id) : 0,
       });
@@ -9656,6 +9704,64 @@ function mmBuildTree() {
   MM_STATE.nodes = positions;
   return positions;
 }
+
+/* ---- Layout alternativo: árvore hierárquica (LR no desktop, TB no telemóvel) ----
+   Reaproveita exatamente os mesmos dados e interações; só muda (x, y). */
+function mmTreeVertical() { return window.innerWidth < 720; }
+function mmBuildTreeH() {
+  const map = MM_STATE.map;
+  const vertical = mmTreeVertical();
+  const children = {};
+  children[map.root.id] = [];
+  map.nodes.forEach(n => { (children[n.parentId] = children[n.parentId] || []).push(n); });
+  const descCount = (id) => (children[id] || []).reduce((a, k) => a + 1 + descCount(k.id), 0);
+  const colMax = {};
+  const recs = [];
+  const visit = (node, depth, parentId, isRoot) => {
+    const box = mmMeasure(node.label, isRoot);
+    const cross = vertical ? box.h : box.w;
+    colMax[depth] = Math.max(colMax[depth] || 0, cross);
+    const rec = {
+      id: node.id, label: node.label, parentId: parentId, isRoot: isRoot,
+      w: box.w, h: box.h, lines: box.lines, lineH: box.lineH,
+      type: isRoot ? 'concept' : node.type, importance: isRoot ? 'high' : node.importance,
+      description: isRoot ? (map.summary || '') : node.description,
+      depth: depth, hasChildren: (children[node.id] || []).length > 0,
+      collapsed: !!MM_STATE.collapsed[node.id],
+      hidden: MM_STATE.collapsed[node.id] ? descCount(node.id) : 0,
+      x: 0, y: 0, kids: [],
+    };
+    recs.push(rec);
+    if (!MM_STATE.collapsed[node.id]) (children[node.id] || []).forEach(k => rec.kids.push(visit(k, depth + 1, node.id, false)));
+    return rec;
+  };
+  const root = visit(map.root, 0, null, true);
+  const gapCross = vertical ? 74 : 70, gapAlong = vertical ? 26 : 18;
+  const colPos = {}; let acc = 0;
+  Object.keys(colMax).map(Number).sort((a, b) => a - b).forEach(d => {
+    colPos[d] = acc + colMax[d] / 2; acc += colMax[d] + gapCross;
+  });
+  let cursor = 0;
+  const layout = (rec) => {
+    if (rec.kids.length) {
+      rec.kids.forEach(layout);
+      rec.along = (rec.kids[0].along + rec.kids[rec.kids.length - 1].along) / 2;
+    } else {
+      const size = vertical ? rec.w : rec.h;
+      rec.along = cursor + size / 2; cursor += size + gapAlong;
+    }
+    rec.cross = colPos[rec.depth];
+  };
+  layout(root);
+  recs.forEach(rec => {
+    rec.x = vertical ? rec.along : rec.cross;
+    rec.y = vertical ? rec.cross : rec.along;
+    delete rec.kids; delete rec.along; delete rec.cross;
+  });
+  MM_STATE.nodes = recs;
+  return recs;
+}
+function mmLayoutNodes() { return MM_LAYOUT === 'tree' ? mmBuildTreeH() : mmBuildTree(); }
 
 function mmSvgEl(name, attrs) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', name);
