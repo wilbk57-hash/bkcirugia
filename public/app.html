@@ -1271,8 +1271,9 @@
   }
   .mm-btn:hover { border-color: var(--teal); color: var(--teal); }
   .mm-btn.icon { padding: 6px 9px; font-size: 13px; }
-  .mm-stage { position: relative; flex: 1 1 auto; overflow: hidden; touch-action: none; }
-  .mm-stage svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  .mm-stage { position: relative; flex: 1 1 auto; overflow: hidden; touch-action: none; overscroll-behavior: contain; }
+  .mm-stage svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  .mm-stage svg * { touch-action: none; }
   .mm-stage svg.dragging { cursor: grabbing; }
   .mm-summary {
     position: absolute; left: 12px; top: 12px; max-width: min(340px, 60%);
@@ -5582,6 +5583,15 @@ const STR_TABLE = [
  ['mm.expand','Expandir ramo','Expand branch','Expandir rama'],
  ['mm.truncated','Mapa resumido aos conceitos mais importantes.','Map trimmed to the most important concepts.','Mapa resumido a los conceptos más importantes.'],
  ['mm.nodesc','Sem descrição adicional.','No extra description.','Sin descripción adicional.'],
+ ['mm.node.ctx','No mapa','In the map','En el mapa'],
+ ['mm.node.parent','Vem de: {a}','Comes from: {a}','Viene de: {a}'],
+ ['mm.node.children','Desdobra-se em {n} subtópico(s).','Breaks down into {n} subtopic(s).','Se desglosa en {n} subtema(s).'],
+ ['mm.node.rels','Relações com outros conceitos','Links to other concepts','Relaciones con otros conceptos'],
+ ['mm.node.imp','Importância: {v}','Importance: {v}','Importancia: {v}'],
+ ['mm.imp.high','alta','high','alta'],
+ ['mm.imp.medium','média','medium','media'],
+ ['mm.imp.low','baixa','low','baja'],
+ ['mm.rel.between','Entre os conceitos','Between the concepts','Entre los conceptos'],
  ['mm.tree.aria','Estrutura do mapa mental em lista','Mind map structure as a list','Estructura del mapa mental en lista'],
  ['mm.type.concept','Conceito','Concept','Concepto'],
  ['mm.type.definition','Definição','Definition','Definición'],
@@ -9140,9 +9150,10 @@ function mmSystemPrompt() {
   return 'Devolve APENAS um objeto JSON válido (sem texto antes ou depois, sem cercas de código) que represente um mapa mental do conteúdo pedido, em ' + mmLangName() + '.\n'
     + 'Formato exato:\n'
     + '{"type":"mind_map","version":1,"title":"","summary":"","root":{"id":"root","label":""},'
-    + '"nodes":[{"id":"","parentId":"","label":"máx 40 caracteres","type":"concept|definition|warning|clinical|example|decision|evidence","importance":"high|medium|low","description":"opcional, 1-2 frases"}],'
-    + '"relations":[{"from":"","to":"","type":"causes|leads_to|associated_with|compares_to|precedes|risk_of|prevents|diagnoses|treats|complication_of","label":"opcional"}]}\n'
+    + '"nodes":[{"id":"","parentId":"","label":"máx 40 caracteres","type":"concept|definition|warning|clinical|example|decision|evidence","importance":"high|medium|low","description":"OBRIGATÓRIO: 2 a 4 frases (máx ~600 caracteres) com explicação pedagógica e clinicamente útil — o que é, porque importa, e um detalhe prático/critério/valor relevante"}],'
+    + '"relations":[{"from":"","to":"","type":"causes|leads_to|associated_with|compares_to|precedes|risk_of|prevents|diagnoses|treats|complication_of","label":"curto, opcional","explanation":"OBRIGATÓRIO: 1 a 2 frases (máx ~300 caracteres) explicando porque os dois conceitos se relacionam assim, com o mecanismo ou implicação clínica"}]}\n'
     + 'Regras: máximo 7 ramos ligados à raiz; máximo 3 níveis de profundidade; máximo 40 nós no total. '
+    + 'Nunca deixes description ou explanation vazios; escreve conteúdo real, sem repetir apenas o label. '
     + 'Se o conteúdo for maior, resume pelos conceitos mais importantes em vez de forçar tudo. '
     + 'Os ids dos nós devem ser curtos e únicos (n1, n2, ...) e parentId deve ser "root" ou o id de outro nó.';
 }
@@ -9181,7 +9192,7 @@ function mmNormalize(obj, mapId) {
       label: String(n.label).trim().slice(0, 40),
       type: MM_TYPES.indexOf(n.type) !== -1 ? n.type : 'concept',
       importance: ['high','medium','low'].indexOf(n.importance) !== -1 ? n.importance : 'medium',
-      description: n.description ? String(n.description).slice(0, 400) : '',
+      description: n.description ? String(n.description).slice(0, 700) : '',
     };
   });
   const byId = {}; nodes.forEach(n => { byId[n.id] = n; });
@@ -9201,7 +9212,12 @@ function mmNormalize(obj, mapId) {
     keptSet[n.id] = true; kept.push(n);
   });
   const relations = (Array.isArray(obj.relations) ? obj.relations : [])
-    .map(r => ({ from: byOld[String(r && r.from)], to: byOld[String(r && r.to)], type: String((r && r.type) || ''), label: r && r.label ? String(r.label).slice(0, 30) : '' }))
+    .map(r => ({
+      from: byOld[String(r && r.from)], to: byOld[String(r && r.to)],
+      type: String((r && r.type) || ''),
+      label: r && r.label ? String(r.label).slice(0, 30) : '',
+      explanation: r && (r.explanation || r.description) ? String(r.explanation || r.description).slice(0, 400) : '',
+    }))
     .filter(r => r.from && r.to && keptSet[r.from] && keptSet[r.to] && r.from !== r.to)
     .slice(0, 20);
   if (!kept.length) return null;
@@ -9980,36 +9996,74 @@ function mmZoomBy(k, cx, cy) {
 }
 let mmDragMoved = false;
 function mmAttachStageEvents(svg) {
-  let dragging = false, lastX = 0, lastY = 0;
-  let captured = null;
+  /* Arrasto e pinça geridos pelo próprio mapa (rato, caneta e toque real).
+     Guardamos todos os ponteiros ativos: 1 dedo = pan, 2 dedos = pinça+pan.
+     O toque é sempre capturado no pointerdown (com toque o clique só chega
+     no fim, por isso a captura não rouba cliques a nós) e preventDefault
+     impede o browser de transformar o gesto em scroll/zoom da página. */
+  const pts = new Map();
+  let pinchDist = 0;
+  const centroid = () => {
+    let x = 0, y = 0; pts.forEach(p => { x += p.x; y += p.y; });
+    const n = pts.size || 1; return { x: x / n, y: y / n };
+  };
+  const dist = () => {
+    if (pts.size < 2) return 0;
+    const a = Array.from(pts.values());
+    return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+  };
+  let last = null;
   svg.addEventListener('pointerdown', (e) => {
-    dragging = true; mmDragMoved = false; lastX = e.clientX; lastY = e.clientY;
-    svg.classList.add('dragging');
-  });
-  svg.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - lastX, dy = e.clientY - lastY;
-    if (Math.abs(dx) + Math.abs(dy) > 3) {
-      mmDragMoved = true;
-      /* Só captura o ponteiro quando o gesto é mesmo um arrasto — capturar
-         desde o pointerdown faria o clique seguinte ir parar ao <svg> em vez
-         do nó tocado. */
-      if (captured === null) { try { svg.setPointerCapture(e.pointerId); captured = e.pointerId; } catch (err) {} }
+    if (e.pointerType !== 'mouse' || e.button === 0) {
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 1) mmDragMoved = false;
+      last = centroid(); pinchDist = dist();
+      svg.classList.add('dragging');
+      if (e.pointerType === 'touch') {
+        try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        e.preventDefault();
+      }
     }
-    lastX = e.clientX; lastY = e.clientY;
-    MM_STATE.tx += dx; MM_STATE.ty += dy;
-    mmApplyTransform();
-  });
+  }, { passive: false });
+  svg.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    e.preventDefault();
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const c = centroid();
+    if (last) {
+      const dx = c.x - last.x, dy = c.y - last.y;
+      if (Math.abs(dx) + Math.abs(dy) > 2) mmDragMoved = true;
+      if (dx || dy) { MM_STATE.tx += dx; MM_STATE.ty += dy; mmApplyTransform(); }
+    }
+    last = c;
+    if (pts.size >= 2) {
+      const d = dist();
+      if (pinchDist > 0 && d > 0 && Math.abs(d - pinchDist) > 1) {
+        const rect = svg.getBoundingClientRect();
+        mmZoomBy(d / pinchDist, c.x - rect.left, c.y - rect.top);
+        mmDragMoved = true;
+      }
+      pinchDist = d;
+    }
+  }, { passive: false });
   /* mmDragMoved é reposto no próximo pointerdown: em ecrãs táteis o clique
      chega depois do pointerup e um reset imediato aqui deixaria passar
      cliques falsos no fim de um arrasto. */
-  const end = () => {
-    dragging = false; svg.classList.remove('dragging');
-    if (captured !== null) { try { svg.releasePointerCapture(captured); } catch (err) {} captured = null; }
+  const end = (e) => {
+    if (e && pts.has(e.pointerId)) {
+      pts.delete(e.pointerId);
+      try { svg.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
+    last = pts.size ? centroid() : null;
+    pinchDist = dist();
+    if (!pts.size) svg.classList.remove('dragging');
   };
   svg.addEventListener('pointerup', end);
   svg.addEventListener('pointercancel', end);
-  svg.addEventListener('pointerleave', end);
+  svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') end(e); });
+  /* Rede de segurança: alguns browsers móveis ainda emitem touchmove; sem
+     preventDefault a página tenta fazer scroll e cancela os pointerevents. */
+  svg.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();
     const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
@@ -10048,10 +10102,21 @@ function mmSelectRelation(r) {
   if (!MM_STATE.map) return;
   MM_STATE.selected = null;
   MM_STATE.selectedRel = mmRelKey(r);
-  const body = r.label
-    ? r.label
-    : mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() });
-  mmPanelShow(t('mm.rel.kind'), mmRelTitle(r), body, [
+  const lines = [];
+  lines.push(mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() }));
+  if (r.explanation) lines.push(r.explanation);
+  else if (r.label) lines.push(r.label);
+  const map = MM_STATE.map;
+  const descOf = (id) => {
+    if (!map) return '';
+    const n = map.nodes.find(x => x.id === id);
+    return n && n.description ? n.description : '';
+  };
+  const ctx = [[r.from, descOf(r.from)], [r.to, descOf(r.to)]]
+    .filter(p => p[1])
+    .map(p => '• ' + mmRelNodeLabel(p[0]) + ': ' + p[1]);
+  if (ctx.length) lines.push(t('mm.rel.between') + '\n' + ctx.join('\n'));
+  mmPanelShow(t('mm.rel.kind'), mmRelTitle(r), lines.join('\n\n'), [
     { label: t('mm.explain'), onClick: () => mmExplainRelation(r) },
   ]);
   mmRender(true);
@@ -10081,6 +10146,28 @@ function mmSelectNode(id) {
   const title = document.createElement('div'); title.className = 'mm-panel-title'; title.textContent = n.label;
   const desc = document.createElement('div'); desc.className = 'mm-panel-desc';
   desc.textContent = n.description || t('mm.nodesc');
+  /* Contexto extra: onde o nó se encaixa e que relações tem no mapa. */
+  const extra = document.createElement('div'); extra.className = 'mm-panel-body';
+  const bits = [];
+  const map = MM_STATE.map;
+  if (!n.isRoot) {
+    bits.push(mmFmt('mm.node.imp', { v: t('mm.imp.' + (n.importance || 'medium')) }));
+    const parentLabel = n.parentId && map ? mmRelNodeLabel(n.parentId) : '';
+    if (parentLabel) bits.push(mmFmt('mm.node.parent', { a: parentLabel }));
+  }
+  if (map) {
+    const kids = map.nodes.filter(x => x.parentId === n.id).length;
+    if (kids) bits.push(mmFmt('mm.node.children', { n: kids }));
+    const rels = (map.relations || []).filter(r => r.from === n.id || r.to === n.id);
+    if (rels.length) {
+      bits.push(t('mm.node.rels') + '\n' + rels.slice(0, 6).map(r => {
+        const other = r.from === n.id ? r.to : r.from;
+        const line = '• ' + mmRelTypeLabel(r.type) + ' → ' + mmRelNodeLabel(other);
+        return r.explanation ? line + ' — ' + r.explanation : line;
+      }).join('\n'));
+    }
+  }
+  extra.textContent = bits.join('\n\n');
   const actions = document.createElement('div'); actions.className = 'mm-panel-actions';
   const explain = document.createElement('button'); explain.className = 'mm-btn'; explain.textContent = t('mm.explain');
   explain.onclick = () => mmExplainNode(n.id);
@@ -10099,7 +10186,9 @@ function mmSelectNode(id) {
     doubt.onclick = () => { mmRecordDoubt(n.id); doubt.textContent = t('mm.doubt.done'); doubt.disabled = true; };
     actions.insertBefore(doubt, close);
   }
-  panel.appendChild(kind); panel.appendChild(title); panel.appendChild(desc); panel.appendChild(actions);
+  panel.appendChild(kind); panel.appendChild(title); panel.appendChild(desc);
+  if (bits.length) panel.appendChild(extra);
+  panel.appendChild(actions);
   panel.classList.add('show');
   mmRender(true);
 }
