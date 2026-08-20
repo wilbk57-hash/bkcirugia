@@ -9677,7 +9677,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   }
 });
 
-refreshAuthCache().then(() => { initApp(); spLoad(); });
+refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); });
 </script>
 <script>
 if ('serviceWorker' in navigator) {
