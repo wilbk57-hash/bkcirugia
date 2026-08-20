@@ -9023,6 +9023,222 @@ function initApp() {
   }
 }
 
+/* ============================================================
+   DESEMPENHO REAL — study_progress (fonte de verdade no servidor)
+   O localStorage (PROGRESS) permanece como cache/fallback offline.
+   ============================================================ */
+let SP_CACHE = [];
+const SP_WEAK = 0.7;              /* abaixo de 70% considera-se fraco */
+const SP_STALE_MS = 2 * 24 * 60 * 60 * 1000; /* "não revisto recentemente" */
+
+function spPct(r) { const tot = Number(r.total) || 0; return tot ? Number(r.score) / tot : 0; }
+function spTopicTitle(id) { const tp = (typeof TOPICS !== 'undefined') && TOPICS[id]; return tp ? tp.title : id; }
+function spFirstTab(id) {
+  const tp = (typeof TOPICS !== 'undefined') && TOPICS[id];
+  return tp && tp.tabs && tp.tabs.length ? tp.tabs[0].id : 'conceito';
+}
+/* Fallback offline: reconstrói as linhas a partir do progresso local. */
+function spFromLocal() {
+  const out = [];
+  Object.keys(PROGRESS.topics || {}).forEach(id => {
+    const q = PROGRESS.topics[id] && PROGRESS.topics[id].quiz;
+    if (!q) return;
+    out.push({ topic_id: id, score: q.bestScore, total: q.total, attempts: q.attempts || 1, last_attempt_at: new Date(q.lastDate || Date.now()).toISOString(), _local: true });
+  });
+  return out;
+}
+async function spLoad() {
+  try {
+    if (!getCurrentUser()) { SP_CACHE = []; spUpdateBadge(); return; }
+    const { data, error } = await supabaseClient.from('study_progress').select('*');
+    if (error) throw error;
+    SP_CACHE = data || [];
+  } catch (e) {
+    console.warn('[study_progress] load falhou, usando cache local', e);
+    SP_CACHE = spFromLocal();
+  }
+  spUpdateBadge();
+  if (document.getElementById('planList')) renderPlan();
+}
+async function spRecordQuiz(topicId, score, total) {
+  const user = getCurrentUser();
+  if (!user) return;
+  const existing = SP_CACHE.find(r => r.topic_id === topicId);
+  const row = {
+    user_id: user.id, topic_id: topicId, score, total,
+    attempts: (existing && existing.attempts ? existing.attempts : 0) + 1,
+    last_attempt_at: new Date().toISOString(),
+  };
+  try {
+    const { data, error } = await supabaseClient
+      .from('study_progress').upsert(row, { onConflict: 'user_id,topic_id' }).select().single();
+    if (error) throw error;
+    SP_CACHE = SP_CACHE.filter(r => r.topic_id !== topicId).concat([data]);
+  } catch (e) {
+    console.warn('[study_progress] gravação falhou', e);
+    SP_CACHE = SP_CACHE.filter(r => r.topic_id !== topicId).concat([row]);
+  }
+  spUpdateBadge();
+  if (document.getElementById('planList')) renderPlan();
+  if (document.getElementById('notifPanel')) spRenderNotifications();
+}
+/* Temas fracos (acerto < 70%), do pior para o melhor, com marca de "por rever". */
+function spWeakItems() {
+  const now = Date.now();
+  return SP_CACHE
+    .filter(r => Number(r.total) > 0 && spPct(r) < SP_WEAK)
+    .map(r => ({
+      topicId: r.topic_id,
+      title: spTopicTitle(r.topic_id),
+      pct: Math.round(spPct(r) * 100),
+      score: Number(r.score), total: Number(r.total),
+      stale: (now - new Date(r.last_attempt_at).getTime()) > SP_STALE_MS,
+      lastAt: new Date(r.last_attempt_at).getTime(),
+    }))
+    .sort((a, b) => a.pct - b.pct);
+}
+function spPendingItems() { return spWeakItems().filter(i => i.stale); }
+
+function spUpdateBadge() {
+  const badge = document.getElementById('notifBadge');
+  if (!badge) return;
+  const n = spPendingItems().length;
+  badge.textContent = n > 9 ? '9+' : String(n);
+  badge.style.display = n ? 'block' : 'none';
+}
+
+/* ---- Sino de notificações ---- */
+function spToggleNotifications(ev) {
+  if (ev) ev.stopPropagation();
+  const open = document.getElementById('notifPanel');
+  if (open) { open.remove(); return; }
+  const el = document.createElement('div');
+  el.id = 'notifPanel';
+  el.style.cssText = 'position:fixed;z-index:9000;top:64px;right:14px;width:min(340px,calc(100vw - 28px));max-height:60vh;overflow:auto;background:var(--bg2,#0b1220);border:1px solid var(--border);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.45);padding:12px;';
+  document.body.appendChild(el);
+  spRenderNotifications();
+  setTimeout(() => {
+    document.addEventListener('click', function onDoc(e) {
+      const p = document.getElementById('notifPanel');
+      if (!p) { document.removeEventListener('click', onDoc); return; }
+      if (!p.contains(e.target)) { p.remove(); document.removeEventListener('click', onDoc); }
+    });
+  }, 0);
+  spLoad();
+}
+function spRenderNotifications() {
+  const el = document.getElementById('notifPanel');
+  if (!el) return;
+  const pending = spPendingItems();
+  const others = spWeakItems().filter(i => !i.stale);
+  const row = (i, muted) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border);">
+      <span style="font-size:16px;">${muted ? '🕓' : '⚠️'}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${i.title}</div>
+        <div style="font-size:11.5px;color:var(--text3);">${muted ? t('sp.notif.recent') : t('sp.notif.weak')} · ${i.score}/${i.total} (${i.pct}%)</div>
+      </div>
+      <button class="plan-go" onclick="document.getElementById('notifPanel')&&document.getElementById('notifPanel').remove();openTopic('${i.topicId}','quiz')">${t('sp.notif.review')}</button>
+    </div>`;
+  const body = pending.map(i => row(i, false)).join('') + others.map(i => row(i, true)).join('');
+  el.innerHTML = `
+    <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:6px;">${t('sp.notif.title')}</div>
+    ${body || `<div style="font-size:12.5px;color:var(--text3);padding:10px 4px;">${t('sp.notif.empty')}</div>`}`;
+}
+
+/* ---- Plano inteligente do dia (2–4 sugestões reais) ---- */
+function spDailyPlan() {
+  const out = spWeakItems().slice(0, 4).map(i => ({
+    topicId: i.topicId, tabId: 'quiz', title: i.title,
+    note: `${t('sp.plan.weak')} ${i.pct}%`,
+  }));
+  if (out.length < 4 && typeof TOPICS !== 'undefined') {
+    const done = new Set(SP_CACHE.map(r => r.topic_id));
+    Object.keys(TOPICS).forEach(id => {
+      if (out.length >= 4 || done.has(id)) return;
+      out.push({ topicId: id, tabId: spFirstTab(id), title: spTopicTitle(id), note: t('sp.plan.new') });
+    });
+  }
+  return out.slice(0, 4);
+}
+
+/* ---- ADMIN: relatórios com dados reais ---- */
+function spCloseReports() { const el = document.getElementById('spReportsOverlay'); if (el) el.remove(); }
+async function spOpenReports() {
+  spCloseReports();
+  const el = document.createElement('div');
+  el.id = 'spReportsOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:var(--bg);overflow:auto;padding:18px;';
+  el.innerHTML = `<div style="max-width:820px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <button class="icon-btn" onclick="spCloseReports()" aria-label="Fechar">✕</button>
+        <h2 style="font-size:18px;margin:0;color:var(--text);">📊 ${t('sp.rep.title')}</h2>
+      </div>
+      <div id="spReportsBody" style="color:var(--text3);font-size:13px;">${t('sp.rep.loading')}</div>
+    </div>`;
+  document.body.appendChild(el);
+  try {
+    const [{ data: rows, error: e1 }, { data: profiles, error: e2 }] = await Promise.all([
+      supabaseClient.from('study_progress').select('*'),
+      supabaseClient.from('profiles').select('id,name,email'),
+    ]);
+    if (e1) throw e1;
+    if (e2) throw e2;
+    spRenderReports(rows || [], profiles || []);
+  } catch (e) {
+    const b = document.getElementById('spReportsBody');
+    if (b) b.textContent = (e && e.message) ? e.message : String(e);
+  }
+}
+function spRenderReports(rows, profiles) {
+  const body = document.getElementById('spReportsBody');
+  if (!body) return;
+  const nameOf = id => { const p = profiles.find(x => x.id === id); return p ? (p.name || p.email) : id.slice(0, 8); };
+  const byTopic = {};
+  rows.forEach(r => {
+    const k = r.topic_id;
+    if (!byTopic[k]) byTopic[k] = { pcts: [], students: new Set(), attempts: 0, worst: [] };
+    const pct = spPct(r) * 100;
+    byTopic[k].pcts.push(pct);
+    byTopic[k].students.add(r.user_id);
+    byTopic[k].attempts += Number(r.attempts) || 0;
+    byTopic[k].worst.push({ user_id: r.user_id, pct: Math.round(pct) });
+  });
+  const all = rows.map(r => spPct(r) * 100);
+  const avgAll = all.length ? Math.round(all.reduce((a, b) => a + b, 0) / all.length) : 0;
+  const topicKeys = Object.keys(byTopic).sort((a, b) => {
+    const av = byTopic[a].pcts.reduce((x, y) => x + y, 0) / byTopic[a].pcts.length;
+    const bv = byTopic[b].pcts.reduce((x, y) => x + y, 0) / byTopic[b].pcts.length;
+    return av - bv;
+  });
+  const cards = `
+    <div class="adm-stat-grid">
+      <div class="adm-stat-card"><div class="n">${profiles.length}</div><div class="l">${t('sp.rep.students')}</div></div>
+      <div class="adm-stat-card"><div class="n">${rows.length}</div><div class="l">${t('sp.rep.records')}</div></div>
+      <div class="adm-stat-card"><div class="n">${avgAll}%</div><div class="l">${t('sp.rep.avg')}</div></div>
+    </div>`;
+  if (!rows.length) { body.innerHTML = cards + `<div style="padding:16px 4px;">${t('sp.rep.empty')}</div>`; return; }
+  const tableTopics = `
+    <div class="sec-heading" style="margin-top:18px;"><h2>${t('sp.rep.bytopic')}</h2></div>
+    <div class="stat-table-card"><table class="adm-table">
+      <thead><tr><th>${t('sp.rep.topic')}</th><th>${t('sp.rep.avg')}</th><th>${t('sp.rep.students2')}</th><th>${t('sp.rep.attempts')}</th></tr></thead>
+      <tbody>${topicKeys.map(k => {
+        const d = byTopic[k];
+        const avg = Math.round(d.pcts.reduce((a, b) => a + b, 0) / d.pcts.length);
+        return `<tr><td class="name">${spTopicTitle(k)}</td><td>${avg}%</td><td>${d.students.size}</td><td>${d.attempts}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  const difficulty = `
+    <div class="sec-heading" style="margin-top:18px;"><h2>${t('sp.rep.difficulty')}</h2></div>
+    <div class="stat-table-card"><table class="adm-table">
+      <thead><tr><th>${t('sp.rep.topic')}</th><th>${t('sp.rep.student')}</th><th>%</th></tr></thead>
+      <tbody>${topicKeys.map(k => byTopic[k].worst.sort((a, b) => a.pct - b.pct).slice(0, 3)
+        .map(w => `<tr><td class="name">${spTopicTitle(k)}</td><td>${nameOf(w.user_id)}</td><td>${w.pct}%</td></tr>`).join('')).join('')}
+      </tbody>
+    </table></div>`;
+  body.innerHTML = cards + tableTopics + difficulty;
+}
+
 /* ---- BOOT ----
    Espera pela sessão real do Supabase (assíncrono) antes de correr
    initApp() — para o "AUTH GATE" acima já encontrar _authCache
@@ -9038,7 +9254,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   }
 });
 
-refreshAuthCache().then(initApp);
+refreshAuthCache().then(() => { initApp(); spLoad(); });
 </script>
 <script>
 if ('serviceWorker' in navigator) {
