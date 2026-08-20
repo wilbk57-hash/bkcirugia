@@ -9981,36 +9981,73 @@ function mmZoomBy(k, cx, cy) {
 }
 let mmDragMoved = false;
 function mmAttachStageEvents(svg) {
-  let dragging = false, lastX = 0, lastY = 0;
-  let captured = null;
+  /* Arrasto e pinça geridos pelo próprio mapa (rato, caneta e toque real).
+     Guardamos todos os ponteiros ativos: 1 dedo = pan, 2 dedos = pinça+pan.
+     O toque é sempre capturado no pointerdown (com toque o clique só chega
+     no fim, por isso a captura não rouba cliques a nós) e preventDefault
+     impede o browser de transformar o gesto em scroll/zoom da página. */
+  const pts = new Map();
+  let pinchDist = 0;
+  const centroid = () => {
+    let x = 0, y = 0; pts.forEach(p => { x += p.x; y += p.y; });
+    const n = pts.size || 1; return { x: x / n, y: y / n };
+  };
+  const dist = () => {
+    if (pts.size < 2) return 0;
+    const a = Array.from(pts.values());
+    return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+  };
+  let last = null;
   svg.addEventListener('pointerdown', (e) => {
-    dragging = true; mmDragMoved = false; lastX = e.clientX; lastY = e.clientY;
-    svg.classList.add('dragging');
-  });
-  svg.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - lastX, dy = e.clientY - lastY;
-    if (Math.abs(dx) + Math.abs(dy) > 3) {
-      mmDragMoved = true;
-      /* Só captura o ponteiro quando o gesto é mesmo um arrasto — capturar
-         desde o pointerdown faria o clique seguinte ir parar ao <svg> em vez
-         do nó tocado. */
-      if (captured === null) { try { svg.setPointerCapture(e.pointerId); captured = e.pointerId; } catch (err) {} }
+    if (e.pointerType !== 'mouse' || e.button === 0) {
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 1) mmDragMoved = false;
+      last = centroid(); pinchDist = dist();
+      svg.classList.add('dragging');
+      if (e.pointerType === 'touch') {
+        try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        e.preventDefault();
+      }
     }
-    lastX = e.clientX; lastY = e.clientY;
-    MM_STATE.tx += dx; MM_STATE.ty += dy;
-    mmApplyTransform();
-  });
+  }, { passive: false });
+  svg.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    e.preventDefault();
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const c = centroid();
+    if (last) {
+      const dx = c.x - last.x, dy = c.y - last.y;
+      if (Math.abs(dx) + Math.abs(dy) > 2) mmDragMoved = true;
+      if (dx || dy) { MM_STATE.tx += dx; MM_STATE.ty += dy; mmApplyTransform(); }
+    }
+    last = c;
+    if (pts.size >= 2) {
+      const d = dist();
+      if (pinchDist > 0 && d > 0 && Math.abs(d - pinchDist) > 1) {
+        const rect = svg.getBoundingClientRect();
+        mmZoomBy(d / pinchDist, c.x - rect.left, c.y - rect.top);
+        mmDragMoved = true;
+      }
+      pinchDist = d;
+    }
+  }, { passive: false });
   /* mmDragMoved é reposto no próximo pointerdown: em ecrãs táteis o clique
      chega depois do pointerup e um reset imediato aqui deixaria passar
      cliques falsos no fim de um arrasto. */
-  const end = () => {
-    dragging = false; svg.classList.remove('dragging');
-    if (captured !== null) { try { svg.releasePointerCapture(captured); } catch (err) {} captured = null; }
+  const end = (e) => {
+    if (e && pts.has(e.pointerId)) {
+      pts.delete(e.pointerId);
+      try { svg.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
+    last = pts.size ? centroid() : null;
+    pinchDist = dist();
+    if (!pts.size) svg.classList.remove('dragging');
   };
   svg.addEventListener('pointerup', end);
   svg.addEventListener('pointercancel', end);
-  svg.addEventListener('pointerleave', end);
+  /* Rede de segurança: alguns browsers móveis ainda emitem touchmove; sem
+     preventDefault a página tenta fazer scroll e cancela os pointerevents. */
+  svg.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();
     const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
