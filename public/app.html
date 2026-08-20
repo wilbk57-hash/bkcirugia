@@ -9980,12 +9980,57 @@ function mmAttachStageEvents(svg) {
 /* ---- Painel do nó (lateral no desktop, bottom sheet no telemóvel) ---- */
 function mmClosePanel() {
   MM_STATE.selected = null;
+  MM_STATE.selectedRel = null;
   document.getElementById('mmPanel').classList.remove('show');
   document.querySelectorAll('#mmSvg .mm-node.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('#mmSvg .mm-rel.mm-rel-on').forEach(el => el.classList.remove('mm-rel-on'));
+}
+
+/* ---- Painel de relação (mesma casa do painel de nó) ---- */
+function mmRelKey(r) { return r.from + '>' + r.type + '>' + r.to; }
+function mmRelNodeLabel(id) {
+  const map = MM_STATE.map; if (!map) return id;
+  if (id === map.root.id) return map.root.label;
+  const n = map.nodes.find(x => x.id === id);
+  return n ? n.label : id;
+}
+function mmRelTypeLabel(type) {
+  const key = 'mm.rel.' + String(type || '');
+  const lbl = t(key);
+  return (!lbl || lbl === key) ? String(type || '') : lbl;
+}
+function mmRelTitle(r) {
+  return mmRelNodeLabel(r.from) + ' → ' + mmRelTypeLabel(r.type) + ' → ' + mmRelNodeLabel(r.to);
+}
+function mmSelectRelation(r) {
+  if (!MM_STATE.map) return;
+  MM_STATE.selected = null;
+  MM_STATE.selectedRel = mmRelKey(r);
+  const body = r.label
+    ? r.label
+    : mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() });
+  mmPanelShow(t('mm.rel.kind'), mmRelTitle(r), body, [
+    { label: t('mm.explain'), onClick: () => mmExplainRelation(r) },
+  ]);
+  mmRender(true);
+}
+function mmExplainRelation(r) {
+  const title = (MM_STATE.map && MM_STATE.map.title) || '';
+  const a = mmRelNodeLabel(r.from), b = mmRelNodeLabel(r.to), rel = mmRelTypeLabel(r.type).toLowerCase();
+  const q = { pt: 'Explique a relação "' + a + ' → ' + rel + ' → ' + b + '" dentro de "' + title + '".',
+              en: 'Explain the relation "' + a + ' → ' + rel + ' → ' + b + '" within "' + title + '".',
+              es: 'Explica la relación "' + a + ' → ' + rel + ' → ' + b + '" dentro de "' + title + '".' }[currentLang]
+            || 'Explique a relação "' + a + ' → ' + rel + ' → ' + b + '".';
+  mmRequestClose();
+  const input = document.getElementById('iaInput');
+  if (!input) return;
+  input.value = q;
+  setTimeout(() => { sendIaMessage(); }, 60);
 }
 function mmSelectNode(id) {
   const n = MM_STATE.nodes.find(x => x.id === id); if (!n) return;
   MM_STATE.selected = id;
+  MM_STATE.selectedRel = null;
   document.querySelectorAll('#mmSvg .mm-node.selected').forEach(el => el.classList.remove('selected'));
   const panel = document.getElementById('mmPanel');
   panel.textContent = '';
