@@ -9102,7 +9102,7 @@ function spPendingItems() { return spWeakItems().filter(i => i.stale); }
 function spUpdateBadge() {
   const badge = document.getElementById('notifBadge');
   if (!badge) return;
-  const n = spPendingItems().length;
+  const n = spWeakItems().length;
   badge.textContent = n > 9 ? '9+' : String(n);
   badge.style.display = n ? 'block' : 'none';
 }
