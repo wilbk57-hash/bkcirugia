@@ -1725,7 +1725,7 @@
     <div class="spec-scroll" id="specScroll"></div>
 
     <!-- 6. Plano Inteligente do Dia -->
-    <div class="sec-heading"><h2 data-i18n="dash.plan">Plano inteligente do dia</h2><button class="sec-link" onclick="showToast(t('toast.stub'))" data-i18n="dash.seeall">ver tudo</button></div>
+    <div class="sec-heading"><h2 data-i18n="dash.plan">Plano inteligente do dia</h2><button class="sec-link" onclick="seOpenToday()" data-i18n="dash.seeall">ver tudo</button></div>
     <div class="plan-list" id="planList"></div>
 
     <!-- 7. Revisão Inteligente -->
@@ -5709,6 +5709,50 @@ const STR_TABLE = [
  ['sp.rep.student','Aluno','Student','Alumno'],
  ['sp.rep.empty','Ainda não há dados de desempenho.','No performance data yet.','Aún no hay datos de desempeño.'],
  ['sp.rep.loading','A carregar…','Loading…','Cargando…'],
+ ['se.today.title','Hoje','Today','Hoy'],
+ ['se.today.open','ver tudo','see all','ver todo'],
+ ['se.events.week','Esta semana','This week','Esta semana'],
+ ['se.events.empty','Sem eventos nos próximos 7 dias.','No events in the next 7 days.','Sin eventos en los próximos 7 días.'],
+ ['se.event.add','+ Novo evento','+ New event','+ Nuevo evento'],
+ ['se.event.type','Tipo','Type','Tipo'],
+ ['se.type.prova','Prova','Exam','Examen'],
+ ['se.type.trabalho','Trabalho','Assignment','Trabajo'],
+ ['se.type.nota_evento','Nota','Note','Nota'],
+ ['se.event.title','Título','Title','Título'],
+ ['se.event.topic','Tema','Topic','Tema'],
+ ['se.event.topic.none','Sem tema','No topic','Sin tema'],
+ ['se.event.date','Data','Date','Fecha'],
+ ['se.event.time','Hora','Time','Hora'],
+ ['se.event.desc','Descrição','Description','Descripción'],
+ ['se.event.reminder','Lembrar (dias antes)','Remind (days before)','Recordar (días antes)'],
+ ['se.event.save','Guardar','Save','Guardar'],
+ ['se.event.cancel','Cancelar','Cancel','Cancelar'],
+ ['se.event.saved','Evento guardado.','Event saved.','Evento guardado.'],
+ ['se.event.deleted','Evento removido.','Event removed.','Evento eliminado.'],
+ ['se.event.done','Concluir','Mark done','Completar'],
+ ['se.event.delete','Apagar','Delete','Eliminar'],
+ ['se.event.ics','Adicionar ao calendário','Add to calendar','Añadir al calendario'],
+ ['se.event.today','Hoje','Today','Hoy'],
+ ['se.event.tomorrow','Amanhã','Tomorrow','Mañana'],
+ ['se.event.indays','Em {n} dias','In {n} days','En {n} días'],
+ ['se.event.late','Atrasado','Overdue','Atrasado'],
+ ['se.event.weak','Tema com desempenho fraco','Topic with weak performance','Tema con desempeño bajo'],
+ ['se.sugg.title','Revisão sugerida antes da prova','Suggested review before the exam','Repaso sugerido antes del examen'],
+ ['se.sugg.accept','Aceitar','Accept','Aceptar'],
+ ['se.sugg.ignore','Ignorar','Ignore','Ignorar'],
+ ['se.sugg.tutor','Rever com o Tutor','Review with Tutor','Repasar con el Tutor'],
+ ['se.sugg.accepted','Sugestões adicionadas ao plano de hoje.','Suggestions added to today\'s plan.','Sugerencias añadidas al plan de hoy.'],
+ ['se.notes.title','As minhas notas','My notes','Mis notas'],
+ ['se.notes.empty','Ainda não escreveu notas.','You haven\'t written any notes yet.','Aún no has escrito notas.'],
+ ['se.notes.near','Relacionadas com prova próxima','Related to an upcoming exam','Relacionadas con un examen próximo'],
+ ['se.note.add','📝 Nota','📝 Note','📝 Nota'],
+ ['se.note.new','Nova nota','New note','Nueva nota'],
+ ['se.note.placeholder','Escreva a sua nota sobre esta lição…','Write your note about this lesson…','Escribe tu nota sobre esta lección…'],
+ ['se.note.saved','Nota guardada.','Note saved.','Nota guardada.'],
+ ['se.note.deleted','Nota removida.','Note removed.','Nota eliminada.'],
+ ['se.note.empty','Escreva algo antes de guardar.','Write something before saving.','Escribe algo antes de guardar.'],
+ ['se.error','Não foi possível guardar. Tente de novo.','Could not save. Try again.','No se pudo guardar. Inténtalo de nuevo.'],
+ ['se.notif.event','Evento a chegar','Upcoming event','Evento próximo'],
 ];
 const STRINGS = { pt: {}, en: {}, es: {} };
 STR_TABLE.forEach(([key, pt, en, es]) => { STRINGS.pt[key]=pt; STRINGS.en[key]=en; STRINGS.es[key]=es; });
@@ -6408,12 +6452,20 @@ function renderPlan() {
   const host = document.getElementById('planList');
   if (!host) return;
   const items = spDailyPlan();
-  if (!items.length) {
+  const evs = (typeof seUpcoming === 'function') ? seUpcoming(7) : [];
+  const evHtml = evs.slice(0, 3).map(e => `
+    <div class="plan-item">
+      <span class="plan-time">${seTypeIcon(e.type)}</span>
+      <span class="plan-dot" style="background:${seIsWeak(e.topic_id) || seDaysUntil(e.date) < 0 ? 'var(--red)' : 'var(--blue)'}"></span>
+      <span class="plan-label">${seEsc(e.title)} · <span style="color:var(--text3);font-size:12px;">${seWhen(e.date)}</span></span>
+      <button class="plan-go" onclick="seOpenToday()">${t('se.today.open')}</button>
+    </div>`).join('');
+  if (!items.length && !evHtml) {
     host.innerHTML = `<div class="pf-empty" style="padding:12px;color:var(--text3);font-size:13px;">${t('sp.plan.empty')}</div>`;
     return;
   }
   const colors = ['var(--red)', 'var(--amber)', 'var(--blue)', 'var(--teal)'];
-  host.innerHTML = items.map((p, i) => `
+  host.innerHTML = evHtml + items.map((p, i) => `
     <div class="plan-item">
       <span class="plan-time">${i + 1}º</span>
       <span class="plan-dot" style="background:${colors[i % colors.length]}"></span>
@@ -7272,6 +7324,7 @@ function renderLessonCompleteBlock(topicId, tabId) {
       ? `<button class="btn lesson-complete-btn done" disabled>✅ ${t('lesson.done.badge')}</button>`
       : `<button class="btn primary lesson-complete-btn" onclick="handleMarkLessonComplete('${topicId}','${tabId}')">☑️ ${t('lesson.markdone')}</button>`}
     <p class="lesson-complete-sub">${t('lesson.markdone.sub')}</p>
+    <button class="plan-go" id="seNoteBtn-${topicId}-${tabId}" style="margin-top:6px;" onclick="seNoteDialog('${topicId}','${tabId}')">${t('se.note.add')}</button>
   </div>`;
 }
 function handleMarkLessonComplete(topicId, tabId) {
@@ -9102,7 +9155,7 @@ function spPendingItems() { return spWeakItems().filter(i => i.stale); }
 function spUpdateBadge() {
   const badge = document.getElementById('notifBadge');
   if (!badge) return;
-  const n = spWeakItems().length;
+  const n = spWeakItems().length + ((typeof sePendingEvents === 'function') ? sePendingEvents().length : 0);
   badge.textContent = n > 9 ? '9+' : String(n);
   badge.style.display = n ? 'block' : 'none';
 }
@@ -9125,12 +9178,23 @@ function spToggleNotifications(ev) {
     });
   }, 0);
   spLoad();
+  seLoad();
 }
 function spRenderNotifications() {
   const el = document.getElementById('notifPanel');
   if (!el) return;
   const pending = spPendingItems();
   const others = spWeakItems().filter(i => !i.stale);
+  const evs = (typeof sePendingEvents === 'function') ? sePendingEvents() : [];
+  const evRow = e => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border);">
+      <span style="font-size:16px;">${seTypeIcon(e.type)}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${seEsc(e.title)}</div>
+        <div style="font-size:11.5px;color:var(--text3);">${t('se.notif.event')} · ${seWhen(e.date)}</div>
+      </div>
+      <button class="plan-go" onclick="document.getElementById('notifPanel')&&document.getElementById('notifPanel').remove();seOpenToday()">${t('se.today.open')}</button>
+    </div>`;
   const row = (i, muted) => `
     <div style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border);">
       <span style="font-size:16px;">${muted ? '🕓' : '⚠️'}</span>
@@ -9140,7 +9204,7 @@ function spRenderNotifications() {
       </div>
       <button class="plan-go" onclick="document.getElementById('notifPanel')&&document.getElementById('notifPanel').remove();openTopic('${i.topicId}','quiz')">${t('sp.notif.review')}</button>
     </div>`;
-  const body = pending.map(i => row(i, false)).join('') + others.map(i => row(i, true)).join('');
+  const body = evs.map(evRow).join('') + pending.map(i => row(i, false)).join('') + others.map(i => row(i, true)).join('');
   el.innerHTML = `
     <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:6px;">${t('sp.notif.title')}</div>
     ${body || `<div style="font-size:12.5px;color:var(--text3);padding:10px 4px;">${t('sp.notif.empty')}</div>`}`;
@@ -9160,6 +9224,365 @@ function spDailyPlan() {
     });
   }
   return out.slice(0, 4);
+}
+
+/* ============================================================
+   FASE 2 — EVENTOS DE ESTUDO (study_events) + NOTAS (study_notes)
+   Cruzam-se com study_progress (SP_CACHE) para priorizar o dia.
+   ============================================================ */
+let SE_EVENTS = [];
+let SE_NOTES = [];
+const SE_EXAM_WINDOW = 5;   /* dias: janela de sugestão automática */
+const SE_WEEK = 7;
+const SE_IGN_KEY = 'bkcirurgia_sugg_ignored_v1';
+
+function seIgnored() { try { return JSON.parse(localStorage.getItem(SE_IGN_KEY) || '[]'); } catch (e) { return []; } }
+function seIgnore(id) { const l = seIgnored(); if (!l.includes(id)) l.push(id); try { localStorage.setItem(SE_IGN_KEY, JSON.stringify(l)); } catch (e) {} }
+function seEsc(s) { return escapeHtml(String(s == null ? '' : s)); }
+function seStartOfToday() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+function seDaysUntil(dateStr) {
+  const parts = String(dateStr).split('-').map(Number);
+  const d = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+  return Math.round((d - seStartOfToday()) / 86400000);
+}
+function seWhen(dateStr) {
+  const n = seDaysUntil(dateStr);
+  if (n < 0) return t('se.event.late');
+  if (n === 0) return t('se.event.today');
+  if (n === 1) return t('se.event.tomorrow');
+  return t('se.event.indays').replace('{n}', n);
+}
+function seTypeLabel(ty) { return t('se.type.' + ty) || ty; }
+function seTypeIcon(ty) { return ty === 'prova' ? '📝' : ty === 'trabalho' ? '📚' : '🗒️'; }
+function seWeakTopicIds() { return new Set(spWeakItems().map(i => i.topicId)); }
+function seIsWeak(topicId) { return !!topicId && seWeakTopicIds().has(topicId); }
+
+async function seLoad() {
+  const user = getCurrentUser();
+  if (!user) { SE_EVENTS = []; SE_NOTES = []; spUpdateBadge(); return; }
+  try {
+    const [ev, nt] = await Promise.all([
+      supabaseClient.from('study_events').select('*').order('date', { ascending: true }),
+      supabaseClient.from('study_notes').select('*').order('created_at', { ascending: false }),
+    ]);
+    if (ev.error) throw ev.error;
+    if (nt.error) throw nt.error;
+    SE_EVENTS = ev.data || [];
+    SE_NOTES = nt.data || [];
+  } catch (e) {
+    console.warn('[study_events/notes] load falhou', e);
+  }
+  spUpdateBadge();
+  if (document.getElementById('planList')) renderPlan();
+  if (document.getElementById('seTodayBody')) seRenderToday();
+}
+
+/* Eventos por vencer (não concluídos) dentro de N dias, por urgência. */
+function seUpcoming(days) {
+  const lim = (days == null) ? SE_WEEK : days;
+  return SE_EVENTS
+    .filter(e => !e.done && seDaysUntil(e.date) <= lim)
+    .sort((a, b) => seDaysUntil(a.date) - seDaysUntil(b.date));
+}
+/* Pendências para o sino: eventos por vencer dentro da antecedência pedida. */
+function sePendingEvents() {
+  return seUpcoming(SE_WEEK).filter(e => seDaysUntil(e.date) <= Math.max(Number(e.reminder_offset) || 0, 2));
+}
+/* Provas a ≤5 dias que ainda não foram ignoradas. */
+function seExamsNeedingReview() {
+  const ign = seIgnored();
+  return seUpcoming(SE_EXAM_WINDOW).filter(e => e.type === 'prova' && !ign.includes(e.id));
+}
+/* 2–4 temas com pior desempenho, priorizando o tema da prova. */
+function seReviewSuggestions(ev) {
+  const weak = spWeakItems();
+  const out = [];
+  if (ev.topic_id) {
+    const own = weak.find(w => w.topicId === ev.topic_id);
+    if (own) out.push(own);
+    else if (typeof TOPICS !== 'undefined' && TOPICS[ev.topic_id]) {
+      out.push({ topicId: ev.topic_id, title: spTopicTitle(ev.topic_id), pct: null });
+    }
+  }
+  weak.forEach(w => { if (out.length < 4 && !out.some(o => o.topicId === w.topicId)) out.push(w); });
+  return out.slice(0, 4);
+}
+
+/* ---- .ics com VALARM (reforço, não o mecanismo principal) ---- */
+function seIcsStamp(dateStr, timeStr) {
+  const p = String(dateStr).split('-');
+  const d = p[0] + p[1] + p[2];
+  if (!timeStr) return { value: 'VALUE=DATE:' + d, allDay: true };
+  const hm = String(timeStr).split(':');
+  return { value: ':' + d + 'T' + (hm[0] || '08').padStart(2, '0') + (hm[1] || '00').padStart(2, '0') + '00', allDay: false };
+}
+function seDownloadIcs(id) {
+  const ev = SE_EVENTS.find(e => e.id === id);
+  if (!ev) return;
+  const st = seIcsStamp(ev.date, ev.time);
+  const days = Math.max(Number(ev.reminder_offset) || 0, 0);
+  const fold = s => String(s).replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//BK-CIRURGIA//Estudo//PT', 'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    'UID:' + ev.id + '@bkcirurgia',
+    'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z',
+    'DTSTART;' + st.value,
+    'SUMMARY:' + fold(seTypeLabel(ev.type) + ' — ' + ev.title),
+    'DESCRIPTION:' + fold(ev.description || ''),
+    'BEGIN:VALARM', 'TRIGGER:-P' + days + 'D', 'ACTION:DISPLAY',
+    'DESCRIPTION:' + fold(ev.title),
+    'END:VALARM', 'END:VEVENT', 'END:VCALENDAR',
+  ];
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (ev.title || 'evento').replace(/[^\w\-]+/g, '_').slice(0, 40) + '.ics';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/* ---- CRUD ---- */
+async function seSaveEvent(form) {
+  const user = getCurrentUser();
+  if (!user) return;
+  const row = {
+    user_id: user.id,
+    type: form.type, title: form.title,
+    topic_id: form.topic_id || null,
+    date: form.date, time: form.time || null,
+    description: form.description || null,
+    reminder_offset: Number(form.reminder_offset) || 1,
+  };
+  const { data, error } = await supabaseClient.from('study_events').insert(row).select().single();
+  if (error) { showToast(t('se.error') + ' ' + (error.message || '')); return false; }
+  SE_EVENTS = SE_EVENTS.concat([data]);
+  showToast(t('se.event.saved'));
+  spUpdateBadge(); renderPlan(); seRenderToday();
+  return true;
+}
+async function seToggleDone(id) {
+  const ev = SE_EVENTS.find(e => e.id === id); if (!ev) return;
+  const { error } = await supabaseClient.from('study_events').update({ done: !ev.done }).eq('id', id);
+  if (error) { showToast(t('se.error')); return; }
+  ev.done = !ev.done;
+  spUpdateBadge(); renderPlan(); seRenderToday();
+}
+async function seDeleteEvent(id) {
+  const { error } = await supabaseClient.from('study_events').delete().eq('id', id);
+  if (error) { showToast(t('se.error')); return; }
+  SE_EVENTS = SE_EVENTS.filter(e => e.id !== id);
+  showToast(t('se.event.deleted'));
+  spUpdateBadge(); renderPlan(); seRenderToday();
+}
+async function seSaveNote(topicId, stepId, content) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  const { data, error } = await supabaseClient.from('study_notes')
+    .insert({ user_id: user.id, topic_id: topicId, lesson_step_id: stepId || null, content }).select().single();
+  if (error) { showToast(t('se.error') + ' ' + (error.message || '')); return false; }
+  SE_NOTES = [data].concat(SE_NOTES);
+  showToast(t('se.note.saved'));
+  seRenderToday();
+  return true;
+}
+async function seDeleteNote(id) {
+  const { error } = await supabaseClient.from('study_notes').delete().eq('id', id);
+  if (error) { showToast(t('se.error')); return; }
+  SE_NOTES = SE_NOTES.filter(n => n.id !== id);
+  showToast(t('se.note.deleted'));
+  seRenderToday();
+}
+
+/* ---- Nota presa ao conteúdo (rodapé de cada lição) ---- */
+function seNoteDialog(topicId, stepId) {
+  const old = document.getElementById('seNoteOverlay'); if (old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'seNoteOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+  const notes = SE_NOTES.filter(n => n.topic_id === topicId && n.lesson_step_id === stepId);
+  el.innerHTML = `<div class="card" style="max-width:460px;width:100%;max-height:82vh;overflow:auto;">
+      <h3 style="margin:0 0 8px;font-size:14px;">${t('se.note.new')} · ${seEsc(spTopicTitle(topicId))}</h3>
+      <textarea id="seNoteText" rows="5" placeholder="${t('se.note.placeholder')}" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;background:var(--bg2);color:var(--text);padding:9px;font-size:13px;"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">
+        <button class="btn" onclick="document.getElementById('seNoteOverlay').remove()">${t('se.event.cancel')}</button>
+        <button class="btn primary" onclick="seSubmitNote('${topicId}','${stepId}')">${t('se.event.save')}</button>
+      </div>
+      ${notes.length ? `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px;">${notes.map(n => `
+        <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;">
+          <div style="flex:1;font-size:12.5px;color:var(--text2,var(--text));white-space:pre-wrap;">${seEsc(n.content)}</div>
+          <button class="icon-btn" title="${t('se.event.delete')}" onclick="seDeleteNote('${n.id}').then(()=>seNoteDialog('${topicId}','${stepId}'))">🗑️</button>
+        </div>`).join('')}</div>` : ''}
+    </div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', e => { if (e.target === el) el.remove(); });
+  const ta = document.getElementById('seNoteText'); if (ta) ta.focus();
+}
+async function seSubmitNote(topicId, stepId) {
+  const ta = document.getElementById('seNoteText');
+  const val = ta ? ta.value.trim() : '';
+  if (!val) { showToast(t('se.note.empty')); return; }
+  const ok = await seSaveNote(topicId, stepId, val);
+  if (ok) { const el = document.getElementById('seNoteOverlay'); if (el) el.remove(); }
+}
+
+/* ---- Tela "Hoje" (lista curta; sem grade mensal) ---- */
+function seCloseToday() { const el = document.getElementById('seTodayOverlay'); if (el) el.remove(); }
+function seOpenToday() {
+  seCloseToday();
+  const el = document.createElement('div');
+  el.id = 'seTodayOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:var(--bg);overflow:auto;padding:18px;';
+  el.innerHTML = `<div style="max-width:760px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <button class="icon-btn" onclick="seCloseToday()" aria-label="Fechar">✕</button>
+        <h2 style="font-size:18px;margin:0;color:var(--text);flex:1;">📅 ${t('se.today.title')}</h2>
+        <button class="btn primary" style="padding:6px 12px;font-size:12.5px;" onclick="seEventForm()">${t('se.event.add')}</button>
+      </div>
+      <div id="seTodayBody"></div>
+    </div>`;
+  document.body.appendChild(el);
+  seRenderToday();
+  seLoad();
+}
+function seRenderToday() {
+  const body = document.getElementById('seTodayBody');
+  if (!body) return;
+  const events = seUpcoming(SE_WEEK);
+  const eventsHtml = events.length ? events.map(e => {
+    const weak = seIsWeak(e.topic_id);
+    const late = seDaysUntil(e.date) < 0;
+    return `<div class="card" style="margin-bottom:10px;border-left:3px solid ${late || weak ? 'var(--red)' : 'var(--blue)'};">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-size:18px;">${seTypeIcon(e.type)}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13.5px;font-weight:700;color:var(--text);">${seEsc(e.title)}</div>
+          <div style="font-size:11.5px;color:var(--text3);">${seTypeLabel(e.type)} · ${seWhen(e.date)} · ${seEsc(e.date)}${e.time ? ' ' + seEsc(e.time) : ''}${e.topic_id ? ' · ' + seEsc(spTopicTitle(e.topic_id)) : ''}</div>
+          ${e.description ? `<div style="font-size:12px;color:var(--text3);margin-top:4px;white-space:pre-wrap;">${seEsc(e.description)}</div>` : ''}
+          ${weak ? `<div style="font-size:11.5px;color:var(--red);margin-top:4px;">⚠️ ${t('se.event.weak')}</div>` : ''}
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+            <button class="plan-go" onclick="seDownloadIcs('${e.id}')">📆 ${t('se.event.ics')}</button>
+            <button class="plan-go" onclick="seToggleDone('${e.id}')">✅ ${t('se.event.done')}</button>
+            <button class="plan-go" onclick="seDeleteEvent('${e.id}')">🗑️ ${t('se.event.delete')}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('') : `<div style="font-size:12.5px;color:var(--text3);padding:6px 2px 12px;">${t('se.events.empty')}</div>`;
+
+  /* Sugestão automática de revisão para provas a ≤5 dias */
+  const suggHtml = seExamsNeedingReview().map(e => {
+    const sug = seReviewSuggestions(e);
+    if (!sug.length) return '';
+    return `<div class="card" style="margin-bottom:10px;border-left:3px solid var(--amber);">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">🎯 ${t('se.sugg.title')} — ${seEsc(e.title)}</div>
+      ${sug.map(s => `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;min-width:0;font-size:12.5px;color:var(--text);">${seEsc(s.title)}${s.pct != null ? ` <span style="color:var(--text3);font-size:11.5px;">${s.pct}%</span>` : ''}</div>
+          <button class="plan-go" onclick="seCloseToday();openTopic('${s.topicId}','${spFirstTab(s.topicId)}')">${t('plan.start')}</button>
+          <button class="plan-go" onclick="seAskTutor('${s.topicId}')">🤖 ${t('se.sugg.tutor')}</button>
+        </div>`).join('')}
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+        <button class="plan-go" onclick="seAcceptSugg('${e.id}')">${t('se.sugg.accept')}</button>
+        <button class="plan-go" onclick="seIgnoreSugg('${e.id}')">${t('se.sugg.ignore')}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  /* Notas agrupadas por tema, com os temas de provas próximas primeiro */
+  const nearTopics = new Set(seUpcoming(SE_WEEK).filter(e => e.topic_id).map(e => e.topic_id));
+  const byTopic = {};
+  SE_NOTES.forEach(n => { (byTopic[n.topic_id] = byTopic[n.topic_id] || []).push(n); });
+  const noteKeys = Object.keys(byTopic).sort((a, b) => (nearTopics.has(b) ? 1 : 0) - (nearTopics.has(a) ? 1 : 0));
+  const notesHtml = noteKeys.length ? noteKeys.map(k => `
+    <div class="card" style="margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">🗒️ ${seEsc(spTopicTitle(k))}${nearTopics.has(k) ? ` <span style="color:var(--amber);font-size:11.5px;font-weight:600;">· ${t('se.notes.near')}</span>` : ''}</div>
+      ${byTopic[k].map(n => `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;min-width:0;font-size:12.5px;color:var(--text);white-space:pre-wrap;">${seEsc(n.content)}</div>
+          <button class="plan-go" onclick="seCloseToday();openTopic('${k}','${spFirstTab(k)}')">${t('plan.start')}</button>
+          <button class="icon-btn" onclick="seDeleteNote('${n.id}')">🗑️</button>
+        </div>`).join('')}
+    </div>`).join('') : `<div style="font-size:12.5px;color:var(--text3);padding:6px 2px;">${t('se.notes.empty')}</div>`;
+
+  body.innerHTML = `
+    ${suggHtml}
+    <div class="sec-heading"><h2>${t('se.events.week')}</h2></div>
+    ${eventsHtml}
+    <div class="sec-heading" style="margin-top:14px;"><h2>${t('se.notes.title')}</h2></div>
+    ${notesHtml}`;
+}
+function seAcceptSugg(eventId) {
+  const ev = SE_EVENTS.find(e => e.id === eventId);
+  if (ev) SE_ACCEPTED = seReviewSuggestions(ev).map(s => s.topicId);
+  seIgnore(eventId);
+  showToast(t('se.sugg.accepted'));
+  renderPlan(); seRenderToday();
+}
+let SE_ACCEPTED = [];
+function seIgnoreSugg(eventId) { seIgnore(eventId); seRenderToday(); }
+function seAskTutor(topicId) {
+  const title = spTopicTitle(topicId);
+  const q = { pt: 'Faça uma revisão rápida e objetiva do tema "' + title + '" para uma prova próxima.',
+              en: 'Give me a quick, focused review of "' + title + '" for an upcoming exam.',
+              es: 'Haz un repaso rápido y enfocado del tema "' + title + '" para un examen próximo.' }[currentLang];
+  seCloseToday();
+  switchTab('iaView');
+  setTimeout(() => {
+    const input = document.getElementById('iaInput');
+    if (!input) return;
+    input.value = q;
+    sendIaMessage();
+  }, 120);
+}
+
+/* ---- Formulário de novo evento ---- */
+function seEventForm() {
+  const old = document.getElementById('seFormOverlay'); if (old) old.remove();
+  const topicOpts = (typeof TOPICS !== 'undefined' ? Object.keys(TOPICS) : [])
+    .map(id => `<option value="${id}">${seEsc(spTopicTitle(id))}</option>`).join('');
+  const el = document.createElement('div');
+  el.id = 'seFormOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+  const fld = 'width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;background:var(--bg2);color:var(--text);padding:8px;font-size:13px;margin-bottom:8px;';
+  el.innerHTML = `<div class="card" style="max-width:440px;width:100%;max-height:86vh;overflow:auto;">
+      <h3 style="margin:0 0 10px;font-size:14px;">${t('se.event.add')}</h3>
+      <label style="font-size:11.5px;color:var(--text3);">${t('se.event.type')}</label>
+      <select id="seFType" style="${fld}">
+        <option value="prova">${t('se.type.prova')}</option>
+        <option value="trabalho">${t('se.type.trabalho')}</option>
+        <option value="nota_evento">${t('se.type.nota_evento')}</option>
+      </select>
+      <label style="font-size:11.5px;color:var(--text3);">${t('se.event.title')}</label>
+      <input id="seFTitle" type="text" style="${fld}">
+      <label style="font-size:11.5px;color:var(--text3);">${t('se.event.topic')}</label>
+      <select id="seFTopic" style="${fld}"><option value="">${t('se.event.topic.none')}</option>${topicOpts}</select>
+      <label style="font-size:11.5px;color:var(--text3);">${t('se.event.date')}</label>
+      <input id="seFDate" type="date" style="${fld}">
+      <label style="font-size:11.5px;color:var(--text3);">${t('se.event.time')}</label>
+      <input id="seFTime" type="time" style="${fld}">
+      <label style="font-size:11.5px;color:var(--text3);">${t('se.event.reminder')}</label>
+      <input id="seFRem" type="number" min="0" max="30" value="1" style="${fld}">
+      <label style="font-size:11.5px;color:var(--text3);">${t('se.event.desc')}</label>
+      <textarea id="seFDesc" rows="3" style="${fld}"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn" onclick="document.getElementById('seFormOverlay').remove()">${t('se.event.cancel')}</button>
+        <button class="btn primary" onclick="seSubmitEvent()">${t('se.event.save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', e => { if (e.target === el) el.remove(); });
+}
+async function seSubmitEvent() {
+  const v = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+  if (!v('seFTitle') || !v('seFDate')) { showToast(t('se.note.empty')); return; }
+  const ok = await seSaveEvent({
+    type: v('seFType') || 'prova', title: v('seFTitle'), topic_id: v('seFTopic'),
+    date: v('seFDate'), time: v('seFTime'), description: v('seFDesc'),
+    reminder_offset: v('seFRem') || 1,
+  });
+  if (ok) { const el = document.getElementById('seFormOverlay'); if (el) el.remove(); }
 }
 
 /* ---- ADMIN: relatórios com dados reais ---- */
@@ -9254,7 +9677,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   }
 });
 
-refreshAuthCache().then(() => { initApp(); spLoad(); });
+refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); });
 </script>
 <script>
 if ('serviceWorker' in navigator) {
