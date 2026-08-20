@@ -1271,8 +1271,9 @@
   }
   .mm-btn:hover { border-color: var(--teal); color: var(--teal); }
   .mm-btn.icon { padding: 6px 9px; font-size: 13px; }
-  .mm-stage { position: relative; flex: 1 1 auto; overflow: hidden; touch-action: none; }
-  .mm-stage svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  .mm-stage { position: relative; flex: 1 1 auto; overflow: hidden; touch-action: none; overscroll-behavior: contain; }
+  .mm-stage svg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  .mm-stage svg * { touch-action: none; }
   .mm-stage svg.dragging { cursor: grabbing; }
   .mm-summary {
     position: absolute; left: 12px; top: 12px; max-width: min(340px, 60%);
