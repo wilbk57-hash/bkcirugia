@@ -6402,20 +6402,23 @@ function renderDashStats() {
     </div>`).join('');
 }
 
-const DAILY_PLAN = [
-  { time: '08:00', color: 'var(--teal)',   key: 'plan.1', action: "openTopic('pre-operatorio','conceito')" },
-  { time: '09:00', color: 'var(--blue)',   key: 'plan.2', action: "openTopic('pre-operatorio','avaliacao')" },
-  { time: '10:30', color: 'var(--amber)',  key: 'plan.3', action: "openTopic('pre-operatorio','caso')" },
-  { time: '11:30', color: 'var(--violet)', key: 'plan.4', action: "openTopic('pre-operatorio','especiais')" },
-  { time: '12:30', color: 'var(--red)',    key: 'plan.5', action: "openTopic('pre-operatorio','quiz')" },
-];
+/* Plano inteligente do dia — construído a partir do desempenho real
+   (study_progress), priorizando os temas com pior acerto. */
 function renderPlan() {
-  document.getElementById('planList').innerHTML = DAILY_PLAN.map(p => `
+  const host = document.getElementById('planList');
+  if (!host) return;
+  const items = spDailyPlan();
+  if (!items.length) {
+    host.innerHTML = `<div class="pf-empty" style="padding:12px;color:var(--text3);font-size:13px;">${t('sp.plan.empty')}</div>`;
+    return;
+  }
+  const colors = ['var(--red)', 'var(--amber)', 'var(--blue)', 'var(--teal)'];
+  host.innerHTML = items.map((p, i) => `
     <div class="plan-item">
-      <span class="plan-time">${p.time}</span>
-      <span class="plan-dot" style="background:${p.color}"></span>
-      <span class="plan-label">${t(p.key)}</span>
-      <button class="plan-go" onclick="${p.action}" data-i18n="plan.start">${t('plan.start')}</button>
+      <span class="plan-time">${i + 1}º</span>
+      <span class="plan-dot" style="background:${colors[i % colors.length]}"></span>
+      <span class="plan-label">${p.title} · <span style="color:var(--text3);font-size:12px;">${p.note}</span></span>
+      <button class="plan-go" onclick="openTopic('${p.topicId}','${p.tabId}')">${t('plan.start')}</button>
     </div>`).join('');
 }
 
