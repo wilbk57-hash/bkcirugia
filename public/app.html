@@ -10045,6 +10045,7 @@ function mmAttachStageEvents(svg) {
   };
   svg.addEventListener('pointerup', end);
   svg.addEventListener('pointercancel', end);
+  svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') end(e); });
   /* Rede de segurança: alguns browsers móveis ainda emitem touchmove; sem
      preventDefault a página tenta fazer scroll e cancela os pointerevents. */
   svg.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
