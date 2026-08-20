@@ -1281,17 +1281,30 @@
     border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; pointer-events: none;
   }
   .mm-tools { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
-  .mm-node-box { fill: var(--panel); stroke: var(--border); stroke-width: 1.2px; }
+  /* Mesma linguagem de cor das info-box dos módulos de conteúdo:
+     âmbar=definição, vermelho=alerta, azul=clínico/evidência,
+     verde=exemplo, roxo=conceito/decisão. Tudo via tokens de tema. */
+  .mm-node-box {
+    fill: color-mix(in srgb, var(--mm-accent, var(--border)) var(--ib-tint), var(--panel));
+    stroke: var(--mm-accent, var(--border)); stroke-width: 1.2px;
+  }
+  .mm-t-concept    { --mm-accent: var(--ib-purple); }
+  .mm-t-definition { --mm-accent: var(--ib-amber); }
+  .mm-t-warning    { --mm-accent: var(--ib-red); }
+  .mm-t-clinical   { --mm-accent: var(--ib-blue); }
+  .mm-t-example    { --mm-accent: var(--ib-green); }
+  .mm-t-decision   { --mm-accent: var(--ib-purple); }
+  .mm-t-evidence   { --mm-accent: var(--ib-blue); }
   .mm-node-root .mm-node-box { fill: var(--teal-dim); stroke: var(--teal); stroke-width: 2px; }
   .mm-node-label { fill: var(--text); font-family: 'Inter', sans-serif; font-size: 11px; }
   .mm-node-root .mm-node-label { font-size: 14px; font-weight: 700; }
   .mm-imp-high .mm-node-label { font-weight: 700; }
   .mm-imp-low .mm-node-label { fill: var(--text2); }
   .mm-imp-low .mm-node-box { opacity: .82; }
-  .mm-t-warning .mm-node-box { stroke: var(--amber); }
   .mm-t-decision .mm-node-box { stroke-dasharray: 4 3; }
   .mm-t-definition .mm-node-box { stroke-dasharray: 1 3; }
   .mm-t-clinical .mm-node-box { stroke-width: 2px; }
+  .mm-t-warning .mm-node-box { stroke-width: 2px; }
   .mm-t-evidence .mm-node-box { stroke-dasharray: 8 3; }
   .mm-node { cursor: pointer; }
   .mm-node:focus { outline: none; }
@@ -1299,6 +1312,9 @@
   .mm-link { fill: none; stroke: var(--border); stroke-width: 1.4px; }
   .mm-rel { fill: none; stroke: var(--violet); stroke-width: 1.2px; stroke-dasharray: 5 4; opacity: .8; }
   .mm-rel-label { fill: var(--violet); font-size: 9px; font-family: 'IBM Plex Mono', monospace; }
+  .mm-rel-hit { fill: none; stroke: transparent; stroke-width: 16px; cursor: pointer; pointer-events: stroke; }
+  .mm-rel-hit:focus { outline: none; }
+  .mm-rel-hit:focus + .mm-rel, .mm-rel.mm-rel-on { stroke-width: 2.4px; opacity: 1; }
   .mm-badge { font-size: 10px; }
   .mm-panel {
     position: absolute; right: 0; top: 0; bottom: 0; width: 320px; z-index: 5;
