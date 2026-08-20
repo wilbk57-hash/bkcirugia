@@ -8843,7 +8843,8 @@ function adminStats() {
 const ADMIN_MGMT_ITEMS = [
   { ic: '🎬', key: 'admin.mgmt.videos' }, { ic: '🖼', key: 'admin.mgmt.images' },
   { ic: '📚', key: 'admin.mgmt.content' }, { ic: '❓', key: 'admin.mgmt.questions' },
-  { ic: '🤖', key: 'admin.mgmt.tutor' }, { ic: '📊', key: 'admin.mgmt.reports' },
+  { ic: '🤖', key: 'admin.mgmt.tutor' },
+  { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
 ];
 function renderAdminDashboard() {
   const host = document.getElementById('adminView');
@@ -8872,7 +8873,7 @@ function renderAdminDashboard() {
 
     <div class="sec-heading" style="margin-top:18px;"><h2>${t('admin.mgmt.title')}</h2></div>
     <div class="adm-mgmt-grid">
-      ${ADMIN_MGMT_ITEMS.map(m => `<div class="adm-mgmt-card" onclick="showToast(t('toast.stub'))"><div class="ic">${m.ic}</div><div class="l">${t(m.key) !== m.key ? t(m.key) : m.key}</div></div>`).join('')}
+      ${ADMIN_MGMT_ITEMS.map(m => `<div class="adm-mgmt-card" onclick="${m.action || "showToast(t('toast.stub'))"}"><div class="ic">${m.ic}</div><div class="l">${t(m.key) !== m.key ? t(m.key) : m.key}</div></div>`).join('')}
     </div>
 
     <div class="sec-heading" style="margin-top:18px;"><h2>${t('admin.users.title')}</h2></div>
