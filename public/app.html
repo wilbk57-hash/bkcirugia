@@ -9052,6 +9052,17 @@ if ('serviceWorker' in navigator) {
    Aditivo: não altera auth, navegação principal nem conteúdos.
    ============================================================ */
 const MM_STORAGE = 'bkcirurgia_mindmaps_v1';
+const MM_LAYOUT_KEY = 'bkcirurgia_mindmaps_layout_v1';
+let MM_LAYOUT = 'radial';
+try { const _l = localStorage.getItem(MM_LAYOUT_KEY); if (_l === 'tree' || _l === 'radial') MM_LAYOUT = _l; } catch (e) {}
+function mmToggleLayout() {
+  MM_LAYOUT = MM_LAYOUT === 'tree' ? 'radial' : 'tree';
+  try { localStorage.setItem(MM_LAYOUT_KEY, MM_LAYOUT); } catch (e) {}
+  MM_STATE.frozen = {};
+  mmClosePanel();
+  if (MM_STATE.map) mmRender(false);
+  mmSyncModeUi();
+}
 const MM_TYPES = ['concept','definition','warning','clinical','example','decision','evidence'];
 const MM_MAX_NODES = 120, MM_MAX_DEPTH = 5, MM_MAX_BRANCH = 9;
 let MM_STATE = {
