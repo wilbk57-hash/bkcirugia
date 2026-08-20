@@ -9141,9 +9141,10 @@ function mmSystemPrompt() {
   return 'Devolve APENAS um objeto JSON válido (sem texto antes ou depois, sem cercas de código) que represente um mapa mental do conteúdo pedido, em ' + mmLangName() + '.\n'
     + 'Formato exato:\n'
     + '{"type":"mind_map","version":1,"title":"","summary":"","root":{"id":"root","label":""},'
-    + '"nodes":[{"id":"","parentId":"","label":"máx 40 caracteres","type":"concept|definition|warning|clinical|example|decision|evidence","importance":"high|medium|low","description":"opcional, 1-2 frases"}],'
-    + '"relations":[{"from":"","to":"","type":"causes|leads_to|associated_with|compares_to|precedes|risk_of|prevents|diagnoses|treats|complication_of","label":"opcional"}]}\n'
+    + '"nodes":[{"id":"","parentId":"","label":"máx 40 caracteres","type":"concept|definition|warning|clinical|example|decision|evidence","importance":"high|medium|low","description":"OBRIGATÓRIO: 2 a 4 frases (máx ~600 caracteres) com explicação pedagógica e clinicamente útil — o que é, porque importa, e um detalhe prático/critério/valor relevante"}],'
+    + '"relations":[{"from":"","to":"","type":"causes|leads_to|associated_with|compares_to|precedes|risk_of|prevents|diagnoses|treats|complication_of","label":"curto, opcional","explanation":"OBRIGATÓRIO: 1 a 2 frases (máx ~300 caracteres) explicando porque os dois conceitos se relacionam assim, com o mecanismo ou implicação clínica"}]}\n'
     + 'Regras: máximo 7 ramos ligados à raiz; máximo 3 níveis de profundidade; máximo 40 nós no total. '
+    + 'Nunca deixes description ou explanation vazios; escreve conteúdo real, sem repetir apenas o label. '
     + 'Se o conteúdo for maior, resume pelos conceitos mais importantes em vez de forçar tudo. '
     + 'Os ids dos nós devem ser curtos e únicos (n1, n2, ...) e parentId deve ser "root" ou o id de outro nó.';
 }
@@ -9182,7 +9183,7 @@ function mmNormalize(obj, mapId) {
       label: String(n.label).trim().slice(0, 40),
       type: MM_TYPES.indexOf(n.type) !== -1 ? n.type : 'concept',
       importance: ['high','medium','low'].indexOf(n.importance) !== -1 ? n.importance : 'medium',
-      description: n.description ? String(n.description).slice(0, 400) : '',
+      description: n.description ? String(n.description).slice(0, 700) : '',
     };
   });
   const byId = {}; nodes.forEach(n => { byId[n.id] = n; });
@@ -9202,7 +9203,12 @@ function mmNormalize(obj, mapId) {
     keptSet[n.id] = true; kept.push(n);
   });
   const relations = (Array.isArray(obj.relations) ? obj.relations : [])
-    .map(r => ({ from: byOld[String(r && r.from)], to: byOld[String(r && r.to)], type: String((r && r.type) || ''), label: r && r.label ? String(r.label).slice(0, 30) : '' }))
+    .map(r => ({
+      from: byOld[String(r && r.from)], to: byOld[String(r && r.to)],
+      type: String((r && r.type) || ''),
+      label: r && r.label ? String(r.label).slice(0, 30) : '',
+      explanation: r && (r.explanation || r.description) ? String(r.explanation || r.description).slice(0, 400) : '',
+    }))
     .filter(r => r.from && r.to && keptSet[r.from] && keptSet[r.to] && r.from !== r.to)
     .slice(0, 20);
   if (!kept.length) return null;
