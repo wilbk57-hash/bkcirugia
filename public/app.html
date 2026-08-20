@@ -9730,6 +9730,30 @@ function mmBuildTree() {
     });
   };
   place(map.root.id, -Math.PI / 2, Math.PI * 1.5, 1);
+  /* Passagem final anti-colisão: em cadeias muito profundas o espaçamento
+     angular pode não chegar, por isso afastam-se os pares que ainda se
+     tocam (move-se sempre o nó mais profundo). Não corre quando há posições
+     congeladas, para não deslocar o que já estava plotado. */
+  if (!Object.keys(MM_STATE.frozen).length) {
+    for (let it = 0; it < 14; it++) {
+      let moved = false;
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          const a = positions[i], b = positions[j];
+          const ox = (a.w + b.w) / 2 + 16 - Math.abs(a.x - b.x);
+          const oy = (a.h + b.h) / 2 + 12 - Math.abs(a.y - b.y);
+          if (ox <= 0 || oy <= 0) continue;
+          const target = (a.depth >= b.depth ? a : b);
+          if (target.isRoot) continue;
+          const other = (target === a ? b : a);
+          if (ox < oy) target.x += (target.x >= other.x ? 1 : -1) * ox;
+          else target.y += (target.y >= other.y ? 1 : -1) * oy;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+  }
   MM_STATE.nodes = positions;
   return positions;
 }
