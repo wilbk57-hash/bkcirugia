@@ -9545,6 +9545,7 @@ function mmSyncModeUi() {
   set('mmPresentBtn', t('mm.present'), MM_STATE.mode === 'present');
   set('mmMemoBtn', t('mm.memo'), MM_STATE.mode === 'memo');
   set('mmDensityBtn', MM_STATE.overview ? t('mm.expandall') : t('mm.collapseall'), MM_STATE.overview);
+  set('mmLayoutBtn', MM_LAYOUT === 'tree' ? t('mm.layout.tree') : t('mm.layout.radial'), MM_LAYOUT === 'tree');
   set('mmStepExit', t('mm.present.exit'), false);
   set('mmSummaryBtn', t('mm.study.summary'), false);
   set('mmQuizBtn', t('mm.study.quiz'), false);
