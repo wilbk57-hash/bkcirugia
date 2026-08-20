@@ -10105,7 +10105,21 @@ function mmSelectRelation(r) {
   const body = r.label
     ? r.label
     : mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() });
-  mmPanelShow(t('mm.rel.kind'), mmRelTitle(r), body, [
+  const lines = [];
+  lines.push(mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() }));
+  if (r.explanation) lines.push(r.explanation);
+  else if (r.label) lines.push(r.label);
+  const map = MM_STATE.map;
+  const descOf = (id) => {
+    if (!map) return '';
+    const n = map.nodes.find(x => x.id === id);
+    return n && n.description ? n.description : '';
+  };
+  const ctx = [[r.from, descOf(r.from)], [r.to, descOf(r.to)]]
+    .filter(p => p[1])
+    .map(p => '• ' + mmRelNodeLabel(p[0]) + ': ' + p[1]);
+  if (ctx.length) lines.push(t('mm.rel.between') + '\n' + ctx.join('\n'));
+  mmPanelShow(t('mm.rel.kind'), mmRelTitle(r), lines.join('\n\n'), [
     { label: t('mm.explain'), onClick: () => mmExplainRelation(r) },
   ]);
   mmRender(true);
