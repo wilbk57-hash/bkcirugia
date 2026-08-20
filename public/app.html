@@ -1689,7 +1689,7 @@
       </div>
       <div class="dash-header-right">
         <button class="icon-btn" onclick="openSearch()" title="Pesquisar" aria-label="Pesquisar">🔍</button>
-        <button class="icon-btn" onclick="showToast(t('toast.stub'))" title="Notificações" aria-label="Notificações">🔔</button>
+        <button class="icon-btn" id="notifBtn" style="position:relative;" onclick="spToggleNotifications(event)" title="Notificações" aria-label="Notificações">🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center;"></span></button>
         <button class="icon-btn" onclick="openSettings()" title="Configurações" aria-label="Configurações">⚙</button>
       </div>
     </div>
