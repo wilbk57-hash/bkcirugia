@@ -10102,9 +10102,6 @@ function mmSelectRelation(r) {
   if (!MM_STATE.map) return;
   MM_STATE.selected = null;
   MM_STATE.selectedRel = mmRelKey(r);
-  const body = r.label
-    ? r.label
-    : mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() });
   const lines = [];
   lines.push(mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() }));
   if (r.explanation) lines.push(r.explanation);
