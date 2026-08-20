@@ -1281,17 +1281,30 @@
     border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; pointer-events: none;
   }
   .mm-tools { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
-  .mm-node-box { fill: var(--panel); stroke: var(--border); stroke-width: 1.2px; }
+  /* Mesma linguagem de cor das info-box dos módulos de conteúdo:
+     âmbar=definição, vermelho=alerta, azul=clínico/evidência,
+     verde=exemplo, roxo=conceito/decisão. Tudo via tokens de tema. */
+  .mm-node-box {
+    fill: color-mix(in srgb, var(--mm-accent, var(--border)) var(--ib-tint), var(--panel));
+    stroke: var(--mm-accent, var(--border)); stroke-width: 1.2px;
+  }
+  .mm-t-concept    { --mm-accent: var(--ib-purple); }
+  .mm-t-definition { --mm-accent: var(--ib-amber); }
+  .mm-t-warning    { --mm-accent: var(--ib-red); }
+  .mm-t-clinical   { --mm-accent: var(--ib-blue); }
+  .mm-t-example    { --mm-accent: var(--ib-green); }
+  .mm-t-decision   { --mm-accent: var(--ib-purple); }
+  .mm-t-evidence   { --mm-accent: var(--ib-blue); }
   .mm-node-root .mm-node-box { fill: var(--teal-dim); stroke: var(--teal); stroke-width: 2px; }
   .mm-node-label { fill: var(--text); font-family: 'Inter', sans-serif; font-size: 11px; }
   .mm-node-root .mm-node-label { font-size: 14px; font-weight: 700; }
   .mm-imp-high .mm-node-label { font-weight: 700; }
   .mm-imp-low .mm-node-label { fill: var(--text2); }
   .mm-imp-low .mm-node-box { opacity: .82; }
-  .mm-t-warning .mm-node-box { stroke: var(--amber); }
   .mm-t-decision .mm-node-box { stroke-dasharray: 4 3; }
   .mm-t-definition .mm-node-box { stroke-dasharray: 1 3; }
   .mm-t-clinical .mm-node-box { stroke-width: 2px; }
+  .mm-t-warning .mm-node-box { stroke-width: 2px; }
   .mm-t-evidence .mm-node-box { stroke-dasharray: 8 3; }
   .mm-node { cursor: pointer; }
   .mm-node:focus { outline: none; }
@@ -1299,6 +1312,9 @@
   .mm-link { fill: none; stroke: var(--border); stroke-width: 1.4px; }
   .mm-rel { fill: none; stroke: var(--violet); stroke-width: 1.2px; stroke-dasharray: 5 4; opacity: .8; }
   .mm-rel-label { fill: var(--violet); font-size: 9px; font-family: 'IBM Plex Mono', monospace; }
+  .mm-rel-hit { fill: none; stroke: transparent; stroke-width: 16px; cursor: pointer; pointer-events: stroke; }
+  .mm-rel-hit:focus { outline: none; }
+  .mm-rel-hit:focus + .mm-rel, .mm-rel.mm-rel-on { stroke-width: 2.4px; opacity: 1; }
   .mm-badge { font-size: 10px; }
   .mm-panel {
     position: absolute; right: 0; top: 0; bottom: 0; width: 320px; z-index: 5;
@@ -5574,6 +5590,20 @@ const STR_TABLE = [
  ['mm.type.example','Exemplo','Example','Ejemplo'],
  ['mm.type.decision','Decisão','Decision','Decisión'],
  ['mm.type.evidence','Evidência','Evidence','Evidencia'],
+ ['mm.layout.radial','Layout: Radial','Layout: Radial','Diseño: Radial'],
+ ['mm.layout.tree','Layout: Árvore','Layout: Tree','Diseño: Árbol'],
+ ['mm.rel.kind','Relação','Relation','Relación'],
+ ['mm.rel.desc','Ligação entre "{a}" e "{b}" ({rel}).','Link between "{a}" and "{b}" ({rel}).','Vínculo entre "{a}" y "{b}" ({rel}).'],
+ ['mm.rel.causes','causa','causes','causa'],
+ ['mm.rel.leads_to','leva a','leads to','lleva a'],
+ ['mm.rel.associated_with','associa-se a','associated with','se asocia con'],
+ ['mm.rel.compares_to','compara-se com','compares to','se compara con'],
+ ['mm.rel.precedes','precede','precedes','precede'],
+ ['mm.rel.risk_of','risco de','risk of','riesgo de'],
+ ['mm.rel.prevents','previne','prevents','previene'],
+ ['mm.rel.diagnoses','diagnostica','diagnoses','diagnostica'],
+ ['mm.rel.treats','trata','treats','trata'],
+ ['mm.rel.complication_of','complicação de','complication of','complicación de'],
 ['mm.overview','Visão geral: abra os ramos para ver o detalhe.','Overview: open branches to see detail.','Vista general: abre las ramas para ver el detalle.'],
 ['mm.expandN','Expandir mais {n}','Expand {n} more','Expandir {n} más'],
 ['mm.expandall','Expandir tudo','Expand all','Expandir todo'],
@@ -9012,6 +9042,7 @@ if ('serviceWorker' in navigator) {
       <button class="mm-btn" id="mmPresentBtn" onclick="mmTogglePresent()"></button>
       <button class="mm-btn" id="mmMemoBtn" onclick="mmToggleMemo()"></button>
       <button class="mm-btn" id="mmDensityBtn" onclick="mmToggleDensity()"></button>
+      <button class="mm-btn" id="mmLayoutBtn" onclick="mmToggleLayout()"></button>
     </div>
     <div class="mm-stepbar" id="mmStepBar">
       <button class="mm-btn icon" id="mmStepPrev" onclick="mmPresentStep(-1)">‹</button>
@@ -9036,6 +9067,17 @@ if ('serviceWorker' in navigator) {
    Aditivo: não altera auth, navegação principal nem conteúdos.
    ============================================================ */
 const MM_STORAGE = 'bkcirurgia_mindmaps_v1';
+const MM_LAYOUT_KEY = 'bkcirurgia_mindmaps_layout_v1';
+let MM_LAYOUT = 'radial';
+try { const _l = localStorage.getItem(MM_LAYOUT_KEY); if (_l === 'tree' || _l === 'radial') MM_LAYOUT = _l; } catch (e) {}
+function mmToggleLayout() {
+  MM_LAYOUT = MM_LAYOUT === 'tree' ? 'radial' : 'tree';
+  try { localStorage.setItem(MM_LAYOUT_KEY, MM_LAYOUT); } catch (e) {}
+  MM_STATE.frozen = {};
+  mmClosePanel();
+  if (MM_STATE.map) mmRender(false);
+  mmSyncModeUi();
+}
 const MM_TYPES = ['concept','definition','warning','clinical','example','decision','evidence'];
 const MM_MAX_NODES = 120, MM_MAX_DEPTH = 5, MM_MAX_BRANCH = 9;
 let MM_STATE = {
@@ -9045,6 +9087,8 @@ let MM_STATE = {
   focus: false, mode: 'normal', presentIdx: 0, revealed: {}, overview: false, frozen: {},
   /* integração pedagógica */
   review: false, reviewSel: [],
+  /* relação selecionada (painel de linha) */
+  selectedRel: null,
 };
 function mmFmt(key, vars) {
   let s = t(key);
@@ -9517,6 +9561,7 @@ function mmSyncModeUi() {
   set('mmPresentBtn', t('mm.present'), MM_STATE.mode === 'present');
   set('mmMemoBtn', t('mm.memo'), MM_STATE.mode === 'memo');
   set('mmDensityBtn', MM_STATE.overview ? t('mm.expandall') : t('mm.collapseall'), MM_STATE.overview);
+  set('mmLayoutBtn', MM_LAYOUT === 'tree' ? t('mm.layout.tree') : t('mm.layout.radial'), MM_LAYOUT === 'tree');
   set('mmStepExit', t('mm.present.exit'), false);
   set('mmSummaryBtn', t('mm.study.summary'), false);
   set('mmQuizBtn', t('mm.study.quiz'), false);
@@ -9573,19 +9618,63 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ---- Layout radial escrito à mão ---- */
+/* Quebra o rótulo em 1-3 linhas; corta com reticências se não couber. */
+function mmWrapLabel(label, isRoot) {
+  const maxChars = isRoot ? 22 : 19, maxLines = 3;
+  const words = String(label == null ? '' : label).trim().split(/\s+/).filter(Boolean);
+  const raw = [];
+  let cur = '';
+  words.forEach(w => {
+    if (!cur) { cur = w; return; }
+    if ((cur + ' ' + w).length <= maxChars) cur += ' ' + w; else { raw.push(cur); cur = w; }
+  });
+  if (cur) raw.push(cur);
+  const lines = [];
+  raw.forEach(l => { let s = l; while (s.length > maxChars + 3) { lines.push(s.slice(0, maxChars)); s = s.slice(maxChars); } lines.push(s); });
+  if (!lines.length) return [''];
+  if (lines.length > maxLines) {
+    const keep = lines.slice(0, maxLines);
+    keep[maxLines - 1] = keep[maxLines - 1].slice(0, Math.max(1, maxChars - 1)).replace(/\s+$/, '') + '…';
+    return keep;
+  }
+  return lines;
+}
+/* Caixa dimensionada pelo texto já quebrado (largura da maior linha + altura por nº de linhas). */
+function mmMeasure(label, isRoot) {
+  const lines = mmWrapLabel(label, isRoot);
+  const charW = isRoot ? 8.6 : 6.6, lineH = isRoot ? 17 : 14;
+  const longest = lines.reduce((a, l) => Math.max(a, l.length), 0);
+  const w = Math.max(isRoot ? 120 : 76, Math.min(isRoot ? 260 : 190, longest * charW + 28));
+  const h = Math.max(isRoot ? 46 : 34, lines.length * lineH + (isRoot ? 20 : 16));
+  return { w: w, h: h, lines: lines, lineH: lineH };
+}
+/* Raio por profundidade: continua a crescer além do nível 3 em vez de saturar. */
+function mmRadius(depth) {
+  const RAD = [0, 230, 400, 545];
+  return depth <= 3 ? RAD[depth] : RAD[3] + (depth - 3) * 185;
+}
+/* Reparte `total` pelos pesos, garantindo o mínimo angular de cada caixa. */
+function mmShare(total, weights, mins) {
+  const sumW = weights.reduce((a, b) => a + b, 0) || 1;
+  let out = weights.map(w => total * w / sumW);
+  for (let it = 0; it < 5; it++) {
+    let need = 0, free = 0;
+    out.forEach((v, i) => { if (v < mins[i]) need += mins[i] - v; else free += v - mins[i]; });
+    if (need <= 0.0001 || free <= 0.0001) break;
+    const take = Math.min(need, free);
+    out = out.map((v, i) => v < mins[i] ? v + (mins[i] - v) * (take / need) : v - (v - mins[i]) * (take / free));
+  }
+  return out;
+}
 function mmBuildTree() {
   const map = MM_STATE.map;
   const children = {};
   children[map.root.id] = [];
   map.nodes.forEach(n => { (children[n.parentId] = children[n.parentId] || []).push(n); });
-  const measure = (label, isRoot) => {
-    const len = String(label).length;
-    const w = Math.max(isRoot ? 120 : 76, Math.min(isRoot ? 260 : 186, len * (isRoot ? 9 : 6.6) + 30));
-    return { w: w, h: isRoot ? 46 : 34 };
-  };
+  const measure = mmMeasure;
   const positions = [];
   const rootBox = measure(map.root.label, true);
-  const rootNode = { id: map.root.id, label: map.root.label, isRoot: true, x: 0, y: 0, w: rootBox.w, h: rootBox.h, type: 'concept', importance: 'high', description: map.summary || '', depth: 0, hasChildren: (children[map.root.id] || []).length > 0, collapsed: false };
+  const rootNode = { id: map.root.id, label: map.root.label, isRoot: true, x: 0, y: 0, w: rootBox.w, h: rootBox.h, lines: rootBox.lines, lineH: rootBox.lineH, type: 'concept', importance: 'high', description: map.summary || '', depth: 0, hasChildren: (children[map.root.id] || []).length > 0, collapsed: false };
   positions.push(rootNode);
   const leafCount = (id) => {
     if (MM_STATE.collapsed[id]) return 1;
@@ -9597,21 +9686,24 @@ function mmBuildTree() {
     const kids = children[id] || [];
     return kids.reduce((a, k) => a + 1 + descCount(k.id), 0);
   };
-  const RAD = [0, 230, 400, 545];
   const place = (parentId, a0, a1, depth) => {
     if (MM_STATE.collapsed[parentId]) return;
     const kids = children[parentId] || [];
     if (!kids.length) return;
-    const total = kids.reduce((a, k) => a + leafCount(k.id), 0) || 1;
     let cur = a0;
     const parentPos = positions.find(p => p.id === parentId);
     const preserving = Object.keys(MM_STATE.frozen).length > 0;
     let freshIdx = 0;
-    kids.forEach(k => {
-      const span = (a1 - a0) * (leafCount(k.id) / total);
+    const r = mmRadius(Math.min(depth, 12));
+    const boxes = kids.map(k => measure(k.label, false));
+    /* O espaçamento angular tem de acomodar a largura real da caixa a este
+       raio, não só o número de folhas — senão ramos desequilibrados colidem. */
+    const mins = boxes.map(b => Math.min((a1 - a0) / kids.length * 1.6, (Math.max(b.w, b.h * 1.4) + 34) / Math.max(r, 1)));
+    const spans = mmShare(a1 - a0, kids.map(k => leafCount(k.id)), mins);
+    kids.forEach((k, ki) => {
+      const span = spans[ki];
       const ang = cur + span / 2;
-      const r = RAD[Math.min(depth, 3)];
-      const box = measure(k.label, false);
+      const box = boxes[ki];
       const frozen = MM_STATE.frozen[k.id];
       /* Num mapa atualizado, os nós novos nascem junto do seu pai para não
          deslocar o que já estava plotado. */
@@ -9628,7 +9720,8 @@ function mmBuildTree() {
         id: k.id, label: k.label, parentId: parentId, isRoot: false,
         x: frozen ? frozen.x : nx,
         y: frozen ? frozen.y : ny,
-        w: box.w, h: box.h, type: k.type, importance: k.importance, description: k.description,
+        w: box.w, h: box.h, lines: box.lines, lineH: box.lineH,
+        type: k.type, importance: k.importance, description: k.description,
         depth: depth, hasChildren: (children[k.id] || []).length > 0, collapsed: !!MM_STATE.collapsed[k.id],
         hidden: MM_STATE.collapsed[k.id] ? descCount(k.id) : 0,
       });
@@ -9637,9 +9730,91 @@ function mmBuildTree() {
     });
   };
   place(map.root.id, -Math.PI / 2, Math.PI * 1.5, 1);
+  /* Passagem final anti-colisão: em cadeias muito profundas o espaçamento
+     angular pode não chegar, por isso afastam-se os pares que ainda se
+     tocam (move-se sempre o nó mais profundo). Não corre quando há posições
+     congeladas, para não deslocar o que já estava plotado. */
+  if (!Object.keys(MM_STATE.frozen).length) {
+    for (let it = 0; it < 14; it++) {
+      let moved = false;
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          const a = positions[i], b = positions[j];
+          const ox = (a.w + b.w) / 2 + 16 - Math.abs(a.x - b.x);
+          const oy = (a.h + b.h) / 2 + 12 - Math.abs(a.y - b.y);
+          if (ox <= 0 || oy <= 0) continue;
+          const target = (a.depth >= b.depth ? a : b);
+          if (target.isRoot) continue;
+          const other = (target === a ? b : a);
+          if (ox < oy) target.x += (target.x >= other.x ? 1 : -1) * ox;
+          else target.y += (target.y >= other.y ? 1 : -1) * oy;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+  }
   MM_STATE.nodes = positions;
   return positions;
 }
+
+/* ---- Layout alternativo: árvore hierárquica (LR no desktop, TB no telemóvel) ----
+   Reaproveita exatamente os mesmos dados e interações; só muda (x, y). */
+function mmTreeVertical() { return window.innerWidth < 720; }
+function mmBuildTreeH() {
+  const map = MM_STATE.map;
+  const vertical = mmTreeVertical();
+  const children = {};
+  children[map.root.id] = [];
+  map.nodes.forEach(n => { (children[n.parentId] = children[n.parentId] || []).push(n); });
+  const descCount = (id) => (children[id] || []).reduce((a, k) => a + 1 + descCount(k.id), 0);
+  const colMax = {};
+  const recs = [];
+  const visit = (node, depth, parentId, isRoot) => {
+    const box = mmMeasure(node.label, isRoot);
+    const cross = vertical ? box.h : box.w;
+    colMax[depth] = Math.max(colMax[depth] || 0, cross);
+    const rec = {
+      id: node.id, label: node.label, parentId: parentId, isRoot: isRoot,
+      w: box.w, h: box.h, lines: box.lines, lineH: box.lineH,
+      type: isRoot ? 'concept' : node.type, importance: isRoot ? 'high' : node.importance,
+      description: isRoot ? (map.summary || '') : node.description,
+      depth: depth, hasChildren: (children[node.id] || []).length > 0,
+      collapsed: !!MM_STATE.collapsed[node.id],
+      hidden: MM_STATE.collapsed[node.id] ? descCount(node.id) : 0,
+      x: 0, y: 0, kids: [],
+    };
+    recs.push(rec);
+    if (!MM_STATE.collapsed[node.id]) (children[node.id] || []).forEach(k => rec.kids.push(visit(k, depth + 1, node.id, false)));
+    return rec;
+  };
+  const root = visit(map.root, 0, null, true);
+  const gapCross = vertical ? 74 : 70, gapAlong = vertical ? 26 : 18;
+  const colPos = {}; let acc = 0;
+  Object.keys(colMax).map(Number).sort((a, b) => a - b).forEach(d => {
+    colPos[d] = acc + colMax[d] / 2; acc += colMax[d] + gapCross;
+  });
+  let cursor = 0;
+  const layout = (rec) => {
+    if (rec.kids.length) {
+      rec.kids.forEach(layout);
+      rec.along = (rec.kids[0].along + rec.kids[rec.kids.length - 1].along) / 2;
+    } else {
+      const size = vertical ? rec.w : rec.h;
+      rec.along = cursor + size / 2; cursor += size + gapAlong;
+    }
+    rec.cross = colPos[rec.depth];
+  };
+  layout(root);
+  recs.forEach(rec => {
+    rec.x = vertical ? rec.along : rec.cross;
+    rec.y = vertical ? rec.cross : rec.along;
+    delete rec.kids; delete rec.along; delete rec.cross;
+  });
+  MM_STATE.nodes = recs;
+  return recs;
+}
+function mmLayoutNodes() { return MM_LAYOUT === 'tree' ? mmBuildTreeH() : mmBuildTree(); }
 
 function mmSvgEl(name, attrs) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', name);
@@ -9651,7 +9826,7 @@ function mmRender(keepView) {
   const stage = document.getElementById('mmStage');
   const old = document.getElementById('mmSvg'); if (old) old.remove();
   const st = document.getElementById('mmStatus'); if (st) st.remove();
-  const nodes = mmBuildTree();
+  const nodes = mmLayoutNodes();
   const byId = {}; nodes.forEach(n => { byId[n.id] = n; });
   const active = mmActiveSet();
   const isActive = (id) => !active || !!active[id];
@@ -9664,13 +9839,29 @@ function mmRender(keepView) {
   nodes.forEach(n => {
     if (n.isRoot) return;
     const p = byId[n.parentId]; if (!p) return;
-    const mx = (p.x + n.x) / 2;
-    linkLayer.appendChild(mmSvgEl('path', { class: 'mm-link' + ((isActive(n.id) && isActive(p.id)) ? '' : ' mm-dim'), d: 'M' + p.x + ',' + p.y + ' C' + mx + ',' + p.y + ' ' + mx + ',' + n.y + ' ' + n.x + ',' + n.y }));
+    const cls = 'mm-link' + ((isActive(n.id) && isActive(p.id)) ? '' : ' mm-dim');
+    let d;
+    if (MM_LAYOUT === 'tree' && mmTreeVertical()) {
+      const my2 = (p.y + n.y) / 2;
+      d = 'M' + p.x + ',' + p.y + ' C' + p.x + ',' + my2 + ' ' + n.x + ',' + my2 + ' ' + n.x + ',' + n.y;
+    } else {
+      const mx = (p.x + n.x) / 2;
+      d = 'M' + p.x + ',' + p.y + ' C' + mx + ',' + p.y + ' ' + mx + ',' + n.y + ' ' + n.x + ',' + n.y;
+    }
+    linkLayer.appendChild(mmSvgEl('path', { class: cls, d: d }));
   });
   (MM_STATE.map.relations || []).forEach(r => {
     const a = byId[r.from], b = byId[r.to]; if (!a || !b) return;
     const my = Math.min(a.y, b.y) - 40;
-    relLayer.appendChild(mmSvgEl('path', { class: 'mm-rel' + ((isActive(a.id) && isActive(b.id)) ? '' : ' mm-dim'), d: 'M' + a.x + ',' + a.y + ' Q' + ((a.x + b.x) / 2) + ',' + my + ' ' + b.x + ',' + b.y }));
+    const d = 'M' + a.x + ',' + a.y + ' Q' + ((a.x + b.x) / 2) + ',' + my + ' ' + b.x + ',' + b.y;
+    /* Caminho invisível mais largo: alvo de toque confortável no telemóvel. */
+    const hit = mmSvgEl('path', { class: 'mm-rel-hit', d: d, tabindex: '0', role: 'button' });
+    hit.setAttribute('aria-label', mmRelTitle(r));
+    const open = () => { if (!mmDragMoved) mmSelectRelation(r); };
+    hit.addEventListener('click', (ev) => { ev.stopPropagation(); open(); });
+    hit.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); mmSelectRelation(r); } });
+    relLayer.appendChild(hit);
+    relLayer.appendChild(mmSvgEl('path', { class: 'mm-rel' + ((isActive(a.id) && isActive(b.id)) ? '' : ' mm-dim') + (MM_STATE.selectedRel === mmRelKey(r) ? ' mm-rel-on' : ''), d: d }));
     if (r.label) {
       const txt = mmSvgEl('text', { class: 'mm-rel-label', x: (a.x + b.x) / 2, y: my + 12, 'text-anchor': 'middle' });
       txt.textContent = r.label;
@@ -9689,10 +9880,17 @@ function mmRender(keepView) {
     });
     grp.setAttribute('aria-label', masked ? t('mm.memo.hint') : n.label);
     grp.appendChild(mmSvgEl('rect', { class: 'mm-node-box', width: n.w, height: n.h, rx: 10, ry: 10 }));
-    const label = mmSvgEl('text', { class: 'mm-node-label', x: n.w / 2, y: n.h / 2 + 4, 'text-anchor': 'middle' });
+    const label = mmSvgEl('text', { class: 'mm-node-label', 'text-anchor': 'middle' });
     /* Diferenciação de tipo é feita pela borda/peso do texto (CSS), não por
        ícones — evita glifos em falta em alguns dispositivos. */
-    label.textContent = masked ? '______' : n.label;
+    const lines = masked ? ['______'] : (n.lines && n.lines.length ? n.lines : [n.label]);
+    const lh = n.lineH || (n.isRoot ? 17 : 14);
+    const y0 = n.h / 2 - ((lines.length - 1) * lh) / 2 + 4;
+    lines.forEach((ln, li) => {
+      const ts = mmSvgEl('tspan', { x: n.w / 2, y: y0 + li * lh });
+      ts.textContent = ln;
+      label.appendChild(ts);
+    });
     grp.appendChild(label);
     const activate = () => {
       if (mmMemoIsHidden(n)) { MM_STATE.revealed[n.id] = true; mmRender(true); return; }
@@ -9824,12 +10022,57 @@ function mmAttachStageEvents(svg) {
 /* ---- Painel do nó (lateral no desktop, bottom sheet no telemóvel) ---- */
 function mmClosePanel() {
   MM_STATE.selected = null;
+  MM_STATE.selectedRel = null;
   document.getElementById('mmPanel').classList.remove('show');
   document.querySelectorAll('#mmSvg .mm-node.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('#mmSvg .mm-rel.mm-rel-on').forEach(el => el.classList.remove('mm-rel-on'));
+}
+
+/* ---- Painel de relação (mesma casa do painel de nó) ---- */
+function mmRelKey(r) { return r.from + '>' + r.type + '>' + r.to; }
+function mmRelNodeLabel(id) {
+  const map = MM_STATE.map; if (!map) return id;
+  if (id === map.root.id) return map.root.label;
+  const n = map.nodes.find(x => x.id === id);
+  return n ? n.label : id;
+}
+function mmRelTypeLabel(type) {
+  const key = 'mm.rel.' + String(type || '');
+  const lbl = t(key);
+  return (!lbl || lbl === key) ? String(type || '') : lbl;
+}
+function mmRelTitle(r) {
+  return mmRelNodeLabel(r.from) + ' → ' + mmRelTypeLabel(r.type) + ' → ' + mmRelNodeLabel(r.to);
+}
+function mmSelectRelation(r) {
+  if (!MM_STATE.map) return;
+  MM_STATE.selected = null;
+  MM_STATE.selectedRel = mmRelKey(r);
+  const body = r.label
+    ? r.label
+    : mmFmt('mm.rel.desc', { a: mmRelNodeLabel(r.from), b: mmRelNodeLabel(r.to), rel: mmRelTypeLabel(r.type).toLowerCase() });
+  mmPanelShow(t('mm.rel.kind'), mmRelTitle(r), body, [
+    { label: t('mm.explain'), onClick: () => mmExplainRelation(r) },
+  ]);
+  mmRender(true);
+}
+function mmExplainRelation(r) {
+  const title = (MM_STATE.map && MM_STATE.map.title) || '';
+  const a = mmRelNodeLabel(r.from), b = mmRelNodeLabel(r.to), rel = mmRelTypeLabel(r.type).toLowerCase();
+  const q = { pt: 'Explique a relação "' + a + ' → ' + rel + ' → ' + b + '" dentro de "' + title + '".',
+              en: 'Explain the relation "' + a + ' → ' + rel + ' → ' + b + '" within "' + title + '".',
+              es: 'Explica la relación "' + a + ' → ' + rel + ' → ' + b + '" dentro de "' + title + '".' }[currentLang]
+            || 'Explique a relação "' + a + ' → ' + rel + ' → ' + b + '".';
+  mmRequestClose();
+  const input = document.getElementById('iaInput');
+  if (!input) return;
+  input.value = q;
+  setTimeout(() => { sendIaMessage(); }, 60);
 }
 function mmSelectNode(id) {
   const n = MM_STATE.nodes.find(x => x.id === id); if (!n) return;
   MM_STATE.selected = id;
+  MM_STATE.selectedRel = null;
   document.querySelectorAll('#mmSvg .mm-node.selected').forEach(el => el.classList.remove('selected'));
   const panel = document.getElementById('mmPanel');
   panel.textContent = '';
