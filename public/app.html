@@ -7324,6 +7324,7 @@ function renderLessonCompleteBlock(topicId, tabId) {
       ? `<button class="btn lesson-complete-btn done" disabled>✅ ${t('lesson.done.badge')}</button>`
       : `<button class="btn primary lesson-complete-btn" onclick="handleMarkLessonComplete('${topicId}','${tabId}')">☑️ ${t('lesson.markdone')}</button>`}
     <p class="lesson-complete-sub">${t('lesson.markdone.sub')}</p>
+    <button class="plan-go" id="seNoteBtn-${topicId}-${tabId}" style="margin-top:6px;" onclick="seNoteDialog('${topicId}','${tabId}')">${t('se.note.add')}</button>
   </div>`;
 }
 function handleMarkLessonComplete(topicId, tabId) {
