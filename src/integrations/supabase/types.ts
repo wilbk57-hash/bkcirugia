@@ -148,6 +148,42 @@ export type Database = {
         }
         Relationships: []
       }
+      study_progress: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_attempt_at: string
+          score: number
+          topic_id: string
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string
+          score?: number
+          topic_id: string
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string
+          score?: number
+          topic_id?: string
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_books: {
         Row: {
           author: string | null
