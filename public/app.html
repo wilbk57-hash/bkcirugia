@@ -5894,6 +5894,9 @@ function recordQuizResult(topicId, score, total) {
   markStudyDay();
   pushActivity({ type: 'quiz', topicId, score, total });
   saveProgress();
+  /* Fonte de verdade passa a ser a tabela study_progress; o localStorage
+     mantém-se como cache/fallback offline. */
+  try { spRecordQuiz(topicId, score, total); } catch (e) {}
   if (document.getElementById('perfilView') && document.getElementById('perfilView').classList.contains('show')) renderPerfil();
 }
 function recordCaseComplete(topicId) {
