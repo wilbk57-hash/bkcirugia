@@ -6452,12 +6452,20 @@ function renderPlan() {
   const host = document.getElementById('planList');
   if (!host) return;
   const items = spDailyPlan();
-  if (!items.length) {
+  const evs = (typeof seUpcoming === 'function') ? seUpcoming(7) : [];
+  const evHtml = evs.slice(0, 3).map(e => `
+    <div class="plan-item">
+      <span class="plan-time">${seTypeIcon(e.type)}</span>
+      <span class="plan-dot" style="background:${seIsWeak(e.topic_id) || seDaysUntil(e.date) < 0 ? 'var(--red)' : 'var(--blue)'}"></span>
+      <span class="plan-label">${seEsc(e.title)} · <span style="color:var(--text3);font-size:12px;">${seWhen(e.date)}</span></span>
+      <button class="plan-go" onclick="seOpenToday()">${t('se.today.open')}</button>
+    </div>`).join('');
+  if (!items.length && !evHtml) {
     host.innerHTML = `<div class="pf-empty" style="padding:12px;color:var(--text3);font-size:13px;">${t('sp.plan.empty')}</div>`;
     return;
   }
   const colors = ['var(--red)', 'var(--amber)', 'var(--blue)', 'var(--teal)'];
-  host.innerHTML = items.map((p, i) => `
+  host.innerHTML = evHtml + items.map((p, i) => `
     <div class="plan-item">
       <span class="plan-time">${i + 1}º</span>
       <span class="plan-dot" style="background:${colors[i % colors.length]}"></span>
