@@ -10146,6 +10146,28 @@ function mmSelectNode(id) {
   const title = document.createElement('div'); title.className = 'mm-panel-title'; title.textContent = n.label;
   const desc = document.createElement('div'); desc.className = 'mm-panel-desc';
   desc.textContent = n.description || t('mm.nodesc');
+  /* Contexto extra: onde o nó se encaixa e que relações tem no mapa. */
+  const extra = document.createElement('div'); extra.className = 'mm-panel-body';
+  const bits = [];
+  const map = MM_STATE.map;
+  if (!n.isRoot) {
+    bits.push(mmFmt('mm.node.imp', { v: t('mm.imp.' + (n.importance || 'medium')) }));
+    const parentLabel = n.parentId && map ? mmRelNodeLabel(n.parentId) : '';
+    if (parentLabel) bits.push(mmFmt('mm.node.parent', { a: parentLabel }));
+  }
+  if (map) {
+    const kids = map.nodes.filter(x => x.parentId === n.id).length;
+    if (kids) bits.push(mmFmt('mm.node.children', { n: kids }));
+    const rels = (map.relations || []).filter(r => r.from === n.id || r.to === n.id);
+    if (rels.length) {
+      bits.push(t('mm.node.rels') + '\n' + rels.slice(0, 6).map(r => {
+        const other = r.from === n.id ? r.to : r.from;
+        const line = '• ' + mmRelTypeLabel(r.type) + ' → ' + mmRelNodeLabel(other);
+        return r.explanation ? line + ' — ' + r.explanation : line;
+      }).join('\n'));
+    }
+  }
+  extra.textContent = bits.join('\n\n');
   const actions = document.createElement('div'); actions.className = 'mm-panel-actions';
   const explain = document.createElement('button'); explain.className = 'mm-btn'; explain.textContent = t('mm.explain');
   explain.onclick = () => mmExplainNode(n.id);
@@ -10164,7 +10186,9 @@ function mmSelectNode(id) {
     doubt.onclick = () => { mmRecordDoubt(n.id); doubt.textContent = t('mm.doubt.done'); doubt.disabled = true; };
     actions.insertBefore(doubt, close);
   }
-  panel.appendChild(kind); panel.appendChild(title); panel.appendChild(desc); panel.appendChild(actions);
+  panel.appendChild(kind); panel.appendChild(title); panel.appendChild(desc);
+  if (bits.length) panel.appendChild(extra);
+  panel.appendChild(actions);
   panel.classList.add('show');
   mmRender(true);
 }
