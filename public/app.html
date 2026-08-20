@@ -9784,7 +9784,7 @@ function mmRender(keepView) {
   const stage = document.getElementById('mmStage');
   const old = document.getElementById('mmSvg'); if (old) old.remove();
   const st = document.getElementById('mmStatus'); if (st) st.remove();
-  const nodes = mmBuildTree();
+  const nodes = mmLayoutNodes();
   const byId = {}; nodes.forEach(n => { byId[n.id] = n; });
   const active = mmActiveSet();
   const isActive = (id) => !active || !!active[id];
@@ -9797,13 +9797,29 @@ function mmRender(keepView) {
   nodes.forEach(n => {
     if (n.isRoot) return;
     const p = byId[n.parentId]; if (!p) return;
-    const mx = (p.x + n.x) / 2;
-    linkLayer.appendChild(mmSvgEl('path', { class: 'mm-link' + ((isActive(n.id) && isActive(p.id)) ? '' : ' mm-dim'), d: 'M' + p.x + ',' + p.y + ' C' + mx + ',' + p.y + ' ' + mx + ',' + n.y + ' ' + n.x + ',' + n.y }));
+    const cls = 'mm-link' + ((isActive(n.id) && isActive(p.id)) ? '' : ' mm-dim');
+    let d;
+    if (MM_LAYOUT === 'tree' && mmTreeVertical()) {
+      const my2 = (p.y + n.y) / 2;
+      d = 'M' + p.x + ',' + p.y + ' C' + p.x + ',' + my2 + ' ' + n.x + ',' + my2 + ' ' + n.x + ',' + n.y;
+    } else {
+      const mx = (p.x + n.x) / 2;
+      d = 'M' + p.x + ',' + p.y + ' C' + mx + ',' + p.y + ' ' + mx + ',' + n.y + ' ' + n.x + ',' + n.y;
+    }
+    linkLayer.appendChild(mmSvgEl('path', { class: cls, d: d }));
   });
   (MM_STATE.map.relations || []).forEach(r => {
     const a = byId[r.from], b = byId[r.to]; if (!a || !b) return;
     const my = Math.min(a.y, b.y) - 40;
-    relLayer.appendChild(mmSvgEl('path', { class: 'mm-rel' + ((isActive(a.id) && isActive(b.id)) ? '' : ' mm-dim'), d: 'M' + a.x + ',' + a.y + ' Q' + ((a.x + b.x) / 2) + ',' + my + ' ' + b.x + ',' + b.y }));
+    const d = 'M' + a.x + ',' + a.y + ' Q' + ((a.x + b.x) / 2) + ',' + my + ' ' + b.x + ',' + b.y;
+    /* Caminho invisível mais largo: alvo de toque confortável no telemóvel. */
+    const hit = mmSvgEl('path', { class: 'mm-rel-hit', d: d, tabindex: '0', role: 'button' });
+    hit.setAttribute('aria-label', mmRelTitle(r));
+    const open = () => { if (!mmDragMoved) mmSelectRelation(r); };
+    hit.addEventListener('click', (ev) => { ev.stopPropagation(); open(); });
+    hit.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); mmSelectRelation(r); } });
+    relLayer.appendChild(hit);
+    relLayer.appendChild(mmSvgEl('path', { class: 'mm-rel' + ((isActive(a.id) && isActive(b.id)) ? '' : ' mm-dim') + (MM_STATE.selectedRel === mmRelKey(r) ? ' mm-rel-on' : ''), d: d }));
     if (r.label) {
       const txt = mmSvgEl('text', { class: 'mm-rel-label', x: (a.x + b.x) / 2, y: my + 12, 'text-anchor': 'middle' });
       txt.textContent = r.label;
@@ -9822,10 +9838,17 @@ function mmRender(keepView) {
     });
     grp.setAttribute('aria-label', masked ? t('mm.memo.hint') : n.label);
     grp.appendChild(mmSvgEl('rect', { class: 'mm-node-box', width: n.w, height: n.h, rx: 10, ry: 10 }));
-    const label = mmSvgEl('text', { class: 'mm-node-label', x: n.w / 2, y: n.h / 2 + 4, 'text-anchor': 'middle' });
+    const label = mmSvgEl('text', { class: 'mm-node-label', 'text-anchor': 'middle' });
     /* Diferenciação de tipo é feita pela borda/peso do texto (CSS), não por
        ícones — evita glifos em falta em alguns dispositivos. */
-    label.textContent = masked ? '______' : n.label;
+    const lines = masked ? ['______'] : (n.lines && n.lines.length ? n.lines : [n.label]);
+    const lh = n.lineH || (n.isRoot ? 17 : 14);
+    const y0 = n.h / 2 - ((lines.length - 1) * lh) / 2 + 4;
+    lines.forEach((ln, li) => {
+      const ts = mmSvgEl('tspan', { x: n.w / 2, y: y0 + li * lh });
+      ts.textContent = ln;
+      label.appendChild(ts);
+    });
     grp.appendChild(label);
     const activate = () => {
       if (mmMemoIsHidden(n)) { MM_STATE.revealed[n.id] = true; mmRender(true); return; }
