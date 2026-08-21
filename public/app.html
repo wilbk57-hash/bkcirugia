@@ -9327,7 +9327,7 @@ function seDownloadIcs(id) {
     'BEGIN:VEVENT',
     'UID:' + ev.id + '@bkcirurgia',
     'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z',
-    'DTSTART;' + st.value,
+    'DTSTART' + (st.allDay ? ';' : '') + st.value,
     'SUMMARY:' + fold(seTypeLabel(ev.type) + ' — ' + ev.title),
     'DESCRIPTION:' + fold(ev.description || ''),
     'BEGIN:VALARM', 'TRIGGER:-P' + days + 'D', 'ACTION:DISPLAY',
