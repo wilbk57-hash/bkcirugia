@@ -9346,9 +9346,17 @@ function seDownloadIcs(id) {
 }
 
 /* ---- CRUD ---- */
+/* Espera a que _authCache esteja preenchido — evita gravações perdidas quando
+   o utilizador age antes de refreshAuthCache() terminar. */
+async function seAwaitUser() {
+  for (let i = 0; i < 40 && !_authCache.ready; i++) await new Promise(r => setTimeout(r, 100));
+  if (getCurrentUser()) return getCurrentUser();
+  await refreshAuthCache().catch(() => {});
+  return getCurrentUser();
+}
 async function seSaveEvent(form) {
-  const user = getCurrentUser();
-  if (!user) return;
+  const user = await seAwaitUser();
+  if (!user) { showToast(t('se.error')); return false; }
   const row = {
     user_id: user.id,
     type: form.type, title: form.title,
