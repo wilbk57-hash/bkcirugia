@@ -9327,7 +9327,7 @@ function seDownloadIcs(id) {
     'BEGIN:VEVENT',
     'UID:' + ev.id + '@bkcirurgia',
     'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z',
-    'DTSTART;' + st.value,
+    'DTSTART' + (st.allDay ? ';' : '') + st.value,
     'SUMMARY:' + fold(seTypeLabel(ev.type) + ' — ' + ev.title),
     'DESCRIPTION:' + fold(ev.description || ''),
     'BEGIN:VALARM', 'TRIGGER:-P' + days + 'D', 'ACTION:DISPLAY',
@@ -9346,9 +9346,17 @@ function seDownloadIcs(id) {
 }
 
 /* ---- CRUD ---- */
+/* Espera a que _authCache esteja preenchido — evita gravações perdidas quando
+   o utilizador age antes de refreshAuthCache() terminar. */
+async function seAwaitUser() {
+  for (let i = 0; i < 40 && !_authCache.ready; i++) await new Promise(r => setTimeout(r, 100));
+  if (getCurrentUser()) return getCurrentUser();
+  await refreshAuthCache().catch(() => {});
+  return getCurrentUser();
+}
 async function seSaveEvent(form) {
-  const user = getCurrentUser();
-  if (!user) return;
+  const user = await seAwaitUser();
+  if (!user) { showToast(t('se.error')); return false; }
   const row = {
     user_id: user.id,
     type: form.type, title: form.title,
@@ -9379,8 +9387,8 @@ async function seDeleteEvent(id) {
   spUpdateBadge(); renderPlan(); seRenderToday();
 }
 async function seSaveNote(topicId, stepId, content) {
-  const user = getCurrentUser();
-  if (!user) return false;
+  const user = await seAwaitUser();
+  if (!user) { showToast(t('se.error')); return false; }
   const { data, error } = await supabaseClient.from('study_notes')
     .insert({ user_id: user.id, topic_id: topicId, lesson_step_id: stepId || null, content }).select().single();
   if (error) { showToast(t('se.error') + ' ' + (error.message || '')); return false; }
