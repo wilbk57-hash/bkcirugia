@@ -2341,7 +2341,7 @@ function handleExplainSelectionChange() {
 
   EXPLAIN_SELECTION_TEXT = text;
   const anchorEl = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
-  const block = anchorEl ? anchorEl.closest('p, li, td, .term-card-block-text, .lesson-section, .caso-body, .quiz-question') : null;
+  const block = anchorEl ? anchorEl.closest('p, li, td, .term-card-block-text, .lesson-section, .caso-body, .quiz-question, .ia-msg-bubble, .mm-panel-desc, .mm-panel-body, .mm-panel, .book-card, .lib-book-item, .se-event, .se-note, .today-card, .sp-card, .admin-card, .report-card, .card') : null;
   EXPLAIN_SELECTION_CONTEXT = ((block || anchorEl) ? (block || anchorEl).textContent : '').trim().slice(0, 900);
 
   btn.querySelector('#explainSelectLabel').textContent = t('explain.cta');
