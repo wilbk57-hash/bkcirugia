@@ -2307,15 +2307,22 @@ document.addEventListener('click', (e) => {
    recebe, num toque, uma explicação curta e objetiva gerada pelo Tutor de
    IA, calibrada pelo trecho ao redor para acertar o sentido certo.
    ============================================================ */
-const EXPLAIN_SCOPE_SELECTOR = '#paneHost, .term-card-block-text';
+/* Escopo amplo: qualquer conteúdo próprio do app (estudo, chat do tutor,
+   mapas mentais, biblioteca, tela Hoje, relatórios do admin, modais),
+   excluindo campos de formulário, navegação e botões. */
+const EXPLAIN_SCOPE_SELECTOR = 'main, #adminView, .mm-panel, .modal, .sheet, .overlay, .drawer, [role="dialog"], .term-card-block-text, #paneHost';
+const EXPLAIN_EXCLUDE_SELECTOR = 'input, textarea, select, option, [contenteditable=""], [contenteditable="true"], button, a, nav, .topbar, .bottom-nav, #appFooter, .auth-overlay, #authView, .settings-form, .explain-select-btn';
 let EXPLAIN_SELECTION_TEXT = '';
 let EXPLAIN_SELECTION_CONTEXT = '';
 let _explainSelectTimer = null;
 
 function isInsideExplainScope(node) {
   const el = node && (node.nodeType === 1 ? node : node.parentElement);
-  return !!(el && el.closest(EXPLAIN_SCOPE_SELECTOR));
+  if (!el) return false;
+  if (el.closest(EXPLAIN_EXCLUDE_SELECTOR)) return false;
+  return !!el.closest(EXPLAIN_SCOPE_SELECTOR);
 }
+
 
 function handleExplainSelectionChange() {
   const btn = document.getElementById('explainSelectBtn');
