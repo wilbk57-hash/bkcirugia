@@ -2310,7 +2310,7 @@ document.addEventListener('click', (e) => {
 /* Escopo amplo: qualquer conteúdo próprio do app (estudo, chat do tutor,
    mapas mentais, biblioteca, tela Hoje, relatórios do admin, modais),
    excluindo campos de formulário, navegação e botões. */
-const EXPLAIN_SCOPE_SELECTOR = 'main, #adminView, .mm-panel, .modal, .sheet, .overlay, .drawer, [role="dialog"], .term-card-block-text, #paneHost';
+const EXPLAIN_SCOPE_SELECTOR = 'body';
 const EXPLAIN_EXCLUDE_SELECTOR = 'input, textarea, select, option, [contenteditable=""], [contenteditable="true"], button, a, nav, .topbar, .bottom-nav, #appFooter, .auth-overlay, #authView, .settings-form, .explain-select-btn';
 let EXPLAIN_SELECTION_TEXT = '';
 let EXPLAIN_SELECTION_CONTEXT = '';
