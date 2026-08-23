@@ -77,14 +77,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "BK-CIRURGIA — Plataforma de estudos em cirurgia" },
+      {
+        name: "description",
+        content:
+          "BK-CIRURGIA: plataforma de estudos em cirurgia com conteúdo estruturado, tutor de IA, biblioteca pessoal e acompanhamento de progresso.",
+      },
+      { name: "author", content: "BK-CIRURGIA" },
+      { property: "og:title", content: "BK-CIRURGIA — Plataforma de estudos em cirurgia" },
+      {
+        property: "og:description",
+        content:
+          "Estude cirurgia com conteúdo estruturado, tutor de IA, mapas mentais e acompanhamento de progresso.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "BK-CIRURGIA" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+
     ],
     links: [
       {
