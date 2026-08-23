@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiTutorRouteImport } from './routes/api/tutor'
 import { Route as ApiBooksOcrRouteImport } from './routes/api/books/ocr'
@@ -19,6 +20,11 @@ import { Route as ApiBooksSearchRouteImport } from './routes/api/books/search'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -49,6 +55,7 @@ const ApiBooksSearchRoute = ApiBooksSearchRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/tutor': typeof ApiTutorRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/tutor': typeof ApiTutorRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/tutor': typeof ApiTutorRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
@@ -76,6 +85,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/app'
     | '/sitemap.xml'
     | '/api/tutor'
     | '/api/books/ocr'
@@ -84,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/app'
     | '/sitemap.xml'
     | '/api/tutor'
     | '/api/books/ocr'
@@ -92,6 +103,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/app'
     | '/sitemap.xml'
     | '/api/tutor'
     | '/api/books/ocr'
@@ -101,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiTutorRoute: typeof ApiTutorRoute
   ApiBooksOcrRoute: typeof ApiBooksOcrRoute
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -157,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiTutorRoute: ApiTutorRoute,
   ApiBooksOcrRoute: ApiBooksOcrRoute,
