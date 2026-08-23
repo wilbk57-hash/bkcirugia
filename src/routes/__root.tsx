@@ -90,9 +90,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Estude cirurgia com conteúdo estruturado, tutor de IA, mapas mentais e acompanhamento de progresso.",
       },
-
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "BK-CIRURGIA" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+
     ],
     links: [
       {
