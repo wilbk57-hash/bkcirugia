@@ -111,6 +111,29 @@ function Index() {
           </div>
         </section>
 
+        <section className="mt-16" aria-labelledby="resumos">
+          <h2 id="resumos" className="text-2xl font-semibold tracking-tight">
+            Resumos abertos
+          </h2>
+          <p className="mt-4 max-w-3xl text-muted-foreground">
+            Alguns resumos de estudo estão disponíveis publicamente, sem necessidade de conta.
+          </p>
+          <ul className="mt-6 space-y-3">
+            <li>
+              <Link
+                to="/resumos/cirurgia-geral"
+                className="font-medium text-primary hover:underline"
+              >
+                Resumo de cirurgia geral: pré-operatório
+              </Link>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Classificação por urgência, fases mediata e imediata e estresse cirúrgico — base
+                para provas de residência.
+              </p>
+            </li>
+          </ul>
+        </section>
+
         <section className="mt-16" aria-labelledby="para-quem">
           <h2 id="para-quem" className="text-2xl font-semibold tracking-tight">
             Para quem é
