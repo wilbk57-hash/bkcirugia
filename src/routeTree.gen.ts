@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiTutorRouteImport } from './routes/api/tutor'
+import { Route as ResumosCirurgiaGeralRouteImport } from './routes/resumos/cirurgia-geral'
 import { Route as ApiBooksOcrRouteImport } from './routes/api/books/ocr'
 import { Route as ApiBooksReindexRouteImport } from './routes/api/books/reindex'
 import { Route as ApiBooksSearchRouteImport } from './routes/api/books/search'
@@ -37,6 +38,11 @@ const ApiTutorRoute = ApiTutorRouteImport.update({
   path: '/api/tutor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResumosCirurgiaGeralRoute = ResumosCirurgiaGeralRouteImport.update({
+  id: '/resumos/cirurgia-geral',
+  path: '/resumos/cirurgia-geral',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBooksOcrRoute = ApiBooksOcrRouteImport.update({
   id: '/api/books/ocr',
   path: '/api/books/ocr',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/tutor': typeof ApiTutorRoute
+  '/resumos/cirurgia-geral': typeof ResumosCirurgiaGeralRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/tutor': typeof ApiTutorRoute
+  '/resumos/cirurgia-geral': typeof ResumosCirurgiaGeralRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/tutor': typeof ApiTutorRoute
+  '/resumos/cirurgia-geral': typeof ResumosCirurgiaGeralRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/sitemap.xml'
     | '/api/tutor'
+    | '/resumos/cirurgia-geral'
     | '/api/books/ocr'
     | '/api/books/reindex'
     | '/api/books/search'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/sitemap.xml'
     | '/api/tutor'
+    | '/resumos/cirurgia-geral'
     | '/api/books/ocr'
     | '/api/books/reindex'
     | '/api/books/search'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/sitemap.xml'
     | '/api/tutor'
+    | '/resumos/cirurgia-geral'
     | '/api/books/ocr'
     | '/api/books/reindex'
     | '/api/books/search'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiTutorRoute: typeof ApiTutorRoute
+  ResumosCirurgiaGeralRoute: typeof ResumosCirurgiaGeralRoute
   ApiBooksOcrRoute: typeof ApiBooksOcrRoute
   ApiBooksReindexRoute: typeof ApiBooksReindexRoute
   ApiBooksSearchRoute: typeof ApiBooksSearchRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTutorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/resumos/cirurgia-geral': {
+      id: '/resumos/cirurgia-geral'
+      path: '/resumos/cirurgia-geral'
+      fullPath: '/resumos/cirurgia-geral'
+      preLoaderRoute: typeof ResumosCirurgiaGeralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/books/ocr': {
       id: '/api/books/ocr'
       path: '/api/books/ocr'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiTutorRoute: ApiTutorRoute,
+  ResumosCirurgiaGeralRoute: ResumosCirurgiaGeralRoute,
   ApiBooksOcrRoute: ApiBooksOcrRoute,
   ApiBooksReindexRoute: ApiBooksReindexRoute,
   ApiBooksSearchRoute: ApiBooksSearchRoute,
