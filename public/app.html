@@ -9720,6 +9720,114 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script>
+// ── Web Push: lembretes de eventos de estudo ──
+var VAPID_PUBLIC_KEY = 'BOsELBpVT4YvtP_1jZpYi7cvTt2aOD9YIHpjYgVtiYT2nIcQ7gwLYjIsbNn7lF35gi9B5bT365ftDOEaDlEgpd0';
+var PUSH_STATE = { enabled: false, busy: false };
+
+function pushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+function pushUrlB64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const output = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+  return output;
+}
+
+function pushKeyToB64(subscription, name) {
+  const key = subscription.getKey(name);
+  if (!key) return '';
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(key)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function pushRefreshState() {
+  if (!pushSupported()) { PUSH_STATE.enabled = false; return false; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    PUSH_STATE.enabled = !!sub && Notification.permission === 'granted';
+  } catch (_) {
+    PUSH_STATE.enabled = false;
+  }
+  return PUSH_STATE.enabled;
+}
+
+async function pushEnableReminders() {
+  const user = await seAwaitUser();
+  if (!user) { showToast(t('toast.push.needlogin')); return false; }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') { showToast(t('toast.push.denied')); return false; }
+
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: pushUrlB64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+  }
+
+  const row = {
+    user_id: user.id,
+    endpoint: sub.endpoint,
+    p256dh: pushKeyToB64(sub, 'p256dh'),
+    auth: pushKeyToB64(sub, 'auth'),
+    lang: (typeof currentLang === 'string' ? currentLang : 'pt'),
+    user_agent: navigator.userAgent.slice(0, 300)
+  };
+
+  const { error } = await supabaseClient
+    .from('push_subscriptions')
+    .upsert(row, { onConflict: 'endpoint' });
+  if (error) throw error;
+
+  PUSH_STATE.enabled = true;
+  return true;
+}
+
+async function pushDisableReminders() {
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    await supabaseClient.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+    await sub.unsubscribe().catch(() => {});
+  }
+  PUSH_STATE.enabled = false;
+  return true;
+}
+
+async function pushToggleReminders() {
+  if (!pushSupported()) { showToast(t('toast.push.unsupported')); return; }
+  if (PUSH_STATE.busy) return;
+  PUSH_STATE.busy = true;
+  try {
+    await pushRefreshState();
+    if (PUSH_STATE.enabled) {
+      await pushDisableReminders();
+      showToast(t('toast.push.disabled'));
+    } else {
+      const ok = await pushEnableReminders();
+      if (ok) showToast(t('toast.push.enabled'));
+    }
+  } catch (err) {
+    console.error('[push]', err);
+    showToast(t('toast.push.error'));
+  } finally {
+    PUSH_STATE.busy = false;
+    if (document.getElementById('settingsView')?.classList.contains('show')) renderSettings();
+  }
+}
+
+if (pushSupported()) {
+  window.addEventListener('load', () => { pushRefreshState().catch(() => {}); });
+}
+</script>
 
 <!-- ── MAPA MENTAL (Tutor de IA) — camada aditiva ── -->
 <div class="mm-overlay" id="mmOverlay" role="dialog" aria-modal="true" aria-labelledby="mmHeadTitle">
