@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bk-cirurgia-v3';
+const CACHE_NAME = 'bk-cirurgia-v4';
 // Only static, versionless assets are pre-cached.
 // The app shell (HTML) and build assets are ALWAYS fetched from the network,
 // otherwise a stale cached shell keeps pointing at old hashed JS chunks
