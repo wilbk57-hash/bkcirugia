@@ -166,7 +166,9 @@ export const Route = createFileRoute('/api/public/hooks/study-reminders')({
 
               const res = await fetch(sub.endpoint, {
                 method: payload.method,
-                headers: payload.headers,
+                headers: Object.fromEntries(
+                  Object.entries(payload.headers).filter(([, v]) => typeof v === 'string'),
+                ) as Record<string, string>,
                 body: payload.body as unknown as BodyInit,
               });
 
