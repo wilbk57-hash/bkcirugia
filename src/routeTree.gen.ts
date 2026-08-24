@@ -17,6 +17,7 @@ import { Route as ResumosCirurgiaGeralRouteImport } from './routes/resumos/cirur
 import { Route as ApiBooksOcrRouteImport } from './routes/api/books/ocr'
 import { Route as ApiBooksReindexRouteImport } from './routes/api/books/reindex'
 import { Route as ApiBooksSearchRouteImport } from './routes/api/books/search'
+import { Route as ApiPublicHooksStudyRemindersRouteImport } from './routes/api/public/hooks/study-reminders'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,12 @@ const ApiBooksSearchRoute = ApiBooksSearchRouteImport.update({
   path: '/api/books/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksStudyRemindersRoute =
+  ApiPublicHooksStudyRemindersRouteImport.update({
+    id: '/api/public/hooks/study-reminders',
+    path: '/api/public/hooks/study-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
+  '/api/public/hooks/study-reminders': typeof ApiPublicHooksStudyRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +86,7 @@ export interface FileRoutesByTo {
   '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
+  '/api/public/hooks/study-reminders': typeof ApiPublicHooksStudyRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +98,7 @@ export interface FileRoutesById {
   '/api/books/ocr': typeof ApiBooksOcrRoute
   '/api/books/reindex': typeof ApiBooksReindexRoute
   '/api/books/search': typeof ApiBooksSearchRoute
+  '/api/public/hooks/study-reminders': typeof ApiPublicHooksStudyRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
     | '/api/books/ocr'
     | '/api/books/reindex'
     | '/api/books/search'
+    | '/api/public/hooks/study-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/api/books/ocr'
     | '/api/books/reindex'
     | '/api/books/search'
+    | '/api/public/hooks/study-reminders'
   id:
     | '__root__'
     | '/'
@@ -121,6 +133,7 @@ export interface FileRouteTypes {
     | '/api/books/ocr'
     | '/api/books/reindex'
     | '/api/books/search'
+    | '/api/public/hooks/study-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +145,7 @@ export interface RootRouteChildren {
   ApiBooksOcrRoute: typeof ApiBooksOcrRoute
   ApiBooksReindexRoute: typeof ApiBooksReindexRoute
   ApiBooksSearchRoute: typeof ApiBooksSearchRoute
+  ApiPublicHooksStudyRemindersRoute: typeof ApiPublicHooksStudyRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBooksSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/study-reminders': {
+      id: '/api/public/hooks/study-reminders'
+      path: '/api/public/hooks/study-reminders'
+      fullPath: '/api/public/hooks/study-reminders'
+      preLoaderRoute: typeof ApiPublicHooksStudyRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +225,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBooksOcrRoute: ApiBooksOcrRoute,
   ApiBooksReindexRoute: ApiBooksReindexRoute,
   ApiBooksSearchRoute: ApiBooksSearchRoute,
+  ApiPublicHooksStudyRemindersRoute: ApiPublicHooksStudyRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -164,7 +164,11 @@ export const Route = createFileRoute('/api/public/hooks/study-reminders')({
                 vapid,
               );
 
-              const res = await fetch(sub.endpoint, payload);
+              const res = await fetch(sub.endpoint, {
+                method: payload.method,
+                headers: payload.headers,
+                body: payload.body as unknown as BodyInit,
+              });
 
               if (res.status === 404 || res.status === 410) {
                 removed.push(sub.id);
