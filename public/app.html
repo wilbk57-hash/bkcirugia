@@ -6130,6 +6130,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'toggle', key: 'notifUpdates', label: 'item.notif.updates' },
       { type: 'toggle', key: 'notifNews', label: 'item.notif.news' },
       { type: 'toggle', key: 'notifSound', label: 'item.notif.sound' },
+      { type: 'nav', label: 'item.push.label', desc: 'item.push.desc', value: t(PUSH_STATE.enabled ? 'item.push.on' : 'item.push.off'), action: 'pushToggleReminders()' },
   ]},
   { sec: 'sec.content', items: [
       { type: 'toggle', key: 'offlineDownload', label: 'item.offline.label' },
