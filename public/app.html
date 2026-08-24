@@ -5168,7 +5168,17 @@ const STR_TABLE = [
  ['item.notif.reminders','Lembretes de estudo','Study reminders','Recordatorios de estudio'],
  ['item.notif.updates','Atualizações de conteúdo','Content updates','Actualizaciones de contenido'],
  ['item.notif.news','Novidades do aplicativo','App news','Novedades de la app'],
- ['item.notif.sound','Sons e vibração','Sounds & vibration','Sonidos y vibración'],
+  ['item.notif.sound','Sons e vibração','Sounds & vibration','Sonidos y vibración'],
+ ['item.push.label','Ativar lembretes neste dispositivo','Enable reminders on this device','Activar recordatorios en este dispositivo'],
+ ['item.push.desc','Recebe avisos de provas e prazos mesmo com a app fechada.','Get exam and deadline alerts even when the app is closed.','Recibe avisos de exámenes y plazos incluso con la app cerrada.'],
+ ['item.push.on','Ativo','On','Activo'],
+ ['item.push.off','Desativado','Off','Desactivado'],
+ ['toast.push.enabled','Lembretes ativados neste dispositivo.','Reminders enabled on this device.','Recordatorios activados en este dispositivo.'],
+ ['toast.push.disabled','Lembretes desativados neste dispositivo.','Reminders disabled on this device.','Recordatorios desactivados en este dispositivo.'],
+ ['toast.push.denied','Permissão de notificações negada nas definições do navegador.','Notification permission denied in your browser settings.','Permiso de notificaciones denegado en el navegador.'],
+ ['toast.push.unsupported','Este dispositivo ou navegador não suporta notificações push.','This device or browser does not support push notifications.','Este dispositivo o navegador no admite notificaciones push.'],
+ ['toast.push.error','Não foi possível ativar os lembretes. Tenta novamente.','Could not enable reminders. Please try again.','No se pudieron activar los recordatorios. Inténtalo de nuevo.'],
+ ['toast.push.needlogin','Inicia sessão para ativar lembretes.','Sign in to enable reminders.','Inicia sesión para activar recordatorios.'],
  ['sec.content','Conteúdo','Content','Contenido'],
  ['item.offline.label','Download para uso offline','Download for offline use','Descargar para uso sin conexión'],
  ['item.autoupdate.label','Atualização automática','Automatic update','Actualización automática'],
@@ -6120,6 +6130,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'toggle', key: 'notifUpdates', label: 'item.notif.updates' },
       { type: 'toggle', key: 'notifNews', label: 'item.notif.news' },
       { type: 'toggle', key: 'notifSound', label: 'item.notif.sound' },
+      { type: 'nav', label: 'item.push.label', desc: 'item.push.desc', value: t(PUSH_STATE.enabled ? 'item.push.on' : 'item.push.off'), action: 'pushToggleReminders()' },
   ]},
   { sec: 'sec.content', items: [
       { type: 'toggle', key: 'offlineDownload', label: 'item.offline.label' },
@@ -9700,13 +9711,121 @@ if ('serviceWorker' in navigator) {
     // Purge caches from older service worker versions that cached the app shell.
     if (window.caches && caches.keys) {
       caches.keys().then((keys) => {
-        keys.forEach((k) => { if (k !== 'bk-cirurgia-v3') caches.delete(k); });
+        keys.forEach((k) => { if (k !== 'bk-cirurgia-v4') caches.delete(k); });
       }).catch(() => {});
     }
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
       .then((reg) => { reg.update().catch(() => {}); })
       .catch(() => {});
   });
+}
+</script>
+<script>
+// ── Web Push: lembretes de eventos de estudo ──
+var VAPID_PUBLIC_KEY = 'BOsELBpVT4YvtP_1jZpYi7cvTt2aOD9YIHpjYgVtiYT2nIcQ7gwLYjIsbNn7lF35gi9B5bT365ftDOEaDlEgpd0';
+var PUSH_STATE = { enabled: false, busy: false };
+
+function pushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+function pushUrlB64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const output = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+  return output;
+}
+
+function pushKeyToB64(subscription, name) {
+  const key = subscription.getKey(name);
+  if (!key) return '';
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(key)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function pushRefreshState() {
+  if (!pushSupported()) { PUSH_STATE.enabled = false; return false; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    PUSH_STATE.enabled = !!sub && Notification.permission === 'granted';
+  } catch (_) {
+    PUSH_STATE.enabled = false;
+  }
+  return PUSH_STATE.enabled;
+}
+
+async function pushEnableReminders() {
+  const user = await seAwaitUser();
+  if (!user) { showToast(t('toast.push.needlogin')); return false; }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') { showToast(t('toast.push.denied')); return false; }
+
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: pushUrlB64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+  }
+
+  const row = {
+    user_id: user.id,
+    endpoint: sub.endpoint,
+    p256dh: pushKeyToB64(sub, 'p256dh'),
+    auth: pushKeyToB64(sub, 'auth'),
+    lang: (typeof currentLang === 'string' ? currentLang : 'pt'),
+    user_agent: navigator.userAgent.slice(0, 300)
+  };
+
+  const { error } = await supabaseClient
+    .from('push_subscriptions')
+    .upsert(row, { onConflict: 'endpoint' });
+  if (error) throw error;
+
+  PUSH_STATE.enabled = true;
+  return true;
+}
+
+async function pushDisableReminders() {
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    await supabaseClient.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+    await sub.unsubscribe().catch(() => {});
+  }
+  PUSH_STATE.enabled = false;
+  return true;
+}
+
+async function pushToggleReminders() {
+  if (!pushSupported()) { showToast(t('toast.push.unsupported')); return; }
+  if (PUSH_STATE.busy) return;
+  PUSH_STATE.busy = true;
+  try {
+    await pushRefreshState();
+    if (PUSH_STATE.enabled) {
+      await pushDisableReminders();
+      showToast(t('toast.push.disabled'));
+    } else {
+      const ok = await pushEnableReminders();
+      if (ok) showToast(t('toast.push.enabled'));
+    }
+  } catch (err) {
+    console.error('[push]', err);
+    showToast(t('toast.push.error'));
+  } finally {
+    PUSH_STATE.busy = false;
+    if (document.getElementById('settingsView')?.classList.contains('show')) renderSettings();
+  }
+}
+
+if (pushSupported()) {
+  window.addEventListener('load', () => { pushRefreshState().catch(() => {}); });
 }
 </script>
 
