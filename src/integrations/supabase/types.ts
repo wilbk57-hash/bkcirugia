@@ -103,6 +103,39 @@ export type Database = {
           },
         ]
       }
+      clinical_cases: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          data_json: Json
+          id: string
+          title: string
+          topic_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          data_json: Json
+          id?: string
+          title?: string
+          topic_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          data_json?: Json
+          id?: string
+          title?: string
+          topic_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           country: string | null

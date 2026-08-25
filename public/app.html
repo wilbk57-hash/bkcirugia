@@ -677,11 +677,68 @@
   .lib-icon { font-size: 18px; }
   .lib-label { font-size: 10px; font-weight: 600; color: var(--text2); line-height: 1.25; }
 
-  /* ── PLACEHOLDER VIEW (Casos / IA / Perfil stubs) ── */
+  /* ── PLACEHOLDER VIEW (IA / Perfil stubs) ── */
   .stub-view { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 20px; }
   .stub-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.7; }
   .stub-title { font-family: 'Space Grotesk'; font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
   .stub-sub { font-size: 13px; color: var(--text3); max-width: 280px; }
+
+  /* ── CASOS CLÍNICOS SIMULADOS ── */
+  .cc-head { margin-bottom: 18px; }
+  .cc-head h2 { font-family: 'Space Grotesk'; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .cc-head p { font-size: 13px; color: var(--text3); line-height: 1.55; }
+  .cc-gen-card { border: 1px solid rgba(45,212,191,0.22); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 20px;
+    background: linear-gradient(135deg, rgba(45,212,191,0.10), rgba(91,168,232,0.05)); }
+  .cc-gen-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--teal-light); margin-bottom: 10px; }
+  .cc-select { width: 100%; font-size: 13px; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); margin-bottom: 12px; }
+  .cc-btn { font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 9px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); cursor: pointer; }
+  .cc-btn:hover { border-color: var(--teal); color: var(--text); }
+  .cc-btn.primary { background: var(--teal); border-color: var(--teal); color: #08120F; }
+  .cc-btn.primary:disabled { opacity: 0.55; cursor: default; }
+  .cc-btn.small { font-size: 11.5px; padding: 6px 11px; border-radius: 8px; }
+  .cc-list { display: flex; flex-direction: column; gap: 10px; }
+  .cc-item { border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); padding: 13px 15px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .cc-item:hover { border-color: var(--teal); }
+  .cc-item-emoji { font-size: 18px; flex-shrink: 0; }
+  .cc-item-main { flex: 1; min-width: 0; }
+  .cc-item-title { font-size: 13.5px; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 3px; }
+  .cc-item-meta { font-size: 11px; color: var(--text3); font-family: 'IBM Plex Mono'; }
+  .cc-item-state { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 3px 8px; border-radius: 20px; border: 1px solid var(--border); color: var(--text3); flex-shrink: 0; }
+  .cc-item-state.done { color: var(--teal-light); border-color: rgba(45,212,191,0.4); }
+  .cc-empty { font-size: 12.5px; color: var(--text3); padding: 14px 2px; }
+  .cc-loading { text-align: center; padding: 48px 20px; color: var(--text3); font-size: 13px; }
+  .cc-loading .cc-spin { font-size: 26px; display: inline-block; margin-bottom: 12px; animation: ccspin 1.1s linear infinite; }
+  @keyframes ccspin { to { transform: rotate(360deg); } }
+
+  /* passo-a-passo */
+  .cc-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .cc-case-title { font-family: 'Space Grotesk'; font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .cc-patient { font-size: 12px; color: var(--text3); margin-bottom: 14px; font-family: 'IBM Plex Mono'; }
+  .cc-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; scrollbar-width: none; }
+  .cc-chips::-webkit-scrollbar { display: none; }
+  .cc-chip { flex: none; font-size: 11px; font-weight: 600; padding: 6px 11px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text3); cursor: pointer; white-space: nowrap; }
+  .cc-chip.visited { color: var(--text2); border-color: rgba(45,212,191,0.3); }
+  .cc-chip.active { background: var(--teal); border-color: var(--teal); color: #08120F; }
+  .cc-track { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; margin-bottom: 18px; }
+  .cc-track-fill { height: 100%; background: var(--teal); border-radius: 2px; transition: width .25s ease; }
+  .cc-step { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--panel); padding: 20px 22px; margin-bottom: 16px; }
+  .cc-step.k-consulta { border-color: rgba(91,168,232,0.32); background: linear-gradient(135deg, rgba(91,168,232,0.09), transparent 60%); }
+  .cc-step.k-analise  { border-color: rgba(168,132,232,0.32); background: linear-gradient(135deg, rgba(168,132,232,0.09), transparent 60%); }
+  .cc-step.k-conduta  { border-color: rgba(45,212,191,0.32); background: linear-gradient(135deg, rgba(45,212,191,0.09), transparent 60%); }
+  .cc-step-kind { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 6px; }
+  .cc-step-title { font-family: 'Space Grotesk'; font-size: 16.5px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+  .cc-step-body { font-size: 14px; color: #C6CEDA; line-height: 1.68; white-space: pre-wrap; }
+  .cc-step-list { margin: 12px 0 0 0; padding-left: 18px; }
+  .cc-step-list li { font-size: 13.5px; color: #C6CEDA; line-height: 1.6; margin-bottom: 5px; }
+  .cc-step-foot { margin-top: 16px; }
+  .cc-nav { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .cc-done-banner { border: 1px solid rgba(45,212,191,0.35); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 16px;
+    background: rgba(45,212,191,0.08); font-size: 13px; color: var(--text2); line-height: 1.6; }
 
   /* ============================================================
      PEDAGOGICAL LESSON ENGINE
@@ -1811,13 +1868,9 @@
     <div class="tema-list" id="temaList"></div>
   </div>
 
-  <!-- ============ CASOS / IA / PERFIL (stubs) ============ -->
+  <!-- ============ CASOS CLÍNICOS SIMULADOS ============ -->
   <div class="main-view" id="casosView" role="tabpanel" aria-hidden="true">
-    <div class="stub-view">
-      <div class="stub-icon">🩺</div>
-      <div class="stub-title" data-i18n="stub.casos.title">Casos clínicos</div>
-      <div class="stub-sub" data-i18n="stub.casos.sub">Em breve: biblioteca completa de casos por especialidade. Por enquanto, encontre os casos dentro de cada tema em Estudos.</div>
-    </div>
+    <div id="ccHost"></div>
   </div>
   <div class="main-view" id="iaView" role="tabpanel" aria-hidden="true">
     <div id="iaMessages" class="ia-messages"></div>
@@ -5770,6 +5823,29 @@ const STR_TABLE = [
  ['se.note.empty','Escreva algo antes de guardar.','Write something before saving.','Escribe algo antes de guardar.'],
  ['se.error','Não foi possível guardar. Tente de novo.','Could not save. Try again.','No se pudo guardar. Inténtalo de nuevo.'],
  ['se.notif.event','Evento a chegar','Upcoming event','Evento próximo'],
+ ['cc.title','Casos clínicos simulados','Simulated clinical cases','Casos clínicos simulados'],
+ ['cc.sub','Atenda um paciente do início ao fim: motivo da consulta, história, exame físico, raciocínio e conduta — passo a passo, com o Tutor de IA ao seu lado.','Care for a patient from start to finish: chief complaint, history, physical exam, reasoning and management — step by step, with the AI Tutor by your side.','Atiende a un paciente de principio a fin: motivo de consulta, historia, examen físico, razonamiento y conducta, paso a paso, con el Tutor de IA a tu lado.'],
+ ['cc.gen.label','Gerar novo caso','Generate new case','Generar nuevo caso'],
+ ['cc.gen.btn','🩺 Gerar novo caso clínico','🩺 Generate new clinical case','🩺 Generar nuevo caso clínico'],
+ ['cc.gen.random','Tema aleatório','Random topic','Tema aleatorio'],
+ ['cc.gen.weak','Foco no meu ponto fraco','Focus on my weak spot','Enfoque en mi punto débil'],
+ ['cc.history','Meus casos','My cases','Mis casos'],
+ ['cc.history.empty','Ainda não gerou nenhum caso clínico. Escolha um tema acima e comece.','You haven’t generated any clinical case yet. Pick a topic above and start.','Aún no has generado ningún caso clínico. Elige un tema arriba y empieza.'],
+ ['cc.state.done','Concluído','Completed','Completado'],
+ ['cc.state.progress','Em curso','In progress','En curso'],
+ ['cc.loading','A preparar o caso clínico…','Preparing the clinical case…','Preparando el caso clínico…'],
+ ['cc.error','Não foi possível gerar o caso agora. Tente de novo.','Could not generate the case right now. Please try again.','No se pudo generar el caso ahora. Inténtalo de nuevo.'],
+ ['cc.back','← Meus casos','← My cases','← Mis casos'],
+ ['cc.prev','← Voltar','← Back','← Atrás'],
+ ['cc.next','Avançar →','Next →','Avanzar →'],
+ ['cc.finish','Concluir caso ✓','Finish case ✓','Concluir caso ✓'],
+ ['cc.ask','💬 Perguntar ao Tutor sobre isto','💬 Ask the Tutor about this','💬 Preguntar al Tutor sobre esto'],
+ ['cc.kind.consulta','No consultório','In the office','En la consulta'],
+ ['cc.kind.analise','Raciocínio clínico','Clinical reasoning','Razonamiento clínico'],
+ ['cc.kind.conduta','Conduta','Management','Conducta'],
+ ['cc.saved','Caso concluído e registado no seu desempenho.','Case completed and recorded in your performance.','Caso completado y registrado en tu desempeño.'],
+ ['cc.done.banner','Caso concluído. Ficou registado no seu histórico e no plano de estudo.','Case completed. It has been saved to your history and study plan.','Caso completado. Quedó registrado en tu historial y plan de estudio.'],
+ ['cc.needauth','Inicie sessão para gerar e guardar casos clínicos.','Sign in to generate and save clinical cases.','Inicia sesión para generar y guardar casos clínicos.'],
 ];
 const STRINGS = { pt: {}, en: {}, es: {} };
 STR_TABLE.forEach(([key, pt, en, es]) => { STRINGS.pt[key]=pt; STRINGS.en[key]=en; STRINGS.es[key]=es; });
