@@ -11757,7 +11757,282 @@ async function mmExportPng() {
     if (typeof showToast === 'function') showToast(t('mm.cp.png.error'), 'error');
   }
 }
+
+/* ============================================================
+   CASOS CLÍNICOS SIMULADOS (MÓDULO IA)
+   ------------------------------------------------------------
+   O Tutor gera um caso em JSON estruturado (10 passos). O aluno
+   percorre os passos como se estivesse no consultório e pode
+   perguntar ao Tutor sobre qualquer passo. A conclusão fica
+   registada em clinical_cases.
+   ============================================================ */
+const CC_STATE = { cases: [], active: null, step: 0, loading: false, loaded: false };
+
+const CC_STEP_PLAN = [
+  { id: 'motivo',     kind: 'consulta', pt: 'Motivo da consulta',      en: 'Chief complaint',        es: 'Motivo de consulta' },
+  { id: 'historia',   kind: 'consulta', pt: 'História da doença',      en: 'History of illness',     es: 'Historia de la enfermedad' },
+  { id: 'antecedentes', kind: 'consulta', pt: 'Antecedentes',          en: 'Past history',           es: 'Antecedentes' },
+  { id: 'exame',      kind: 'consulta', pt: 'Exame físico',            en: 'Physical exam',          es: 'Examen físico' },
+  { id: 'hipoteses',  kind: 'analise',  pt: 'Hipóteses diagnósticas',  en: 'Differential diagnosis', es: 'Hipótesis diagnósticas' },
+  { id: 'exames',     kind: 'analise',  pt: 'Exames complementares',   en: 'Workup',                 es: 'Exámenes complementarios' },
+  { id: 'diagnostico',kind: 'analise',  pt: 'Diagnóstico',             en: 'Diagnosis',              es: 'Diagnóstico' },
+  { id: 'conduta',    kind: 'conduta',  pt: 'Conduta / tratamento',    en: 'Management',             es: 'Conducta / tratamiento' },
+  { id: 'evolucao',   kind: 'conduta',  pt: 'Evolução',                en: 'Course',                 es: 'Evolución' },
+  { id: 'alta',       kind: 'conduta',  pt: 'Alta e orientações',      en: 'Discharge & advice',     es: 'Alta y orientaciones' },
+];
+function ccStepLabel(i) {
+  const p = CC_STEP_PLAN[i]; if (!p) return '';
+  return currentLang === 'en' ? p.en : currentLang === 'es' ? p.es : p.pt;
+}
+function ccKindLabel(kind) { return t('cc.kind.' + kind); }
+
+function ccBuildSystemPrompt() {
+  const langName = currentLang === 'en' ? 'English' : currentLang === 'es' ? 'Spanish' : 'Portuguese (pt-PT)';
+  return [
+    'You are a surgery professor creating a realistic, step-by-step simulated clinical case for a medical student.',
+    'Answer with STRICT JSON only — no markdown fences, no commentary.',
+    'Schema:',
+    '{"title":string,"patient":{"name":string,"age":string,"sex":string,"setting":string},',
+    '"steps":[{"id":string,"title":string,"narrative":string,"bullets":[string],"teaching":string}],',
+    '"takeaway":string}',
+    'The "steps" array MUST have exactly 10 items, in this exact order of ids:',
+    CC_STEP_PLAN.map(s => s.id).join(', ') + '.',
+    '"narrative" is what happens in the consultation room (2-5 sentences, immersive, present tense).',
+    '"bullets" holds 2-5 concrete clinical data points or decisions for that step.',
+    '"teaching" is one short sentence of clinical pearl for that step.',
+    'Be clinically accurate and use realistic values. Write all content in ' + langName + '.',
+  ].join('\n');
+}
+
+function ccExtractJson(text) {
+  let s = String(text || '').trim();
+  s = s.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a === -1 || b === -1) throw new Error('no-json');
+  return JSON.parse(s.slice(a, b + 1));
+}
+
+function ccNormalize(raw) {
+  const steps = Array.isArray(raw.steps) ? raw.steps : [];
+  const norm = CC_STEP_PLAN.map((plan, i) => {
+    const found = steps.find(s => s && String(s.id || '').toLowerCase() === plan.id) || steps[i] || {};
+    return {
+      id: plan.id,
+      kind: plan.kind,
+      title: String(found.title || ccStepLabel(i)),
+      narrative: String(found.narrative || found.body || ''),
+      bullets: Array.isArray(found.bullets) ? found.bullets.map(String).slice(0, 6) : [],
+      teaching: String(found.teaching || ''),
+    };
+  });
+  const p = raw.patient || {};
+  return {
+    title: String(raw.title || t('cc.title')),
+    patient: { name: String(p.name || ''), age: String(p.age || ''), sex: String(p.sex || ''), setting: String(p.setting || '') },
+    steps: norm,
+    takeaway: String(raw.takeaway || ''),
+  };
+}
+
+async function ccLoadCases() {
+  const user = await seAwaitUser();
+  if (!user) { CC_STATE.cases = []; CC_STATE.loaded = true; return; }
+  const { data, error } = await supabaseClient
+    .from('clinical_cases').select('*').order('created_at', { ascending: false }).limit(30);
+  if (!error) CC_STATE.cases = data || [];
+  CC_STATE.loaded = true;
+}
+
+async function renderCasos() {
+  const host = document.getElementById('ccHost');
+  if (!host) return;
+  if (CC_STATE.active) { ccRenderCase(); return; }
+  if (!CC_STATE.loaded) {
+    host.innerHTML = `<div class="cc-loading"><span class="cc-spin">🩺</span><div>${t('cc.loading')}</div></div>`;
+    await ccLoadCases();
+    if (CC_STATE.active) { ccRenderCase(); return; }
+  }
+  ccRenderList();
+}
+
+function ccRenderList() {
+  const host = document.getElementById('ccHost');
+  if (!host) return;
+  const topicOpts = Object.keys(TOPICS)
+    .map(id => `<option value="${id}">${escapeHtml(TOPICS[id].title)}</option>`).join('');
+  const items = CC_STATE.cases.length
+    ? CC_STATE.cases.map(c => {
+        const done = !!c.completed_at;
+        const d = new Date(c.created_at);
+        return `<div class="cc-item" onclick="ccOpenCase('${c.id}')">
+          <div class="cc-item-emoji">${done ? '✅' : '🩺'}</div>
+          <div class="cc-item-main">
+            <div class="cc-item-title">${escapeHtml(c.title || t('cc.title'))}</div>
+            <div class="cc-item-meta">${d.toLocaleDateString()}</div>
+          </div>
+          <div class="cc-item-state ${done ? 'done' : ''}">${done ? t('cc.state.done') : t('cc.state.progress')}</div>
+        </div>`;
+      }).join('')
+    : `<div class="cc-empty">${t('cc.history.empty')}</div>`;
+
+  host.innerHTML = `
+    <div class="cc-head">
+      <h2>${t('cc.title')}</h2>
+      <p>${t('cc.sub')}</p>
+    </div>
+    <div class="cc-gen-card">
+      <div class="cc-gen-label">${t('cc.gen.label')}</div>
+      <select class="cc-select" id="ccTopicSel" style="margin-bottom:10px">
+        <option value="">${t('cc.gen.random')}</option>
+        ${topicOpts}
+      </select>
+      <button class="cc-btn primary" id="ccGenBtn" onclick="ccGenerate()">${t('cc.gen.btn')}</button>
+    </div>
+    <div class="cc-gen-label" style="margin-bottom:10px">${t('cc.history')}</div>
+    <div class="cc-list">${items}</div>`;
+}
+
+async function ccGenerate() {
+  if (CC_STATE.loading) return;
+  const user = await seAwaitUser();
+  if (!user) { showToast(t('cc.needauth')); return; }
+  const sel = document.getElementById('ccTopicSel');
+  let topicId = sel ? sel.value : '';
+  if (!topicId) {
+    const keys = Object.keys(TOPICS);
+    topicId = keys[Math.floor(Math.random() * keys.length)];
+  }
+  const topic = TOPICS[topicId];
+  CC_STATE.loading = true;
+  const host = document.getElementById('ccHost');
+  host.innerHTML = `<div class="cc-loading"><span class="cc-spin">🩺</span><div>${t('cc.loading')}</div></div>`;
+  try {
+    const out = await runTutorRequest({
+      system: ccBuildSystemPrompt(),
+      messages: [{ role: 'user', content: `Tema/módulo do caso clínico: "${topic.title}". Gera o caso completo em JSON.` }],
+      maxTokens: 3000,
+    });
+    const caseData = ccNormalize(ccExtractJson(out.text));
+    const { data, error } = await supabaseClient.from('clinical_cases').insert({
+      user_id: user.id, topic_id: topicId, title: caseData.title, data_json: caseData,
+    }).select().single();
+    if (error) throw error;
+    CC_STATE.cases = [data].concat(CC_STATE.cases);
+    CC_STATE.active = data; CC_STATE.step = 0;
+    ccRenderCase();
+  } catch (err) {
+    showToast(t('cc.error') + (err && err.message ? ' (' + err.message + ')' : ''));
+    ccRenderList();
+  } finally {
+    CC_STATE.loading = false;
+  }
+}
+
+function ccOpenCase(id) {
+  const row = CC_STATE.cases.find(c => c.id === id);
+  if (!row) return;
+  CC_STATE.active = row; CC_STATE.step = 0;
+  ccRenderCase();
+}
+function ccCloseCase() {
+  CC_STATE.active = null; CC_STATE.step = 0;
+  ccRenderList();
+  window.scrollTo(0, 0);
+}
+
+function ccRenderCase() {
+  const host = document.getElementById('ccHost');
+  const row = CC_STATE.active;
+  if (!host || !row) return;
+  const data = row.data_json || {};
+  const steps = data.steps || [];
+  const i = Math.max(0, Math.min(CC_STATE.step, steps.length - 1));
+  CC_STATE.step = i;
+  const s = steps[i] || {};
+  const last = i === steps.length - 1;
+  const pat = data.patient || {};
+  const patLine = [pat.name, pat.age, pat.sex, pat.setting].filter(Boolean).join(' · ');
+  const chips = steps.map((st, k) =>
+    `<button class="cc-chip ${k === i ? 'active' : (k < i ? 'visited' : '')}" onclick="ccGoStep(${k})">${k + 1}. ${escapeHtml(ccStepLabel(k))}</button>`
+  ).join('');
+  const bullets = (s.bullets || []).length
+    ? `<ul class="cc-step-list">${s.bullets.map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul>` : '';
+  const teaching = s.teaching
+    ? `<div class="cc-step-foot"><div class="cc-step-kind">💡 ${escapeHtml(s.teaching)}</div></div>` : '';
+  const doneBanner = row.completed_at
+    ? `<div class="cc-done-banner">${t('cc.done.banner')}${data.takeaway ? '<br><br>' + escapeHtml(data.takeaway) : ''}</div>` : '';
+
+  host.innerHTML = `
+    <div class="cc-topbar">
+      <button class="cc-btn small" onclick="ccCloseCase()">${t('cc.back')}</button>
+      <div class="cc-item-meta">${i + 1}/${steps.length}</div>
+    </div>
+    ${doneBanner}
+    <div class="cc-case-title">${escapeHtml(data.title || '')}</div>
+    <div class="cc-patient">${escapeHtml(patLine)}</div>
+    <div class="cc-chips">${chips}</div>
+    <div class="cc-track"><div class="cc-track-fill" style="width:${((i + 1) / steps.length) * 100}%"></div></div>
+    <div class="cc-step k-${s.kind || 'consulta'}">
+      <div class="cc-step-kind">${escapeHtml(ccKindLabel(s.kind || 'consulta'))}</div>
+      <div class="cc-step-title">${escapeHtml(s.title || ccStepLabel(i))}</div>
+      <div class="cc-step-body">${escapeHtml(s.narrative || '')}</div>
+      ${bullets}
+      ${teaching}
+      <div class="cc-step-foot"><button class="cc-btn small" onclick="ccAskTutor()">${t('cc.ask')}</button></div>
+    </div>
+    <div class="cc-nav">
+      <button class="cc-btn" onclick="ccGoStep(${i - 1})" ${i === 0 ? 'disabled' : ''}>${t('cc.prev')}</button>
+      ${last
+        ? `<button class="cc-btn primary" id="ccFinishBtn" onclick="ccFinishCase()">${t('cc.finish')}</button>`
+        : `<button class="cc-btn primary" onclick="ccGoStep(${i + 1})">${t('cc.next')}</button>`}
+    </div>`;
+  window.scrollTo(0, 0);
+}
+
+function ccGoStep(k) {
+  const steps = (CC_STATE.active && CC_STATE.active.data_json && CC_STATE.active.data_json.steps) || [];
+  if (k < 0 || k >= steps.length) return;
+  CC_STATE.step = k;
+  ccRenderCase();
+}
+
+function ccAskTutor() {
+  const row = CC_STATE.active; if (!row) return;
+  const data = row.data_json || {};
+  const s = (data.steps || [])[CC_STATE.step] || {};
+  const parts = [
+    `Estou a resolver o caso clínico simulado "${data.title || ''}".`,
+    `Passo ${CC_STATE.step + 1} — ${ccStepLabel(CC_STATE.step)}: ${s.title || ''}`,
+    s.narrative || '',
+    (s.bullets || []).length ? '- ' + s.bullets.join('\n- ') : '',
+    'Explica-me o raciocínio clínico deste passo e o que devo procurar a seguir.',
+  ].filter(Boolean);
+  switchTab('iaView');
+  const input = document.getElementById('iaInput');
+  if (input) {
+    input.value = parts.join('\n');
+    input.dispatchEvent(new Event('input'));
+    input.focus();
+  }
+  setTimeout(() => { if (typeof sendIaMessage === 'function') sendIaMessage(); }, 60);
+}
+
+async function ccFinishCase() {
+  const row = CC_STATE.active; if (!row || row.completed_at) return;
+  const btn = document.getElementById('ccFinishBtn');
+  if (btn) btn.disabled = true;
+  const { data, error } = await supabaseClient
+    .from('clinical_cases')
+    .update({ completed_at: new Date().toISOString() })
+    .eq('id', row.id).select().single();
+  if (error) { showToast(t('cc.error')); if (btn) btn.disabled = false; return; }
+  CC_STATE.active = data;
+  CC_STATE.cases = CC_STATE.cases.map(c => (c.id === data.id ? data : c));
+  showToast(t('cc.saved'));
+  ccRenderCase();
+}
 </script>
+
 
 </body>
 </html>
