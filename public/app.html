@@ -7063,6 +7063,8 @@ function switchTab(tabId, fromPop) {
   NAV_STATE.currentTopic = null;
   NAV_STATE.currentPaneId = null;
   if (tabId === 'perfilView') renderPerfil();
+  if (tabId === 'casosView') { try { renderCasos(); } catch (e) {} }
+
   syncIaBar();
   window.scrollTo(0, 0);
   /* iaView is rendered last, after the generic scrollTo(0,0) above, so its
