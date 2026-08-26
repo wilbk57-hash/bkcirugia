@@ -11985,7 +11985,9 @@ function ccRenderCase() {
     <div class="cc-nav">
       <button class="cc-btn" onclick="ccGoStep(${i - 1})" ${i === 0 ? 'disabled' : ''}>${t('cc.prev')}</button>
       ${last
-        ? `<button class="cc-btn primary" id="ccFinishBtn" onclick="ccFinishCase()">${t('cc.finish')}</button>`
+        ? (row.completed_at
+            ? `<button class="cc-btn" onclick="ccCloseCase()">${t('cc.back')}</button>`
+            : `<button class="cc-btn primary" id="ccFinishBtn" onclick="ccFinishCase()">${t('cc.finish')}</button>`)
         : `<button class="cc-btn primary" onclick="ccGoStep(${i + 1})">${t('cc.next')}</button>`}
     </div>`;
   window.scrollTo(0, 0);
