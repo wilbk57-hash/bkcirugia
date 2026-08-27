@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { clientForRequest } from '@/lib/rag-auth.server'
+import { callerIsAdmin, clientForRequest } from '@/lib/rag-auth.server'
 import { MAX_PAGES, chunkPages, embedTexts, extractEpubPages, extractPdfPages } from '@/lib/rag.server'
 
 const BUCKET = 'user-books'
@@ -38,13 +38,15 @@ export const Route = createFileRoute('/api/books/reindex')({
         const apiKey = process.env['LOVABLE_API_KEY']
         if (!apiKey) return json({ error: 'unavailable', message: 'AI not configured' }, 503)
 
-        // RLS keeps this to the caller's own book.
+        // Shared official library book.
         const { data: book, error: bookErr } = await supabase
           .from('user_books')
           .select('id, user_id, file_path, mime_type')
           .eq('id', parsed.bookId)
           .maybeSingle()
-        if (bookErr || !book || book.user_id !== userId) return json({ error: 'not_found' }, 404)
+        if (bookErr || !book) return json({ error: 'not_found' }, 404)
+        // Official library: only administrators may (re)index shared books.
+        if (!(await callerIsAdmin(supabase, userId))) return json({ error: 'forbidden' }, 403)
 
         const isPdf = book.mime_type === 'application/pdf'
         const isEpub =
@@ -104,7 +106,7 @@ export const Route = createFileRoute('/api/books/reindex')({
               apiKey,
             )
             const rows = slice.map((c, i) => ({
-              user_id: userId,
+              user_id: book.user_id,
               book_id: book.id,
               chunk_index: c.index,
               content: c.content,
