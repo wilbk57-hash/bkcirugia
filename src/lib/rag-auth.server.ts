@@ -31,3 +31,12 @@ export async function clientForRequest(
   if (error || !data?.user) return null
   return { supabase, userId: data.user.id }
 }
+
+/** True when the caller is a platform administrator (official library manager). */
+export async function callerIsAdmin(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase.from('admin_roles').select('user_id').eq('user_id', userId).maybeSingle()
+  return !!data
+}
