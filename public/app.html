@@ -8081,7 +8081,7 @@ function closeAdmin() {
    ============================================================ */
 const MYLIB_BUCKET = 'user-books';
 const MYLIB_MAX_BYTES = 100 * 1024 * 1024; // 100MB por ficheiro (limite do bucket)
-const MYLIB_QUOTA_BYTES = 500 * 1024 * 1024; // 500MB por utilizador (ver migration)
+function myLibIsAdmin() { try { return !!getCurrentAdmin(); } catch (e) { return false; } }
 let _myBooksCache = [];
 let _myLibPendingFile = null; // { file, hash } entre a validação e a confirmação dos metadados
 let _myLibSearchQuery = '';
@@ -8147,42 +8147,39 @@ function renderMyLibrary() {
   const host = document.getElementById('myLibraryView');
   if (!host) return;
   const used = _myBooksCache.reduce((sum, b) => sum + (b.size_bytes || 0), 0);
-  const pct = Math.min(100, Math.round((used / MYLIB_QUOTA_BYTES) * 100));
+  const isAdm = myLibIsAdmin();
   host.innerHTML = `
     <div class="dash-header">
       <div class="dash-header-left">
         <div class="dash-avatar" style="background:linear-gradient(135deg,var(--teal),#2FA88A)">📖</div>
         <div>
-          <div class="dash-greeting">${myLibT('Minha Biblioteca','My Library','Mi Biblioteca')}</div>
-          <div class="dash-name">${myLibT('Os teus livros pessoais','Your personal books','Tus libros personales')}</div>
+          <div class="dash-greeting">${myLibT('Biblioteca Oficial','Official Library','Biblioteca Oficial')}</div>
+          <div class="dash-name">${myLibT('Livros partilhados com todos os alunos','Books shared with every student','Libros compartidos con todos los alumnos')}</div>
         </div>
       </div>
       <button class="icon-btn" title="${myLibT('Fechar','Close','Cerrar')}" aria-label="${myLibT('Fechar','Close','Cerrar')}" onclick="closeMyLibrary()">✕</button>
     </div>
 
-    <div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px;">
-        <span>${myLibT('Meu armazenamento','My storage','Mi almacenamiento')}</span>
-        <span>${myLibFormatBytes(used)} / ${myLibFormatBytes(MYLIB_QUOTA_BYTES)}</span>
+    ${isAdm ? `<div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);">
+        <span>${myLibT('Armazenamento total','Total storage','Almacenamiento total')}</span>
+        <span>${myLibFormatBytes(used)} · ${_myBooksCache.length} ${myLibT('livros','books','libros')}</span>
       </div>
-      <div style="height:8px;border-radius:4px;background:var(--bg2);overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:${pct>90?'var(--red)':'var(--teal)'};transition:width .3s;"></div>
-      </div>
-    </div>
+    </div>` : ''}
 
     <div id="myLibUploadHost"></div>
 
     <div class="search-bar" style="margin:4px 0 12px;">
       <span class="search-bar-icon">🔎</span>
       <input id="myLibSearchInput" class="search-input" type="text" autocomplete="off"
-        placeholder="${myLibT('Pesquisar nos meus livros...','Search my books...','Buscar en mis libros...')}"
+        placeholder="${myLibT('Pesquisar na biblioteca...','Search the library...','Buscar en la biblioteca...')}"
         value="${_myLibSearchQuery.replace(/"/g,'&quot;')}"
         oninput="onMyLibSearchInput(this.value)">
       <button type="button" class="search-close" style="${ _myLibSearchQuery ? '' : 'display:none;'}"
         onclick="document.getElementById('myLibSearchInput').value='';onMyLibSearchInput('')" aria-label="${myLibT('Limpar','Clear','Limpiar')}">✕</button>
     </div>
 
-    <div class="sec-heading" style="margin-top:4px;"><h2>${myLibT('Seus livros','Your books','Tus libros')}</h2></div>
+    <div class="sec-heading" style="margin-top:4px;"><h2>${myLibT('Livros disponíveis','Available books','Libros disponibles')}</h2></div>
     <div id="myLibList" class="card" style="padding:0;overflow:hidden;"></div>
   `;
   renderMyLibUploadArea();
@@ -8193,6 +8190,7 @@ function renderMyLibrary() {
 function renderMyLibUploadArea() {
   const host = document.getElementById('myLibUploadHost');
   if (!host) return;
+  if (!myLibIsAdmin()) { host.innerHTML = ''; return; }
   if (_myLibPendingFile) { renderMyLibMetadataForm(); return; }
   host.innerHTML = `
     <div class="card" style="text-align:center;border:1.5px dashed var(--border);cursor:pointer;" onclick="document.getElementById('myLibFileInput').click()">
@@ -8359,11 +8357,6 @@ async function myLibHandleFileSelect(input) {
     setStatus(myLibT(`Ficheiro grande demais (máx. ${myLibFormatBytes(MYLIB_MAX_BYTES)}).`,`File too large (max ${myLibFormatBytes(MYLIB_MAX_BYTES)}).`,`Archivo demasiado grande (máx. ${myLibFormatBytes(MYLIB_MAX_BYTES)}).`), true);
     return;
   }
-  const used = _myBooksCache.reduce((sum, b) => sum + (b.size_bytes || 0), 0);
-  if (used + file.size > MYLIB_QUOTA_BYTES) {
-    setStatus(myLibT('Isso ultrapassa o teu espaço disponível na Biblioteca.','That would exceed your available library storage.','Eso supera tu espacio disponible en la Biblioteca.'), true);
-    return;
-  }
 
   /* Nunca confiar só na extensão: verificar a assinatura real do ficheiro. */
   const head = await myLibReadHeaderBytes(file, 8);
@@ -8378,7 +8371,7 @@ async function myLibHandleFileSelect(input) {
   setStatus(myLibT('A verificar duplicados…','Checking for duplicates…','Comprobando duplicados…'));
   const hash = await myLibComputeHash(file);
   if (_myBooksCache.some(b => b.file_hash === hash)) {
-    setStatus(myLibT('Este livro já existe na tua Biblioteca.','This book already exists in your Library.','Este libro ya existe en tu Biblioteca.'), true);
+    setStatus(myLibT('Este livro já existe na Biblioteca Oficial.','This book is already in the Official Library.','Este libro ya está en la Biblioteca Oficial.'), true);
     return;
   }
 
@@ -8507,7 +8500,7 @@ async function myLibConfirmUpload() {
   btn.classList.remove('loading'); btn.disabled = false;
   _myLibPendingFile = null;
   myLibIndexBook(bookId); // preparação para o tutor, em segundo plano (PDF e EPUB)
-  showToast(myLibT('Livro adicionado à tua Biblioteca Pessoal.','Book added to your Personal Library.','Libro añadido a tu Biblioteca Personal.'));
+  showToast(myLibT('Livro adicionado à Biblioteca Oficial.','Book added to the Official Library.','Libro añadido a la Biblioteca Oficial.'));
   await refreshMyBooks();
   setTimeout(() => { renderMyLibrary(); }, 1200); // garantir que a lista mostra o novo livro
 }
@@ -8657,13 +8650,10 @@ async function refreshMyBooks() {
   renderMyLibList();
   maybeIndexPendingBooks();
   try { loadIaRagBooks(true); } catch (e) {}
-  // atualizar também a barra de quota no topo, sem recriar o formulário em curso
+  // atualizar o total de armazenamento (só visível para o admin)
   const used = _myBooksCache.reduce((sum, b) => sum + (b.size_bytes || 0), 0);
-  const pct = Math.min(100, Math.round((used / MYLIB_QUOTA_BYTES) * 100));
-  const bar = document.querySelector('#myLibraryView .card > div[style*="height:8px"] > div');
   const label = document.querySelector('#myLibraryView .card > div[style*="justify-content:space-between"] > span:last-child');
-  if (bar) { bar.style.width = pct + '%'; bar.style.background = pct > 90 ? 'var(--red)' : 'var(--teal)'; }
-  if (label) label.textContent = `${myLibFormatBytes(used)} / ${myLibFormatBytes(MYLIB_QUOTA_BYTES)}`;
+  if (label) label.textContent = `${myLibFormatBytes(used)} · ${_myBooksCache.length}`;
 }
 
 function renderMyLibList() {
@@ -8673,7 +8663,7 @@ function renderMyLibList() {
   if (!host) return;
   const filtered = getFilteredMyBooks();
   if (!_myBooksCache.length) {
-    host.innerHTML = `<div style="padding:28px 16px;text-align:center;color:var(--text3);font-size:13px;">${myLibT('Ainda não tens livros. Toca em "Adicionar livro" para começar.','You don\'t have any books yet. Tap "Add book" to get started.','Aún no tienes libros. Toca "Añadir libro" para empezar.')}</div>`;
+    host.innerHTML = `<div style="padding:28px 16px;text-align:center;color:var(--text3);font-size:13px;">${myLibIsAdmin() ? myLibT('Ainda não há livros oficiais. Toca em "Adicionar livro" para começar.','No official books yet. Tap "Add book" to get started.','Aún no hay libros oficiales. Toca "Añadir libro" para empezar.') : myLibT('A Biblioteca Oficial ainda não tem livros.','The Official Library has no books yet.','La Biblioteca Oficial aún no tiene libros.')}</div>`;
     return;
   }
   if (!filtered.length) {
@@ -8685,16 +8675,16 @@ function renderMyLibList() {
       <div style="font-size:22px;">${b.mime_type === 'application/pdf' ? '📕' : '📗'}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.title}</div>
-        <div style="font-size:11.5px;color:var(--text3);">👤 ${myLibT('Livro pessoal','Personal book','Libro personal')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
+        <div style="font-size:11.5px;color:var(--text3);">🏛 ${myLibT('Biblioteca Oficial','Official Library','Biblioteca Oficial')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
         <div>${myLibIndexLabel(b)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
-        ${myLibOcrEligible(b) ? (_myLibOcr[b.id] && _myLibOcr[b.id].running
+        ${myLibIsAdmin() && myLibOcrEligible(b) ? (_myLibOcr[b.id] && _myLibOcr[b.id].running
           ? `<button class="icon-btn" title="${myLibT('Parar leitura','Stop reading','Detener lectura')}" onclick="myLibOcrCancel('${b.id}')">⏹️</button>`
           : `<button class="icon-btn" title="${myLibT('Ler texto das imagens (OCR)','Read text from images (OCR)','Leer texto de las imágenes (OCR)')}" onclick="myLibOcrBook('${b.id}')">🔍</button>`) : ''}
         <button class="icon-btn" title="${myLibT('Ler','Read','Leer')}" onclick="myLibReadBook('${b.id}')">📖</button>
         <button class="icon-btn" title="${myLibT('Baixar','Download','Descargar')}" onclick="myLibDownloadBook('${b.id}')">⬇️</button>
-        <button class="icon-btn" title="${myLibT('Excluir','Delete','Eliminar')}" onclick="myLibDeleteBook('${b.id}')">🗑️</button>
+        ${myLibIsAdmin() ? `<button class="icon-btn" title="${myLibT('Excluir','Delete','Eliminar')}" onclick="myLibDeleteBook('${b.id}')">🗑️</button>` : ''}
       </div>
     </div>
   `).join('');
@@ -8994,6 +8984,7 @@ const ADMIN_MGMT_ITEMS = [
   { ic: '📚', key: 'admin.mgmt.content' }, { ic: '❓', key: 'admin.mgmt.questions' },
   { ic: '🤖', key: 'admin.mgmt.tutor' },
   { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
+  { ic: '🏛', key: 'admin.mgmt.library', action: 'openMyLibrary()' },
 ];
 function renderAdminDashboard() {
   const host = document.getElementById('adminView');

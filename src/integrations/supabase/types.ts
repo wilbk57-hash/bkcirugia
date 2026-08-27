@@ -412,6 +412,7 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       log_event: {
         Args: { p_detail?: Json; p_event: string }
         Returns: undefined

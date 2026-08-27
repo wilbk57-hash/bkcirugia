@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { clientForRequest } from '@/lib/rag-auth.server'
+import { callerIsAdmin, clientForRequest } from '@/lib/rag-auth.server'
 import { chunkPages, embedTexts } from '@/lib/rag.server'
 
 export const OCR_MAX_PAGES = 1000
@@ -85,13 +85,15 @@ export const Route = createFileRoute('/api/books/ocr')({
         const apiKey = process.env['LOVABLE_API_KEY']
         if (!apiKey) return json({ error: 'unavailable', message: 'AI not configured' }, 503)
 
-        // RLS restricts this to the caller's own book.
+        // Shared official library book.
         const { data: book, error: bookErr } = await supabase
           .from('user_books')
           .select('id, user_id, chunk_count')
           .eq('id', parsed.bookId)
           .maybeSingle()
-        if (bookErr || !book || book.user_id !== userId) return json({ error: 'not_found' }, 404)
+        if (bookErr || !book) return json({ error: 'not_found' }, 404)
+        // Official library: only administrators may (re)index shared books.
+        if (!(await callerIsAdmin(supabase, userId))) return json({ error: 'forbidden' }, 403)
 
         try {
           if (parsed.page === 1) {
@@ -117,7 +119,7 @@ export const Route = createFileRoute('/api/books/ocr')({
               apiKey,
             )
             const rows = chunks.map((c, i) => ({
-              user_id: userId,
+              user_id: book.user_id,
               book_id: book.id,
               chunk_index: (parsed.page - 1) * CHUNKS_PER_PAGE + i,
               content: c.content,
