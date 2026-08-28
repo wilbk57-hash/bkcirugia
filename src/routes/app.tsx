@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { Download } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { registerAppServiceWorker } from "@/lib/register-sw";
 
@@ -37,16 +38,58 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppShell() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
   useEffect(() => {
     void registerAppServiceWorker();
+
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const handleInstalled = () => setInstallPrompt(null);
+
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+    window.addEventListener("appinstalled", handleInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+      window.removeEventListener("appinstalled", handleInstalled);
+    };
   }, []);
 
+  const installApp = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
+
   return (
-    <iframe
-      src="/app.html"
-      title="BK-CIRURGIA"
-      className="fixed inset-0 h-full w-full border-0"
-    />
+    <>
+      <iframe
+        src="/app.html"
+        title="BK-CIRURGIA"
+        className="fixed inset-0 h-full w-full border-0"
+      />
+      {installPrompt ? (
+        <button
+          type="button"
+          onClick={installApp}
+          className="fixed bottom-20 right-4 z-50 inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-semibold text-foreground shadow-lg transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Instalar BK-CIRURGIA"
+          title="Instalar BK-CIRURGIA"
+        >
+          <Download aria-hidden="true" className="size-4" />
+          Instalar app
+        </button>
+      ) : null}
+    </>
   );
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
