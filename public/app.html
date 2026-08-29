@@ -8997,7 +8997,7 @@ function renderAdminDashboard() {
         <div class="dash-avatar" style="background:linear-gradient(135deg,var(--violet),#7B5CB8)">🛡</div>
         <div>
           <div class="dash-greeting">${t('admin.dash.title')}</div>
-          <div class="dash-name">${(getCurrentAdmin()||{}).username || 'admin'}</div>
+          <div class="dash-name">${escapeHtml((getCurrentAdmin()||{}).username || 'admin')}</div>
           <div class="dash-meta">${t('admin.dash.sub')}</div>
         </div>
       </div>
@@ -9023,10 +9023,10 @@ function renderAdminDashboard() {
         <tbody>
           ${s.users.length ? s.users.map(u => `
             <tr>
-              <td class="name">${u.name}</td>
-              <td>${u.email}</td>
-              <td><span class="adm-role-pill ${u.status==='suspended'?'blocked':''}">${u.status==='suspended' ? t('admin.stat.blocked') : (t(roleLabel[u.role]) !== roleLabel[u.role] ? t(roleLabel[u.role]) : u.role)}</span></td>
-              <td style="text-align:right;"><button class="btn" style="padding:5px 10px;font-size:11px;${u.status==='suspended'?'color:var(--teal);border-color:var(--teal);':'color:var(--red);border-color:var(--red);'}" onclick="adminToggleBlock('${u.id}')">${u.status==='suspended' ? '✓' : '⛔'}</button></td>
+              <td class="name">${escapeHtml(u.name)}</td>
+              <td>${escapeHtml(u.email)}</td>
+              <td><span class="adm-role-pill ${u.status==='suspended'?'blocked':''}">${escapeHtml(u.status==='suspended' ? t('admin.stat.blocked') : (t(roleLabel[u.role]) !== roleLabel[u.role] ? t(roleLabel[u.role]) : u.role))}</span></td>
+              <td style="text-align:right;"><button class="btn" style="padding:5px 10px;font-size:11px;${u.status==='suspended'?'color:var(--teal);border-color:var(--teal);':'color:var(--red);border-color:var(--red);'}" onclick="adminToggleBlock('${escapeHtml(u.id)}')">${u.status==='suspended' ? '✓' : '⛔'}</button></td>
             </tr>`).join('') : (_adminUsersCache.length === 0 && !s.users.length ? `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px;">${currentLang==='en'?'Loading…':currentLang==='es'?'Cargando…':'A carregar…'}</td></tr>` : `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px;">—</td></tr>`)}
         </tbody>
       </table>
@@ -9056,17 +9056,17 @@ function renderAdminBooksSection() {
   const T = (pt, en, es) => myLibT(pt, en, es);
   const rows = books.slice(0, 100).map(b => `
     <tr>
-      <td class="name">${(b.title || b.file_name || '—')}</td>
-      <td>${userLabel(b.user_id)}</td>
+      <td class="name">${escapeHtml(b.title || b.file_name || '—')}</td>
+      <td>${escapeHtml(userLabel(b.user_id))}</td>
       <td>${myLibFormatBytes(b.size_bytes || 0)}</td>
-      <td>${fmtDate(b.created_at)}</td>
-      <td><span class="adm-role-pill">${b.status || 'ready'}</span></td>
+      <td>${escapeHtml(fmtDate(b.created_at))}</td>
+      <td><span class="adm-role-pill">${escapeHtml(b.status || 'ready')}</span></td>
     </tr>`).join('');
   const usageRows = Array.from(byUser.entries())
     .sort((a, b) => b[1].bytes - a[1].bytes)
     .map(([uid, v]) => `
       <tr>
-        <td class="name">${userLabel(uid)}</td>
+        <td class="name">${escapeHtml(userLabel(uid))}</td>
         <td>${v.count}</td>
         <td>${myLibFormatBytes(v.bytes)}</td>
       </tr>`).join('');
