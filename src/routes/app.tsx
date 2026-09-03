@@ -2,6 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { registerAppServiceWorker } from "@/lib/register-sw";
 
 export const Route = createFileRoute("/app")({
@@ -39,29 +47,46 @@ export const Route = createFileRoute("/app")({
 
 function AppShell() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
 
   useEffect(() => {
     void registerAppServiceWorker();
+
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const updateInstalledState = () =>
+      setIsInstalled(standaloneQuery.matches || window.navigator.standalone === true);
+    updateInstalledState();
 
     const handleInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
     };
-    const handleInstalled = () => setInstallPrompt(null);
+    const handleInstalled = () => {
+      setInstallPrompt(null);
+      setIsInstalled(true);
+      setShowInstallHelp(false);
+    };
 
     window.addEventListener("beforeinstallprompt", handleInstallPrompt);
     window.addEventListener("appinstalled", handleInstalled);
+    standaloneQuery.addEventListener("change", updateInstalledState);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
       window.removeEventListener("appinstalled", handleInstalled);
+      standaloneQuery.removeEventListener("change", updateInstalledState);
     };
   }, []);
 
   const installApp = async () => {
-    if (!installPrompt) return;
+    if (!installPrompt) {
+      setShowInstallHelp(true);
+      return;
+    }
     await installPrompt.prompt();
-    await installPrompt.userChoice;
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") setIsInstalled(true);
     setInstallPrompt(null);
   };
 
@@ -72,18 +97,31 @@ function AppShell() {
         title="BK-CIRURGIA"
         className="fixed inset-0 h-full w-full border-0"
       />
-      {installPrompt ? (
-        <button
+      {!isInstalled ? (
+        <Button
           type="button"
           onClick={installApp}
-          className="fixed bottom-20 right-4 z-50 inline-flex min-h-11 items-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-semibold text-foreground shadow-lg transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          variant="outline"
+          className="fixed bottom-20 right-4 z-50 min-h-11 bg-background px-4 font-semibold shadow-lg"
           aria-label="Instalar BK-CIRURGIA"
           title="Instalar BK-CIRURGIA"
         >
           <Download aria-hidden="true" className="size-4" />
           Instalar app
-        </button>
+        </Button>
       ) : null}
+      <Dialog open={showInstallHelp} onOpenChange={setShowInstallHelp}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Instalar BK-CIRURGIA</DialogTitle>
+            <DialogDescription>
+              O browser não disponibilizou o pedido automático. No Chrome, abra o menu e escolha
+              “Instalar BK-CIRURGIA”. No iPhone ou iPad, toque em Partilhar e depois em “Adicionar ao
+              ecrã principal”.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -91,5 +129,11 @@ function AppShell() {
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
+declare global {
+  interface Navigator {
+    standalone?: boolean;
+  }
 }
 
