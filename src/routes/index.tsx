@@ -43,10 +43,10 @@ export const Route = createFileRoute("/")({
           "Estude cirurgia com conteúdo estruturado, tutor de IA, mapas mentais e acompanhamento de progresso.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://trypixelperfect.app/" },
+      { property: "og:url", content: "https://bkcirugia.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://trypixelperfect.app/" }],
+    links: [{ rel: "canonical", href: "https://bkcirugia.lovable.app/" }],
     scripts: [
       {
         type: "application/ld+json",
@@ -54,7 +54,7 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "BK-CIRURGIA",
-          url: "https://trypixelperfect.app/",
+          url: "https://bkcirugia.lovable.app/",
           description:
             "Plataforma de estudos em cirurgia com módulos estruturados, tutor de IA, mapas mentais e acompanhamento de progresso.",
           inLanguage: "pt",
