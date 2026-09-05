@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-const URL = "https://trypixelperfect.app/resumos/cirurgia-geral";
+const URL = "https://bkcirugia.lovable.app/resumos/cirurgia-geral";
 const TITLE = "Resumo de cirurgia geral: pré-operatório | BK-CIRURGIA";
 const DESCRIPTION =
   "Resumo de cirurgia geral para residência: definição de pré-operatório, cirurgia eletiva, de urgência e emergência, fases mediata e imediata e estresse cirúrgico.";
