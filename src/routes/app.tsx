@@ -19,7 +19,7 @@ export const Route = createFileRoute("/app")({
       {
         name: "description",
         content:
-          "Aceda à plataforma BK-CIRURGIA: módulos de estudo, tutor de IA, mapas mentais e biblioteca pessoal.",
+            "Aceda à plataforma BK-CIRURGIA: módulos de estudo, tutor de IA, mapas mentais e biblioteca oficial.",
       },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Entrar — BK-CIRURGIA" },
