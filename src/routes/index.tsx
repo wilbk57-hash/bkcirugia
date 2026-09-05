@@ -14,8 +14,8 @@ const FEATURES = [
     text: "Transforme um tema em mapa mental interativo, com modos de foco, apresentação e memorização.",
   },
   {
-    title: "Biblioteca pessoal",
-    text: "Carregue os seus PDFs e EPUBs, leia dentro da própria plataforma e pesquise por título, autor ou categoria.",
+    title: "Biblioteca oficial",
+    text: "Aceda aos livros da biblioteca oficial, leia dentro da própria plataforma e pesquise por título, autor ou categoria.",
   },
   {
     title: "Progresso real e plano do dia",
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "BK-CIRURGIA: plataforma de estudos em cirurgia com módulos estruturados, tutor de IA, mapas mentais, biblioteca pessoal e acompanhamento de progresso.",
+            "BK-CIRURGIA: plataforma de estudos em cirurgia com módulos estruturados, tutor de IA, mapas mentais, biblioteca oficial de livros e acompanhamento de progresso.",
       },
       { property: "og:title", content: "BK-CIRURGIA — Plataforma de estudos em cirurgia" },
       {
@@ -78,7 +78,7 @@ function Index() {
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-muted-foreground">
             Estude cirurgia com conteúdo estruturado, tutor de inteligência artificial, mapas
-            mentais interativos, biblioteca pessoal de livros e acompanhamento real do seu
+            mentais interativos, biblioteca ficial de livros e acompanhamento real do seu
             progresso.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
