@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Download } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -49,9 +49,11 @@ function AppShell() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
     void registerAppServiceWorker();
+    setIsAndroid(/Android/i.test(window.navigator.userAgent));
 
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
     const updateInstalledState = () =>
@@ -90,6 +92,11 @@ function AppShell() {
     setInstallPrompt(null);
   };
 
+  const openInChrome = () => {
+    const chromeUrl = `${window.location.host}${window.location.pathname}${window.location.search}`;
+    window.location.href = `intent://${chromeUrl}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end`;
+  };
+
   return (
     <>
       <iframe
@@ -115,11 +122,17 @@ function AppShell() {
           <DialogHeader>
             <DialogTitle>Instalar BK-CIRURGIA</DialogTitle>
             <DialogDescription>
-              O browser não disponibilizou o pedido automático. No Chrome, abra o menu e escolha
-              “Instalar BK-CIRURGIA”. No iPhone ou iPad, toque em Partilhar e depois em “Adicionar ao
-              ecrã principal”.
+              {isAndroid
+                ? "Esta página está aberta num navegador interno, que não permite instalar aplicações. Abra-a no Chrome e depois escolha “Instalar app” no menu ⋮."
+                : "No iPhone ou iPad, abra esta página no Safari, toque em Partilhar e depois em “Adicionar ao ecrã principal”."}
             </DialogDescription>
           </DialogHeader>
+          {isAndroid ? (
+            <Button type="button" onClick={openInChrome} className="w-full font-semibold">
+              <ExternalLink aria-hidden="true" className="size-4" />
+              Abrir no Chrome
+            </Button>
+          ) : null}
         </DialogContent>
       </Dialog>
     </>
