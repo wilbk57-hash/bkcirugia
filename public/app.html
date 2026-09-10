@@ -9245,6 +9245,7 @@ async function adminToggleBlock(userId) {
    ============================================================ */
 function initApp() {
   loadSettingsState();
+  pwaInitInstallTracking();
   document.getElementById('heroBanner').style.backgroundImage = `linear-gradient(0deg, rgba(0,0,0,0), rgba(0,0,0,0)), url('${HERO_IMG}')`;
   applyThemeMode(SETTINGS_STATE.theme);
   applyAccent(SETTINGS_STATE.accent);
