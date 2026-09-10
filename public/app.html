@@ -8051,6 +8051,7 @@ function openAdmin(fromPop) {
   renderAdminDashboard();
   refreshAdminUsers();
   refreshAdminBooks();
+  refreshAdminInstalls();
   syncIaBar();
   window.scrollTo(0, 0);
   if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
