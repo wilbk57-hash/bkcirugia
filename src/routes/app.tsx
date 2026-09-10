@@ -56,9 +56,19 @@ function AppShell() {
     setIsAndroid(/Android/i.test(window.navigator.userAgent));
 
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
-    const updateInstalledState = () =>
-      setIsInstalled(standaloneQuery.matches || window.navigator.standalone === true);
+    const notifyAppFrame = (displayMode: string) => {
+      const frame = document.querySelector("iframe");
+      frame?.contentWindow?.postMessage({ type: "bk-pwa-installed", displayMode }, window.location.origin);
+    };
+    const updateInstalledState = () => {
+      const installed = standaloneQuery.matches || window.navigator.standalone === true;
+      setIsInstalled(installed);
+      if (installed) {
+        notifyAppFrame(standaloneQuery.matches ? "standalone" : "ios-standalone");
+      }
+    };
     updateInstalledState();
+    const initialPing = window.setTimeout(updateInstalledState, 2500);
 
     const handleInstallPrompt = (event: Event) => {
       event.preventDefault();
