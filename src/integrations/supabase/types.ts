@@ -220,6 +220,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pwa_installs: {
+        Row: {
+          app_version: string
+          created_at: string
+          device_key: string
+          display_mode: string | null
+          id: string
+          installed_at: string
+          last_seen_at: string
+          platform: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          app_version?: string
+          created_at?: string
+          device_key: string
+          display_mode?: string | null
+          id?: string
+          installed_at?: string
+          last_seen_at?: string
+          platform?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          app_version?: string
+          created_at?: string
+          device_key?: string
+          display_mode?: string | null
+          id?: string
+          installed_at?: string
+          last_seen_at?: string
+          platform?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_events: {
         Row: {
           created_at: string
