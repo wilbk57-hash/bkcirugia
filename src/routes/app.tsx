@@ -78,6 +78,7 @@ function AppShell() {
       setInstallPrompt(null);
       setIsInstalled(true);
       setShowInstallHelp(false);
+      notifyAppFrame("installed");
     };
 
     window.addEventListener("beforeinstallprompt", handleInstallPrompt);
