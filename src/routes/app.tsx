@@ -86,6 +86,7 @@ function AppShell() {
     standaloneQuery.addEventListener("change", updateInstalledState);
 
     return () => {
+      window.clearTimeout(initialPing);
       window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
       window.removeEventListener("appinstalled", handleInstalled);
       standaloneQuery.removeEventListener("change", updateInstalledState);
