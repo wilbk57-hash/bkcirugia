@@ -8967,6 +8967,127 @@ async function deleteAccount() {
   document.getElementById('bottomNav').classList.remove('hide');
 }
 
+/* ---- REGISTO DE INSTALAÇÕES (PWA) ---- */
+const PWA_APP_VERSION = '1.5.0';
+let _adminInstallsCache = [];
+let _pwaRecorded = false;
+
+function pwaDeviceKey() {
+  try {
+    let k = localStorage.getItem('bk_device_key');
+    if (!k) {
+      k = (self.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+      localStorage.setItem('bk_device_key', k);
+    }
+    return k;
+  } catch (_) { return 'anon-' + Math.random().toString(16).slice(2); }
+}
+
+function pwaDeviceLabel(ua) {
+  ua = ua || '';
+  const os = /iPhone|iPad|iPod/i.test(ua) ? 'iOS'
+    : /Android/i.test(ua) ? 'Android'
+    : /Windows/i.test(ua) ? 'Windows'
+    : /Mac OS X/i.test(ua) ? 'macOS'
+    : /Linux/i.test(ua) ? 'Linux' : '—';
+  const br = /Edg\//i.test(ua) ? 'Edge'
+    : /OPR\//i.test(ua) ? 'Opera'
+    : /SamsungBrowser/i.test(ua) ? 'Samsung Internet'
+    : /Chrome\//i.test(ua) ? 'Chrome'
+    : /Firefox\//i.test(ua) ? 'Firefox'
+    : /Safari\//i.test(ua) ? 'Safari' : '—';
+  return os + ' · ' + br;
+}
+
+function pwaIsStandalone() {
+  try {
+    if (window.navigator.standalone === true) return true;
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (window.parent !== window) {
+      try { return window.parent.matchMedia('(display-mode: standalone)').matches; } catch (_) { return false; }
+    }
+  } catch (_) { /* noop */ }
+  return false;
+}
+
+async function pwaRecordInstall(displayMode) {
+  if (_pwaRecorded) return;
+  const user = await seAwaitUser();
+  if (!user) return;
+  _pwaRecorded = true;
+  const ua = navigator.userAgent || '';
+  const row = {
+    user_id: user.id,
+    device_key: pwaDeviceKey(),
+    app_version: PWA_APP_VERSION,
+    platform: pwaDeviceLabel(ua),
+    user_agent: ua.slice(0, 400),
+    display_mode: displayMode || 'standalone',
+    last_seen_at: new Date().toISOString(),
+  };
+  try {
+    const { error } = await supabaseClient.from('pwa_installs').insert(row);
+    if (error) {
+      await supabaseClient.from('pwa_installs')
+        .update({ app_version: row.app_version, display_mode: row.display_mode, platform: row.platform, user_agent: row.user_agent, last_seen_at: row.last_seen_at })
+        .eq('user_id', user.id).eq('device_key', row.device_key);
+    }
+  } catch (_) { /* nunca bloquear a UI */ }
+}
+
+function pwaInitInstallTracking() {
+  window.addEventListener('message', (ev) => {
+    if (ev.origin !== window.location.origin) return;
+    if (ev.data && ev.data.type === 'bk-pwa-installed') pwaRecordInstall(ev.data.displayMode);
+  });
+  const check = () => { if (pwaIsStandalone()) pwaRecordInstall(); };
+  check();
+  setTimeout(check, 3000);
+}
+
+async function refreshAdminInstalls() {
+  const { data, error } = await supabaseClient
+    .from('pwa_installs')
+    .select('id,user_id,app_version,platform,user_agent,display_mode,installed_at,last_seen_at')
+    .order('installed_at', { ascending: false })
+    .limit(200);
+  if (!error) _adminInstallsCache = data || [];
+  renderAdminDashboard();
+}
+
+function renderAdminInstallsSection() {
+  const T = (pt, en, es) => myLibT(pt, en, es);
+  const rows = _adminInstallsCache;
+  const userLabel = (uid) => {
+    const u = _adminUsersCache.find(x => x.id === uid);
+    return u ? (u.email || u.name || uid) : uid;
+  };
+  const fmt = (d) => { try { return new Date(d).toLocaleString(); } catch (e) { return '—'; } };
+  const uniqueUsers = new Set(rows.map(r => r.user_id)).size;
+  const body = rows.map(r => `
+    <tr>
+      <td class="name">${escapeHtml(userLabel(r.user_id))}</td>
+      <td>${escapeHtml(r.platform || '—')}</td>
+      <td><span class="adm-role-pill">v${escapeHtml(r.app_version || '—')}</span></td>
+      <td>${escapeHtml(fmt(r.installed_at))}</td>
+      <td>${escapeHtml(fmt(r.last_seen_at))}</td>
+    </tr>`).join('');
+  return `
+    <div class="sec-heading" style="margin-top:18px;"><h2>${T('Instalações do app','App installs','Instalaciones de la app')}</h2></div>
+    <div class="adm-stat-grid">
+      <div class="adm-stat-card"><div class="n">${rows.length}</div><div class="l">${T('Dispositivos','Devices','Dispositivos')}</div></div>
+      <div class="adm-stat-card"><div class="n">${uniqueUsers}</div><div class="l">${T('Alunos','Students','Alumnos')}</div></div>
+      <div class="adm-stat-card"><div class="n">v${escapeHtml(PWA_APP_VERSION)}</div><div class="l">${T('Versão atual','Current version','Versión actual')}</div></div>
+    </div>
+    <div class="stat-table-card">
+      <table class="adm-table">
+        <thead><tr><th>${T('Aluno','Student','Alumno')}</th><th>${T('Dispositivo','Device','Dispositivo')}</th><th>${T('Versão','Version','Versión')}</th><th>${T('Instalado em','Installed on','Instalado el')}</th><th>${T('Última utilização','Last used','Último uso')}</th></tr></thead>
+        <tbody>${body || `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:18px;">${T('Ainda ninguém instalou o app.','Nobody has installed the app yet.','Todavía nadie ha instalado la app.')}</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 /* ---- ADMIN DASHBOARD (post-login) ---- */
 function adminStats() {
   const users = _adminUsersCache;
