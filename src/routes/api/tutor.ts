@@ -25,7 +25,6 @@ const BodySchema = z.object({
 const MODELS = {
   gemini: 'google/gemini-3.1-flash-lite',
   openai: 'openai/gpt-5.6-luna',
-  claude: 'anthropic/claude-sonnet-4.5',
 } as const
 
 function json(data: unknown, status = 200) {
