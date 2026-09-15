@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { clientForRequest } from '@/lib/rag-auth.server'
 import { embedQuery } from '@/lib/rag.server'
+import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 const BodySchema = z.object({
   query: z.string().min(3).max(2000),
@@ -22,6 +23,8 @@ export const Route = createFileRoute('/api/books/search')({
       POST: async ({ request }) => {
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
+
+        if (!(await consumeAiQuota(caller.supabase, 'search'))) return rateLimitResponse('search')
 
         let parsed
         try {
