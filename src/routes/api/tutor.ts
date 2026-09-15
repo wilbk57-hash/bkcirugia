@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
 import { streamText } from 'ai'
 import { z } from 'zod'
 import {
   createLovableChatProvider,
   createLovableResponsesProvider,
 } from '@/lib/ai-gateway.server'
+import { clientForRequest } from '@/lib/rag-auth.server'
+import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 const BodySchema = z.object({
   provider: z.enum(['gemini', 'openai']),
