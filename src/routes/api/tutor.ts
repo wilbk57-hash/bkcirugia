@@ -8,7 +8,7 @@ import {
 } from '@/lib/ai-gateway.server'
 
 const BodySchema = z.object({
-  provider: z.enum(['gemini', 'openai', 'claude']),
+  provider: z.enum(['gemini', 'openai']),
   system: z.string().max(60000).optional(),
   maxTokens: z.number().int().min(64).max(4000).optional(),
   messages: z
