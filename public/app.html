@@ -8647,7 +8647,9 @@ async function myLibOcrBook(id) {
 
 async function refreshMyBooks() {
   const { data, error } = await supabaseClient.from('user_books').select('*').order('created_at', { ascending: false });
-  if (!error) _myBooksCache = (data || []).filter(b => !b.status || b.status === 'ready');
+  // Mostra também os livros ainda a processar, senão um livro acabado de
+  // carregar desaparece da lista até terminar a indexação.
+  if (!error) _myBooksCache = (data || []).filter(b => b.status !== 'removed');
   renderMyLibList();
   maybeIndexPendingBooks();
   try { loadIaRagBooks(true); } catch (e) {}
@@ -8675,8 +8677,8 @@ function renderMyLibList() {
     <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
       <div style="font-size:22px;">${b.mime_type === 'application/pdf' ? '📕' : '📗'}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.title}</div>
-        <div style="font-size:11.5px;color:var(--text3);">🏛 ${myLibT('Biblioteca Oficial','Official Library','Biblioteca Oficial')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
+        <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(b.title || '')}</div>
+        <div style="font-size:11.5px;color:var(--text3);">🏛 ${myLibT('Biblioteca Oficial','Official Library','Biblioteca Oficial')} · ${b.author ? escapeHtml(b.author) + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
         <div>${myLibIndexLabel(b)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
