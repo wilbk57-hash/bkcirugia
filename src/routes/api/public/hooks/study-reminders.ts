@@ -53,10 +53,11 @@ export const Route = createFileRoute('/api/public/hooks/study-reminders')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const expectedKey =
-          process.env['SUPABASE_ANON_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+        // Segredo dedicado a este hook. A chave pública do projeto já não serve:
+        // é conhecida por qualquer visitante do site.
+        const expectedKey = process.env['REMINDERS_HOOK_SECRET'];
         const provided =
-          request.headers.get('apikey') ||
+          request.headers.get('x-reminders-secret') ||
           request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
         if (!expectedKey || !provided || provided !== expectedKey) {

@@ -1681,7 +1681,7 @@
           <label for="adminSetupPw2" data-i18n="auth.field.password2">Confirmar senha</label>
           <div class="auth-input-wrap"><input class="auth-input" id="adminSetupPw2" type="password" autocomplete="new-password" placeholder="••••••••"><button type="button" class="pw-toggle" onclick="togglePw('adminSetupPw2', this)" aria-label="Mostrar ou ocultar senha">👁</button></div>
         </div>
-        <div class="auth-field"><label for="adminSetupCode" data-i18n="auth.field.securitycode.set">Definir código de segurança (6 dígitos)</label><input class="auth-input" id="adminSetupCode" type="text" maxlength="6" inputmode="numeric" placeholder="000000"><div class="auth-err-msg" id="adminSetupErr"></div></div>
+        <div class="auth-field"><div class="auth-err-msg" id="adminSetupErr"></div></div>
 
         <button class="auth-submit" id="adminSetupBtn" onclick="doAdminSetup()" data-i18n="auth.adminsetup.submit">Criar administrador</button>
       </div>
@@ -1699,7 +1699,7 @@
           <label for="adminPw" data-i18n="auth.field.password">Senha</label>
           <div class="auth-input-wrap"><input class="auth-input" id="adminPw" type="password" autocomplete="current-password" placeholder="••••••••"><button type="button" class="pw-toggle" onclick="togglePw('adminPw', this)" aria-label="Mostrar ou ocultar senha">👁</button></div>
         </div>
-        <div class="auth-field"><label for="adminCode" data-i18n="auth.field.securitycode">Código de segurança (2FA)</label><input class="auth-input" id="adminCode" type="text" maxlength="6" inputmode="numeric" placeholder="000000"><div class="auth-err-msg" id="adminErr"></div></div>
+        <div class="auth-field"><div class="auth-err-msg" id="adminErr"></div></div>
 
         <button class="auth-submit" id="adminBtn" onclick="doAdminLogin()" data-i18n="auth.admin.submit">Entrar como administrador</button>
         <div style="text-align:center;margin-top:10px;"><a href="javascript:void(0)" onclick="showAuthScreen('admin-setup')" style="font-size:12px;color:var(--text3);text-decoration:underline;">Ainda não tenho conta de administrador</a></div>
@@ -5304,7 +5304,13 @@ const STR_TABLE = [
  ['dash.specialties','Temas do curso','Course topics','Temas del curso'],
  ['dash.library','Biblioteca rápida','Quick library','Biblioteca rápida'],
  ['stub.casos.title','Casos clínicos','Clinical cases','Casos clínicos'],
- ['stub.casos.sub','Em breve: biblioteca completa de casos por especialidade. Por enquanto, encontre os casos dentro de cada tema em Estudos.','Coming soon: a full case library by specialty. For now, find cases inside each topic under Study.','Próximamente: biblioteca completa de casos por especialidad. Por ahora, encuentra los casos dentro de cada tema en Estudio.'],
+ ['stub.casos.sub','Gere casos clínicos simulados passo a passo com o Tutor de IA e acompanhe o seu progresso.','Generate step-by-step simulated clinical cases with the AI Tutor and track your progress.','Genera casos clínicos simulados paso a paso con el Tutor de IA y sigue tu progreso.'],
+ ['admin.mgmt.videos','Vídeos','Videos','Vídeos'],
+ ['admin.mgmt.images','Imagens','Images','Imágenes'],
+ ['admin.mgmt.content','Conteúdos','Content','Contenidos'],
+ ['admin.mgmt.questions','Questões','Questions','Preguntas'],
+ ['admin.mgmt.tutor','Tutor de IA','AI Tutor','Tutor de IA'],
+ ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
  ['stub.ia.title','Tutor de IA','AI tutor','Tutor de IA'],
  ['stub.ia.sub','Em breve: tire dúvidas, gere resumos e pratique perguntas com um tutor de IA treinado no seu material.','Coming soon: ask questions, generate summaries and practice with an AI tutor trained on your material.','Próximamente: resuelve dudas, genera resúmenes y practica preguntas con un tutor de IA entrenado con tu material.'],
  ['stub.perfil.title','Perfil','Profile','Perfil'],
@@ -8647,7 +8653,9 @@ async function myLibOcrBook(id) {
 
 async function refreshMyBooks() {
   const { data, error } = await supabaseClient.from('user_books').select('*').order('created_at', { ascending: false });
-  if (!error) _myBooksCache = (data || []).filter(b => !b.status || b.status === 'ready');
+  // Mostra também os livros ainda a processar, senão um livro acabado de
+  // carregar desaparece da lista até terminar a indexação.
+  if (!error) _myBooksCache = (data || []).filter(b => b.status !== 'removed');
   renderMyLibList();
   maybeIndexPendingBooks();
   try { loadIaRagBooks(true); } catch (e) {}
@@ -8675,8 +8683,8 @@ function renderMyLibList() {
     <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);">
       <div style="font-size:22px;">${b.mime_type === 'application/pdf' ? '📕' : '📗'}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.title}</div>
-        <div style="font-size:11.5px;color:var(--text3);">🏛 ${myLibT('Biblioteca Oficial','Official Library','Biblioteca Oficial')} · ${b.author ? b.author + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
+        <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(b.title || '')}</div>
+        <div style="font-size:11.5px;color:var(--text3);">🏛 ${myLibT('Biblioteca Oficial','Official Library','Biblioteca Oficial')} · ${b.author ? escapeHtml(b.author) + ' · ' : ''}${myLibFormatBytes(b.size_bytes)}</div>
         <div>${myLibIndexLabel(b)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">

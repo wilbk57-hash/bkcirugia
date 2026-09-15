@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { createClient } from '@supabase/supabase-js'
 import { streamText } from 'ai'
 import { z } from 'zod'
 import {
   createLovableChatProvider,
   createLovableResponsesProvider,
 } from '@/lib/ai-gateway.server'
+import { clientForRequest } from '@/lib/rag-auth.server'
+import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 const BodySchema = z.object({
   provider: z.enum(['gemini', 'openai']),
@@ -34,33 +35,15 @@ function json(data: unknown, status = 200) {
   })
 }
 
-async function verifyCaller(request: Request) {
-  const auth = request.headers.get('Authorization') || ''
-  const token = auth.toLowerCase().startsWith('bearer ') ? auth.slice(7).trim() : ''
-  if (!token) return null
-  const key = process.env['SUPABASE_PUBLISHABLE_KEY']!
-  const supabase = createClient(process.env['SUPABASE_URL']!, key, {
-    auth: { persistSession: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers)
-        if (key.startsWith('sb_') && h.get('Authorization') === `Bearer ${key}`) h.delete('Authorization')
-        h.set('apikey', key)
-        return fetch(input, { ...init, headers: h })
-      },
-    },
-  })
-  const { data, error } = await supabase.auth.getUser(token)
-  if (error || !data?.user) return null
-  return data.user.id
-}
-
 export const Route = createFileRoute('/api/tutor')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const userId = await verifyCaller(request)
-        if (!userId) return json({ error: 'unauthorized' }, 401)
+        const caller = await clientForRequest(request)
+        if (!caller) return json({ error: 'unauthorized' }, 401)
+
+        // Limite por aluno e por hora — evita custos de IA descontrolados.
+        if (!(await consumeAiQuota(caller.supabase, 'tutor'))) return rateLimitResponse('tutor')
 
         let parsed
         try {
