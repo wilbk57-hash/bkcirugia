@@ -8,7 +8,7 @@ import {
 } from '@/lib/ai-gateway.server'
 
 const BodySchema = z.object({
-  provider: z.enum(['gemini', 'openai']),
+  provider: z.enum(['gemini', 'openai', 'claude']),
   system: z.string().max(60000).optional(),
   maxTokens: z.number().int().min(64).max(4000).optional(),
   messages: z
@@ -25,6 +25,7 @@ const BodySchema = z.object({
 const MODELS = {
   gemini: 'google/gemini-3.1-flash-lite',
   openai: 'openai/gpt-5.6-luna',
+  claude: 'anthropic/claude-sonnet-4.5',
 } as const
 
 function json(data: unknown, status = 200) {
