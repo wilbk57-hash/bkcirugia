@@ -1549,12 +1549,6 @@
         </div>
         <button class="auth-submit" id="loginBtn" onclick="doLogin()" data-i18n="auth.login.submit">Entrar</button>
 
-        <div class="auth-divider"><span data-i18n="auth.or">ou continue com</span></div>
-        <div class="auth-oauth-row">
-          <button class="auth-oauth-btn" onclick="oauthStub('Google')">🔷 Google</button>
-          <button class="auth-oauth-btn" onclick="oauthStub('Apple')"></button>
-          <button class="auth-oauth-btn" onclick="oauthStub('Microsoft')">⊞ Microsoft</button>
-        </div>
         <div class="auth-switch"><span data-i18n="auth.login.switch.q">Não tem conta?</span> <b onclick="showAuthScreen('register')" data-i18n="auth.welcome.register">Criar conta</b></div>
       </div>
     </div>
@@ -5312,9 +5306,9 @@ const STR_TABLE = [
  ['admin.mgmt.tutor','Tutor de IA','AI Tutor','Tutor de IA'],
  ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
  ['stub.ia.title','Tutor de IA','AI tutor','Tutor de IA'],
- ['stub.ia.sub','Em breve: tire dúvidas, gere resumos e pratique perguntas com um tutor de IA treinado no seu material.','Coming soon: ask questions, generate summaries and practice with an AI tutor trained on your material.','Próximamente: resuelve dudas, genera resúmenes y practica preguntas con un tutor de IA entrenado con tu material.'],
+ ['stub.ia.sub','Tire dúvidas, gere resumos e pratique perguntas com o Tutor de IA, que também consulta a Biblioteca Oficial.','Ask questions, generate summaries and practice with the AI Tutor, which also searches the Official Library.','Resuelve dudas, genera resúmenes y practica preguntas con el Tutor de IA, que también consulta la Biblioteca Oficial.'],
  ['stub.perfil.title','Perfil','Profile','Perfil'],
- ['stub.perfil.sub','Em breve: histórico completo, conquistas e estatísticas detalhadas.','Coming soon: full history, achievements and detailed stats.','Próximamente: historial completo, logros y estadísticas detalladas.'],
+ ['stub.perfil.sub','Consulte o seu progresso por tema, notas e eventos de estudo.','Check your progress by topic, notes and study events.','Consulta tu progreso por tema, notas y eventos de estudio.'],
  ['greet.morning','Bom dia','Good morning','Buenos días'],
  ['greet.afternoon','Boa tarde','Good afternoon','Buenas tardes'],
  ['greet.evening','Boa noite','Good evening','Buenas noches'],
@@ -9233,7 +9227,7 @@ async function refreshAdminBooks() {
   renderAdminDashboard();
 }
 async function refreshAdminUsers() {
-  const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false }).limit(500);
   if (!error) _adminUsersCache = data || [];
   renderAdminDashboard();
 }
@@ -9829,7 +9823,7 @@ async function spOpenReports() {
   document.body.appendChild(el);
   try {
     const [{ data: rows, error: e1 }, { data: profiles, error: e2 }] = await Promise.all([
-      supabaseClient.from('study_progress').select('*'),
+      supabaseClient.from('study_progress').select('*').order('last_attempt_at', { ascending: false }).limit(5000),
       supabaseClient.from('profiles').select('id,name,email'),
     ]);
     if (e1) throw e1;
@@ -9843,7 +9837,8 @@ async function spOpenReports() {
 function spRenderReports(rows, profiles) {
   const body = document.getElementById('spReportsBody');
   if (!body) return;
-  const nameOf = id => { const p = profiles.find(x => x.id === id); return p ? (p.name || p.email) : id.slice(0, 8); };
+  const profileById = new Map((profiles || []).map(p => [p.id, p]));
+  const nameOf = id => { const p = profileById.get(id); return p ? (p.name || p.email) : id.slice(0, 8); };
   const byTopic = {};
   rows.forEach(r => {
     const k = r.topic_id;
