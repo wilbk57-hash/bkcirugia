@@ -1549,12 +1549,6 @@
         </div>
         <button class="auth-submit" id="loginBtn" onclick="doLogin()" data-i18n="auth.login.submit">Entrar</button>
 
-        <div class="auth-divider"><span data-i18n="auth.or">ou continue com</span></div>
-        <div class="auth-oauth-row">
-          <button class="auth-oauth-btn" onclick="oauthStub('Google')">🔷 Google</button>
-          <button class="auth-oauth-btn" onclick="oauthStub('Apple')"></button>
-          <button class="auth-oauth-btn" onclick="oauthStub('Microsoft')">⊞ Microsoft</button>
-        </div>
         <div class="auth-switch"><span data-i18n="auth.login.switch.q">Não tem conta?</span> <b onclick="showAuthScreen('register')" data-i18n="auth.welcome.register">Criar conta</b></div>
       </div>
     </div>
@@ -9843,7 +9837,8 @@ async function spOpenReports() {
 function spRenderReports(rows, profiles) {
   const body = document.getElementById('spReportsBody');
   if (!body) return;
-  const nameOf = id => { const p = profiles.find(x => x.id === id); return p ? (p.name || p.email) : id.slice(0, 8); };
+  const profileById = new Map((profiles || []).map(p => [p.id, p]));
+  const nameOf = id => { const p = profileById.get(id); return p ? (p.name || p.email) : id.slice(0, 8); };
   const byTopic = {};
   rows.forEach(r => {
     const k = r.topic_id;
