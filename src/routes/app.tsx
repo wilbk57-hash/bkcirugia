@@ -50,10 +50,35 @@ function AppShell() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isMac, setIsMac] = useState(false);
+
+  // Evita o "flash branco" no iOS/Safari enquanto o iframe (app.html) ainda
+  // está a carregar: pinta a página por trás com a mesma cor de fundo do
+  // manifest, em vez de deixar o branco padrão do navegador aparecer.
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousRootBg = root.style.backgroundColor;
+    const previousBodyBg = document.body.style.backgroundColor;
+    root.style.backgroundColor = "#0b1220";
+    document.body.style.backgroundColor = "#0b1220";
+    return () => {
+      root.style.backgroundColor = previousRootBg;
+      document.body.style.backgroundColor = previousBodyBg;
+    };
+  }, []);
 
   useEffect(() => {
     void registerAppServiceWorker();
-    setIsAndroid(/Android/i.test(window.navigator.userAgent));
+
+    const ua = window.navigator.userAgent;
+    setIsAndroid(/Android/i.test(ua));
+    // iPadOS 13+ identifica-se como "Macintosh" mas tem ecrã tátil — sem
+    // isto, um iPad seria tratado (erradamente) como um Mac de secretária.
+    const isAppleTouchDevice =
+      /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    setIsIOS(isAppleTouchDevice);
+    setIsMac(/Macintosh/i.test(ua) && !isAppleTouchDevice);
 
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
     const notifyAppFrame = (displayMode: string) => {
@@ -109,6 +134,14 @@ function AppShell() {
     window.location.href = `intent://${chromeUrl}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end`;
   };
 
+  const installHelpText = isAndroid
+    ? "Esta página está aberta num navegador interno, que não permite instalar aplicações. Abra-a no Chrome e depois escolha “Instalar app” no menu ⋮."
+    : isIOS
+      ? "No iPhone ou iPad, abra esta página no Safari, toque em Partilhar e depois em “Adicionar ao ecrã principal”."
+      : isMac
+        ? "No Mac, abra esta página no Safari, Chrome ou Edge e procure a opção “Instalar” ou o ícone de instalação na barra de endereço."
+        : "No Windows, abra esta página no Chrome ou Edge e clique no ícone de instalar (⊕ ou monitor) na barra de endereço.";
+
   return (
     <>
       <iframe
@@ -133,11 +166,7 @@ function AppShell() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Instalar BK-CIRURGIA</DialogTitle>
-            <DialogDescription>
-              {isAndroid
-                ? "Esta página está aberta num navegador interno, que não permite instalar aplicações. Abra-a no Chrome e depois escolha “Instalar app” no menu ⋮."
-                : "No iPhone ou iPad, abra esta página no Safari, toque em Partilhar e depois em “Adicionar ao ecrã principal”."}
-            </DialogDescription>
+            <DialogDescription>{installHelpText}</DialogDescription>
           </DialogHeader>
           {isAndroid ? (
             <Button type="button" onClick={openInChrome} className="w-full font-semibold">
@@ -161,4 +190,3 @@ declare global {
     standalone?: boolean;
   }
 }
-
