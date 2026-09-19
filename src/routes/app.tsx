@@ -1,121 +1,192 @@
-const CACHE_NAME = 'bk-cirurgia-v5';
-// Assets estáticos versionados: nunca mudam sem trocar o nome do arquivo,
-// então podem ser cache-first com segurança.
-const ASSETS_TO_CACHE = [
-  './app.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-512-maskable.png'
-];
+import { createFileRoute } from "@tanstack/react-router";
+import { Download, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE).catch(() => {}))
-  );
-  self.skipWaiting();
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { registerAppServiceWorker } from "@/lib/register-sw";
+
+export const Route = createFileRoute("/app")({
+  head: () => ({
+    meta: [
+      { title: "Entrar — BK-CIRURGIA" },
+      {
+        name: "description",
+        content:
+            "Aceda à plataforma BK-CIRURGIA: módulos de estudo, tutor de IA, mapas mentais e biblioteca oficial.",
+      },
+      { name: "robots", content: "noindex" },
+      { property: "og:title", content: "Entrar — BK-CIRURGIA" },
+      {
+        property: "og:description",
+        content: "Aceda à sua conta BK-CIRURGIA e continue os seus estudos em cirurgia.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#0b1220" },
+      { name: "application-name", content: "BK-CIRURGIA" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "BK-Cirurgia" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+    ],
+    links: [
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/icons/icon-192.png", sizes: "192x192" },
+      { rel: "icon", href: "/icons/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+  }),
+  component: AppShell,
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
-    )
-  );
-  self.clients.claim();
-});
+function AppShell() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isMac, setIsMac] = useState(false);
 
-self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  if (request.method !== 'GET') return;
+  // Evita o "flash branco" no iOS/Safari enquanto o iframe (app.html) ainda
+  // está a carregar: pinta a página por trás com a mesma cor de fundo do
+  // manifest, em vez de deixar o branco padrão do navegador aparecer.
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousRootBg = root.style.backgroundColor;
+    const previousBodyBg = document.body.style.backgroundColor;
+    root.style.backgroundColor = "#0b1220";
+    document.body.style.backgroundColor = "#0b1220";
+    return () => {
+      root.style.backgroundColor = previousRootBg;
+      document.body.style.backgroundColor = previousBodyBg;
+    };
+  }, []);
 
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
+  useEffect(() => {
+    void registerAppServiceWorker();
 
-  // Nunca cachear chamadas de API — dados têm que ser sempre ao vivo.
-  if (url.pathname.startsWith('/api/')) return;
+    const ua = window.navigator.userAgent;
+    setIsAndroid(/Android/i.test(ua));
+    // iPadOS 13+ identifica-se como "Macintosh" mas tem ecrã tátil — sem
+    // isto, um iPad seria tratado (erradamente) como um Mac de secretária.
+    const isAppleTouchDevice =
+      /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    setIsIOS(isAppleTouchDevice);
+    setIsMac(/Macintosh/i.test(ua) && !isAppleTouchDevice);
 
-  const isStatic =
-    url.pathname.endsWith('/manifest.json') || url.pathname.includes('/icons/');
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const notifyAppFrame = (displayMode: string) => {
+      const frame = document.querySelector("iframe");
+      frame?.contentWindow?.postMessage({ type: "bk-pwa-installed", displayMode }, window.location.origin);
+    };
+    const updateInstalledState = () => {
+      const installed = standaloneQuery.matches || window.navigator.standalone === true;
+      setIsInstalled(installed);
+      if (installed) {
+        notifyAppFrame(standaloneQuery.matches ? "standalone" : "ios-standalone");
+      }
+    };
+    updateInstalledState();
+    const initialPing = window.setTimeout(updateInstalledState, 2500);
 
-  if (isStatic) {
-    // Ícones e manifest: cache-first (só mudam quando trocamos o nome do arquivo).
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        });
-      })
-    );
-    return;
-  }
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const handleInstalled = () => {
+      setInstallPrompt(null);
+      setIsInstalled(true);
+      setShowInstallHelp(false);
+      notifyAppFrame("installed");
+    };
 
-  // App shell (app.html), a rota /app e qualquer HTML/JS/CSS do mesmo site:
-  // network-first (pega sempre a versão mais nova quando há internet), mas
-  // se a rede falhar (offline), cai para a última cópia guardada em vez de
-  // mostrar uma tela quebrada. É isto que faz o app instalado funcionar
-  // sem internet.
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() =>
-        caches.match(request).then((cached) => cached || caches.match('./app.html'))
-      )
-  );
-});
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+    window.addEventListener("appinstalled", handleInstalled);
+    standaloneQuery.addEventListener("change", updateInstalledState);
 
-// ── Web Push: lembretes de eventos de estudo ──
-self.addEventListener('push', (event) => {
-  let payload = {};
-  try {
-    payload = event.data ? event.data.json() : {};
-  } catch (_) {
-    payload = { body: event.data ? event.data.text() : '' };
-  }
+    return () => {
+      window.clearTimeout(initialPing);
+      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+      window.removeEventListener("appinstalled", handleInstalled);
+      standaloneQuery.removeEventListener("change", updateInstalledState);
+    };
+  }, []);
 
-  const title = payload.title || 'BK-CIRURGIA';
-  const options = {
-    body: payload.body || '',
-    icon: payload.icon || './icons/icon-192.png',
-    badge: payload.badge || './icons/icon-192.png',
-    tag: payload.tag || 'bk-reminder',
-    renotify: true,
-    requireInteraction: false,
-    data: { url: payload.url || './app.html' }
+  const installApp = async () => {
+    if (!installPrompt) {
+      setShowInstallHelp(true);
+      return;
+    }
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") setIsInstalled(true);
+    setInstallPrompt(null);
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
-});
+  const openInChrome = () => {
+    const chromeUrl = `${window.location.host}${window.location.pathname}${window.location.search}`;
+    window.location.href = `intent://${chromeUrl}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end`;
+  };
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const target = new URL(
-    (event.notification.data && event.notification.data.url) || './app.html',
-    self.location.origin
-  ).href;
+  const installHelpText = isAndroid
+    ? "Esta página está aberta num navegador interno, que não permite instalar aplicações. Abra-a no Chrome e depois escolha “Instalar app” no menu ⋮."
+    : isIOS
+      ? "No iPhone ou iPad, abra esta página no Safari, toque em Partilhar e depois em “Adicionar ao ecrã principal”."
+      : isMac
+        ? "No Mac, abra esta página no Safari, Chrome ou Edge e procure a opção “Instalar” ou o ícone de instalação na barra de endereço."
+        : "No Windows, abra esta página no Chrome ou Edge e clique no ícone de instalar (⊕ ou monitor) na barra de endereço.";
 
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
-          client.navigate?.(target);
-          return client.focus();
-        }
-      }
-      return self.clients.openWindow(target);
-    })
+  return (
+    <>
+      <iframe
+        src="/app.html"
+        title="BK-CIRURGIA"
+        className="fixed inset-0 h-full w-full border-0"
+      />
+      {!isInstalled ? (
+        <Button
+          type="button"
+          onClick={installApp}
+          variant="outline"
+          className="fixed bottom-20 right-4 z-50 min-h-11 bg-background px-4 font-semibold shadow-lg"
+          aria-label="Instalar BK-CIRURGIA"
+          title="Instalar BK-CIRURGIA"
+        >
+          <Download aria-hidden="true" className="size-4" />
+          Instalar app
+        </Button>
+      ) : null}
+      <Dialog open={showInstallHelp} onOpenChange={setShowInstallHelp}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Instalar BK-CIRURGIA</DialogTitle>
+            <DialogDescription>{installHelpText}</DialogDescription>
+          </DialogHeader>
+          {isAndroid ? (
+            <Button type="button" onClick={openInChrome} className="w-full font-semibold">
+              <ExternalLink aria-hidden="true" className="size-4" />
+              Abrir no Chrome
+            </Button>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </>
   );
-});
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
+declare global {
+  interface Navigator {
+    standalone?: boolean;
+  }
+}
