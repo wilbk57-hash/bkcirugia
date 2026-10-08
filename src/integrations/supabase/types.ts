@@ -166,6 +166,36 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_messages: {
+        Row: {
+          body: string
+          created_at: string
+          from_admin: boolean
+          id: string
+          read_at: string | null
+          sender_id: string
+          student_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_admin?: boolean
+          id?: string
+          read_at?: string | null
+          sender_id: string
+          student_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_admin?: boolean
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       feedback_replies: {
         Row: {
           admin_id: string
