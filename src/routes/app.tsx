@@ -213,7 +213,7 @@ function AppShell() {
             <DialogTitle>Instalar BK-CIRURGIA</DialogTitle>
             <DialogDescription>{installHelpText}</DialogDescription>
           </DialogHeader>
-          {isAndroid ? (
+          {isAndroid && inAppBrowser ? (
             <Button type="button" onClick={openInChrome} className="w-full font-semibold">
               <ExternalLink aria-hidden="true" className="size-4" />
               Abrir no Chrome
