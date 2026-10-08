@@ -5624,6 +5624,8 @@ const STR_TABLE = [
  ['settings.account.logout.desc','Encerrar sua sessão neste dispositivo.','End your session on this device.','Cerrar tu sesión en este dispositivo.'],
  ['settings.account.admin','Painel administrativo','Admin dashboard','Panel administrativo'],
  ['settings.account.admin.desc','Gerenciar usuários e ver estatísticas da plataforma.','Manage users and view platform statistics.','Gestionar usuarios y ver estadísticas de la plataforma.'],
+ ['admin.lang.label','Idioma do painel','Panel language','Idioma del panel'],
+ ['admin.lang.saved','Idioma do painel guardado.','Panel language saved.','Idioma del panel guardado.'],
  ['admin.dash.title','Painel Administrativo','Admin Dashboard','Panel Administrativo'],
  ['admin.dash.sub','Visão geral de usuários, conteúdo e engajamento da plataforma.','Overview of platform users, content and engagement.','Resumen de usuarios, contenido y participación de la plataforma.'],
  ['admin.stat.total','Total de usuários','Total users','Usuarios totales'],
@@ -8038,6 +8040,31 @@ function onAuthGranted(isAdmin) {
    render this view — a regular user (or nobody) is bounced to the
    dashboard, even if this function is called directly, via a stale
    history entry, or via a leftover #adminView hash. */
+/* Admin panel language: chosen per admin and stored in profiles.admin_lang,
+   independent of the student-facing app language. */
+let adminLang = null;
+function adminLangCur() { return adminLang || currentLang; }
+function at(key) { const l = adminLangCur(); return (STRINGS[l] && STRINGS[l][key]) || STRINGS.pt[key] || key; }
+function adminT3(pt, en, es) { const l = adminLangCur(); return l === 'en' ? en : l === 'es' ? es : pt; }
+async function loadAdminLang() {
+  try {
+    const { data: u } = await supabaseClient.auth.getUser();
+    if (!u || !u.user) return;
+    const { data } = await supabaseClient.from('profiles').select('admin_lang').eq('id', u.user.id).maybeSingle();
+    if (data && data.admin_lang) { adminLang = data.admin_lang; renderAdminDashboard(); }
+  } catch (e) {}
+}
+async function setAdminLang(lang) {
+  if (!['pt','en','es'].includes(lang)) return;
+  adminLang = lang;
+  renderAdminDashboard();
+  try {
+    const { data: u } = await supabaseClient.auth.getUser();
+    if (!u || !u.user) return;
+    const { error } = await supabaseClient.from('profiles').update({ admin_lang: lang }).eq('id', u.user.id);
+    showToast(error ? (error.message || 'Erro') : at('admin.lang.saved'));
+  } catch (e) {}
+}
 function openAdmin(fromPop) {
   if (!getCurrentAdmin()) { switchTab('dashboardView'); return; }
   MAIN_VIEWS.forEach(vid => hideEl(document.getElementById(vid)));
@@ -8052,6 +8079,7 @@ function openAdmin(fromPop) {
   refreshAdminUsers();
   refreshAdminBooks();
   refreshAdminInstalls();
+  loadAdminLang();
   syncIaBar();
   window.scrollTo(0, 0);
   if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
@@ -9059,7 +9087,7 @@ async function refreshAdminInstalls() {
 }
 
 function renderAdminInstallsSection() {
-  const T = (pt, en, es) => myLibT(pt, en, es);
+  const T = (pt, en, es) => adminT3(pt, en, es);
   const rows = _adminInstallsCache;
   const userLabel = (uid) => {
     const u = _adminUsersCache.find(x => x.id === uid);
@@ -9120,38 +9148,45 @@ function renderAdminDashboard() {
       <div class="dash-header-left">
         <div class="dash-avatar" style="background:linear-gradient(135deg,var(--violet),#7B5CB8)">🛡</div>
         <div>
-          <div class="dash-greeting">${t('admin.dash.title')}</div>
+          <div class="dash-greeting">${at('admin.dash.title')}</div>
           <div class="dash-name">${escapeHtml((getCurrentAdmin()||{}).username || 'admin')}</div>
-          <div class="dash-meta">${t('admin.dash.sub')}</div>
+          <div class="dash-meta">${at('admin.dash.sub')}</div>
         </div>
       </div>
-      <button class="icon-btn" title="${t('admin.logout')}" aria-label="${t('admin.logout')}" onclick="doLogout()">⎋</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select class="sb-input" aria-label="${at('admin.lang.label')}" title="${at('admin.lang.label')}" onchange="setAdminLang(this.value)" style="width:auto;padding:6px 8px;">
+          <option value="pt" ${adminLangCur()==='pt'?'selected':''}>🇵🇹 PT</option>
+          <option value="en" ${adminLangCur()==='en'?'selected':''}>🇺🇸 EN</option>
+          <option value="es" ${adminLangCur()==='es'?'selected':''}>🇪🇸 ES</option>
+        </select>
+        <button class="icon-btn" title="${at('admin.logout')}" aria-label="${at('admin.logout')}" onclick="doLogout()">⎋</button>
+      </div>
     </div>
 
     <div class="adm-stat-grid">
-      <div class="adm-stat-card"><div class="n">${s.total}</div><div class="l">${t('admin.stat.total')}</div></div>
-      <div class="adm-stat-card"><div class="n">${s.active}</div><div class="l">${t('admin.stat.active')}</div></div>
-      <div class="adm-stat-card"><div class="n">${s.fresh}</div><div class="l">${t('admin.stat.new')}</div></div>
-      <div class="adm-stat-card"><div class="n">${s.blocked}</div><div class="l">${t('admin.stat.blocked')}</div></div>
+      <div class="adm-stat-card"><div class="n">${s.total}</div><div class="l">${at('admin.stat.total')}</div></div>
+      <div class="adm-stat-card"><div class="n">${s.active}</div><div class="l">${at('admin.stat.active')}</div></div>
+      <div class="adm-stat-card"><div class="n">${s.fresh}</div><div class="l">${at('admin.stat.new')}</div></div>
+      <div class="adm-stat-card"><div class="n">${s.blocked}</div><div class="l">${at('admin.stat.blocked')}</div></div>
     </div>
 
-    <div class="sec-heading" style="margin-top:18px;"><h2>${t('admin.mgmt.title')}</h2></div>
+    <div class="sec-heading" style="margin-top:18px;"><h2>${at('admin.mgmt.title')}</h2></div>
     <div class="adm-mgmt-grid">
-      ${ADMIN_MGMT_ITEMS.map(m => `<div class="adm-mgmt-card" onclick="${m.action || "showToast(t('toast.stub'))"}"><div class="ic">${m.ic}</div><div class="l">${t(m.key) !== m.key ? t(m.key) : m.key}</div></div>`).join('')}
+      ${ADMIN_MGMT_ITEMS.map(m => `<div class="adm-mgmt-card" onclick="${m.action || "showToast(at('toast.stub'))"}"><div class="ic">${m.ic}</div><div class="l">${at(m.key) !== m.key ? at(m.key) : m.key}</div></div>`).join('')}
     </div>
 
-    <div class="sec-heading" style="margin-top:18px;"><h2>${t('admin.users.title')}</h2></div>
+    <div class="sec-heading" style="margin-top:18px;"><h2>${at('admin.users.title')}</h2></div>
     <div class="stat-table-card">
       <table class="adm-table">
-        <thead><tr><th>${t('auth.field.name')}</th><th>${t('auth.field.email')}</th><th>${t('auth.field.usertype')}</th><th></th></tr></thead>
+        <thead><tr><th>${at('auth.field.name')}</th><th>${at('auth.field.email')}</th><th>${at('auth.field.usertype')}</th><th></th></tr></thead>
         <tbody>
           ${s.users.length ? s.users.map(u => `
             <tr>
               <td class="name">${escapeHtml(u.name)}</td>
               <td>${escapeHtml(u.email)}</td>
-              <td><span class="adm-role-pill ${u.status==='suspended'?'blocked':''}">${escapeHtml(u.status==='suspended' ? t('admin.stat.blocked') : (t(roleLabel[u.role]) !== roleLabel[u.role] ? t(roleLabel[u.role]) : u.role))}</span></td>
+              <td><span class="adm-role-pill ${u.status==='suspended'?'blocked':''}">${escapeHtml(u.status==='suspended' ? at('admin.stat.blocked') : (at(roleLabel[u.role]) !== roleLabel[u.role] ? at(roleLabel[u.role]) : u.role))}</span></td>
               <td style="text-align:right;"><button class="btn" style="padding:5px 10px;font-size:11px;${u.status==='suspended'?'color:var(--teal);border-color:var(--teal);':'color:var(--red);border-color:var(--red);'}" onclick="adminToggleBlock('${escapeHtml(u.id)}')">${u.status==='suspended' ? '✓' : '⛔'}</button></td>
-            </tr>`).join('') : (_adminUsersCache.length === 0 && !s.users.length ? `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px;">${currentLang==='en'?'Loading…':currentLang==='es'?'Cargando…':'A carregar…'}</td></tr>` : `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px;">—</td></tr>`)}
+            </tr>`).join('') : (_adminUsersCache.length === 0 && !s.users.length ? `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px;">${adminLangCur()==='en'?'Loading…':adminLangCur()==='es'?'Cargando…':'A carregar…'}</td></tr>` : `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px;">—</td></tr>`)}
         </tbody>
       </table>
     </div>
@@ -9178,7 +9213,7 @@ function renderAdminBooksSection() {
   };
   const totalBytes = books.reduce((s, b) => s + (b.size_bytes || 0), 0);
   const fmtDate = (d) => { try { return new Date(d).toLocaleDateString(); } catch (e) { return ''; } };
-  const T = (pt, en, es) => myLibT(pt, en, es);
+  const T = (pt, en, es) => adminT3(pt, en, es);
   const rows = books.slice(0, 100).map(b => `
     <tr>
       <td class="name">${escapeHtml(b.title || b.file_name || '—')}</td>
