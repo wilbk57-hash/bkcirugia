@@ -175,8 +175,12 @@ function AppShell() {
     window.location.href = `intent://${chromeUrl}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end`;
   };
 
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const inAppBrowser = /; wv\)|FBAN|FBAV|Instagram|Line\/|WhatsApp|Telegram|MiuiBrowser|GSA\//i.test(ua);
   const installHelpText = isAndroid
-    ? "Esta página está aberta num navegador interno, que não permite instalar aplicações. Abra-a no Chrome e depois escolha “Instalar app” no menu ⋮."
+    ? inAppBrowser
+      ? "Esta página está aberta dentro de outra aplicação, que não permite instalar. Toque em “Abrir no Chrome” e depois instale pelo menu ⋮."
+      : "Toque no menu ⋮ (canto superior direito do Chrome) e escolha “Instalar app” ou “Adicionar ao ecrã principal” → “Instalar”. Se já instalou antes, procure o ícone BK-Cirurgia no telemóvel."
     : isIOS
       ? "No iPhone ou iPad, abra esta página no Safari, toque em Partilhar e depois em “Adicionar ao ecrã principal”."
       : isMac
