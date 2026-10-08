@@ -5318,6 +5318,8 @@ const STR_TABLE = [
  ['admin.mgmt.tutor','Tutor de IA','AI Tutor','Tutor de IA'],
  ['admin.mgmt.feedback','Mensagens','Messages','Mensajes'],
  ['item.mymsgs.label','As minhas mensagens','My messages','Mis mensajes'],
+ ['admin.mgmt.chat','Conversas','Chats','Conversaciones'],
+ ['item.chatadmin.label','Falar com o admin','Chat with admin','Hablar con el admin'],
  ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
  ['stub.ia.title','Tutor de IA','AI tutor','Tutor de IA'],
  ['stub.ia.sub','Tire dúvidas, gere resumos e pratique perguntas com o Tutor de IA, que também consulta a Biblioteca Oficial.','Ask questions, generate summaries and practice with the AI Tutor, which also searches the Official Library.','Resuelve dudas, genera resúmenes y practica preguntas con el Tutor de IA, que también consulta la Biblioteca Oficial.'],
@@ -6420,6 +6422,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'nav', label: 'item.suggestion.label', action: "bkFeedback('suggestion')" },
       { type: 'nav', label: 'item.rate.label', action: 'bkRate()' },
       { type: 'nav', label: 'item.mymsgs.label', action: 'bkMyMessages()' },
+      { type: 'nav', label: 'item.chatadmin.label', action: 'bkChatAdmin()' },
   ]},
   { sec: 'sec.about', items: [
       { type: 'value', label: 'item.version.label', value: '1.0.0 · pré-lançamento' },
@@ -9309,6 +9312,7 @@ const ADMIN_MGMT_ITEMS = [
   { ic: '📚', key: 'admin.mgmt.content', action: "admPanel('content')" }, { ic: '❓', key: 'admin.mgmt.questions', action: "admPanel('questions')" },
   { ic: '🤖', key: 'admin.mgmt.tutor', action: "admPanel('tutor')" },
   { ic: '💬', key: 'admin.mgmt.feedback', action: "admPanel('feedback')" },
+  { ic: '✉️', key: 'admin.mgmt.chat', action: "admPanel('chat')" },
   { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
   { ic: '🏛', key: 'admin.mgmt.library', action: 'openMyLibrary()' },
 ];
@@ -9333,6 +9337,7 @@ function admPanel(kind) {
     videos: '🎬 ' + T('Vídeos','Videos','Vídeos'), images: '🖼 ' + T('Imagens','Images','Imágenes'),
     content: '📚 ' + T('Conteúdo','Content','Contenido'), questions: '❓ ' + T('Perguntas','Questions','Preguntas'),
     tutor: '🤖 ' + T('Tutor IA','AI Tutor','Tutor IA'),
+    chat: '✉️ ' + T('Conversas com alunos','Student chats','Conversaciones'),
     feedback: '💬 ' + T('Mensagens dos alunos','Student messages','Mensajes de alumnos'),
   };
   const el = document.createElement('div');
@@ -9346,7 +9351,7 @@ function admPanel(kind) {
     <div id="admPanelBody" style="color:var(--text2);font-size:13px;"></div></div>`;
   document.body.appendChild(el);
   const body = el.querySelector('#admPanelBody');
-  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback }[kind];
+  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback, chat: admRenderChat }[kind];
   if (fn) fn(body);
   auditLog('admin_open_panel', { kind });
 }
@@ -9508,7 +9513,7 @@ async function admRenderChat(body) {
   };
   body.addEventListener('click', ev => {
     const th = ev.target.closest('[data-thread]'); if (th) return openThread(th.dataset.thread);
-    if (ev.target.closest('[data-back]')) return admRenderChat(body.cloneNode(false) && body) ;
+    if (ev.target.closest('[data-back]')) return showList();
     if (ev.target.closest('[data-open-new]')) { const v = body.querySelector('[data-new]').value; if (v) openThread(v); }
   });
   showList();
