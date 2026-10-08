@@ -1164,8 +1164,22 @@
      AUTH SYSTEM — landing / login / cadastro / recuperação / admin
      ============================================================ */
   body.pre-auth #topbarRoot, body.pre-auth main, body.pre-auth #bottomNav,
-  body.pre-auth #iaInputBar, body.pre-auth #appFooter { display: none !important; }
+  body.pre-auth #iaInputBar, body.pre-auth #appFooter, body.pre-auth #dmFab { display: none !important; }
   body.pre-auth { overflow: hidden; }
+
+  /* Botão flutuante de conversa com o admin (só alunos autenticados) */
+  #dmFab {
+    display: none; position: fixed; right: 16px; bottom: 92px; z-index: 850;
+    width: 52px; height: 52px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--primary); color: var(--bg); font-size: 22px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35); align-items: center; justify-content: center;
+  }
+  #dmFab.show { display: flex; }
+  #dmFab .dm-fab-badge {
+    position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px;
+    border-radius: 10px; background: #e5484d; color: #fff; font-size: 11px;
+    font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px;
+  }
 
   #authOverlay {
     display: none; position: fixed; inset: 0; z-index: 900;
@@ -1939,6 +1953,8 @@
 <div class="bottom-nav" id="bottomNav">
   <div class="bottom-nav-inner" id="bottomNavInner" role="tablist" aria-label="Navegação principal"></div>
 </div>
+
+<button id="dmFab" onclick="bkChatAdmin()" aria-label="Falar com o admin" title="Falar com o admin">💬</button>
 
 <div class="ia-input-bar" id="iaInputBar">
   <button class="ia-mic-btn" id="iaMicBtn" onclick="toggleVoiceInput()" aria-label="Falar" title="Falar">🎤</button>
