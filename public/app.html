@@ -1520,8 +1520,8 @@
         <button class="auth-btn admin" onclick="goToAdminAuth()" data-i18n="auth.welcome.admin">Acesso Administrativo</button>
       </div>
       <div class="auth-footer-links">
-        <span onclick="showToast(t('toast.stub'))" data-i18n="auth.footer.terms">Termos de uso</span>
-        <span onclick="showToast(t('toast.stub'))" data-i18n="auth.footer.privacy">Política de privacidade</span>
+        <span onclick="bkInfo('terms')" data-i18n="auth.footer.terms">Termos de uso</span>
+        <span onclick="bkInfo('privacy')" data-i18n="auth.footer.privacy">Política de privacidade</span>
       </div>
       <div class="auth-version">BK-CIRURGIA · v1.0.0 · pré-lançamento</div>
     </div>
@@ -1619,7 +1619,7 @@
             <div class="auth-err-msg" id="regPwErr"></div>
           </div>
           <div class="auth-check-row">
-            <label><input type="checkbox" id="regTerms"> <span data-i18n="auth.terms.q">Aceito os</span> <a onclick="showToast(t('toast.stub'))" data-i18n="auth.footer.terms">termos de uso</a></label>
+            <label><input type="checkbox" id="regTerms"> <span data-i18n="auth.terms.q">Aceito os</span> <a onclick="bkInfo('terms')" data-i18n="auth.footer.terms">termos de uso</a></label>
           </div>
         </div>
 
@@ -6183,8 +6183,14 @@ function setSetting(key, value) {
 
 function stubAction(labelKey) { showToast(t('toast.stub')); }
 
-function clearCache() { showToast(t('toast.cache')); }
-function checkUpdates() { showToast(t('toast.updates')); }
+async function clearCache() {
+  try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } } catch (e) {}
+  showToast(t('toast.cache'));
+}
+async function checkUpdates() {
+  try { const r = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (r) await r.update(); } catch (e) {}
+  showToast(t('toast.updates'));
+}
 /* logoutAllDevices() and deleteAccount() are implemented once, in the
    AUTH SYSTEM block below, where session/user data actually lives. */
 
@@ -6238,8 +6244,8 @@ const SETTINGS_SECTIONS = () => [
       { type: 'nav', label: 'item.logoutall.label', action: 'logoutAllDevices()' },
   ]},
   { sec: 'sec.region', items: [
-      { type: 'nav', label: 'item.country.label', value: 'Brasil', action: 'stubAction()' },
-      { type: 'nav', label: 'item.timezone.label', value: 'GMT-3', action: 'stubAction()' },
+      { type: 'nav', label: 'item.country.label', value: SETTINGS_STATE.country || 'Brasil', action: 'bkPickCountry()' },
+      { type: 'nav', label: 'item.timezone.label', value: SETTINGS_STATE.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, action: 'bkPickTimezone()' },
       { type: 'select', key: '_dateformat', label: 'item.dateformat.label', opts: [['dmy','DD/MM/AAAA'],['mdy','MM/DD/YYYY'],['ymd','AAAA-MM-DD']], noI18nOpts: true },
       { type: 'segmented2', key: '_timeformat', label: 'item.timeformat.label', opts: [['24','24h'],['12','12h']], noI18nOpts: true },
       { type: 'segmented2', key: '_units', label: 'item.units.label', opts: [['metric','item.units.metric'],['imperial','item.units.imperial']] },
@@ -6252,18 +6258,18 @@ const SETTINGS_SECTIONS = () => [
       { type: 'toggle', key: 'voiceCommands', label: 'item.voice.label' },
   ]},
   { sec: 'sec.privacy', items: [
-      { type: 'nav', label: 'item.privacypolicy.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.terms.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.permissions.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.exportdata.label', action: 'stubAction()' },
+      { type: 'nav', label: 'item.privacypolicy.label', action: "bkInfo('privacy')" },
+      { type: 'nav', label: 'item.terms.label', action: "bkInfo('terms')" },
+      { type: 'nav', label: 'item.permissions.label', action: 'bkPermissions()' },
+      { type: 'nav', label: 'item.exportdata.label', action: 'bkExportData()' },
       { type: 'nav', label: 'item.deleteaccount.label', action: 'deleteAccount()', danger: true },
   ]},
   { sec: 'sec.support', items: [
-      { type: 'nav', label: 'item.helpcenter.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.faq.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.reportbug.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.suggestion.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.rate.label', action: 'stubAction()' },
+      { type: 'nav', label: 'item.helpcenter.label', action: "bkInfo('help')" },
+      { type: 'nav', label: 'item.faq.label', action: "bkInfo('faq')" },
+      { type: 'nav', label: 'item.reportbug.label', action: "bkFeedback('bug')" },
+      { type: 'nav', label: 'item.suggestion.label', action: "bkFeedback('suggestion')" },
+      { type: 'nav', label: 'item.rate.label', action: 'bkRate()' },
   ]},
   { sec: 'sec.about', items: [
       { type: 'value', label: 'item.version.label', value: '1.0.0 · pré-lançamento' },
@@ -6641,7 +6647,7 @@ const LIB_ITEMS = [
 ];
 function renderLibrary() {
   document.getElementById('libGrid').innerHTML = LIB_ITEMS.map(l => `
-    <div class="lib-item" onclick="${l.action || `showToast(t('toast.stub'))`}">
+    <div class="lib-item" onclick="${l.action || `bkLibItem('${l.key}')`}">
       <div class="lib-icon">${l.icon}</div>
       <div class="lib-label">${t(l.key)}</div>
     </div>`).join('');
@@ -6689,8 +6695,8 @@ function renderStatTable() {
 /* 12. Casos Clínicos Recomendados */
 const RECOMMENDED_CASES = [
   { emoji: '🩹', tagKey: 'case.tag1', titleKey: 'case.title1', level: 'case.level.basic', time: '8 min', action: "openTopic('pre-operatorio','caso')" },
-  { emoji: '🫀', tagKey: 'case.tag2', titleKey: 'case.title2', level: 'case.level.inter', time: '12 min', action: "showToast(t('toast.stub'))" },
-  { emoji: '🚑', tagKey: 'case.tag3', titleKey: 'case.title3', level: 'case.level.adv', time: '15 min', action: "showToast(t('toast.stub'))" },
+  { emoji: '🫀', tagKey: 'case.tag2', titleKey: 'case.title2', level: 'case.level.inter', time: '12 min', action: "bkCaseFor('pre-operatorio')" },
+  { emoji: '🚑', tagKey: 'case.tag3', titleKey: 'case.title3', level: 'case.level.adv', time: '15 min', action: "bkCaseFor('choque')" },
 ];
 function renderCases() {
   document.getElementById('caseScroll').innerHTML = RECOMMENDED_CASES.map(c => `
@@ -6712,7 +6718,7 @@ const FEATURED_SURGERIES = [
 ];
 function renderSurgeries() {
   document.getElementById('surgeryScroll').innerHTML = FEATURED_SURGERIES.map(s => `
-    <div class="surgery-chip" onclick="showToast(t('toast.stub'))"><span>${s.icon}</span><span>${t(s.key)}</span></div>`).join('');
+    <div class="surgery-chip" onclick="bkAskTutor(t('${s.key}'))"><span>${s.icon}</span><span>${t(s.key)}</span></div>`).join('');
 }
 
 /* 15. Desempenho Semanal */
@@ -6794,7 +6800,7 @@ function renderNews() {
   if (!SETTINGS_STATE.showNews) { section.style.display = 'none'; return; }
   section.style.display = 'block';
   document.getElementById('newsList').innerHTML = MEDICAL_NEWS.map(n => `
-    <div class="news-row" onclick="showToast(t('toast.stub'))">
+    <div class="news-row" onclick="window.open('https://news.google.com/search?q='+encodeURIComponent(t('${n.key}')),'_blank','noopener')">
       <div class="news-thumb">${n.icon}</div>
       <div><div class="news-title" data-i18n="${n.key}">${t(n.key)}</div><div class="news-source" data-i18n="${n.source}">${t(n.source)}</div></div>
     </div>`).join('');
