@@ -9160,7 +9160,7 @@ function admTopicsList() {
 function admEachSection(tp, fn) {
   (tp.tabs || []).forEach(tab => (tab.sections || []).forEach(s => fn(tab, s)));
 }
-function admOpenTopic(id) { admClosePanel(); closeAdmin && closeAdmin(); try { openTopic(id); } catch (e) { showToast(String(e)); } }
+function admOpenTopic(id) { admClosePanel(); closeAdmin(); try { openTopic(id); } catch (e) { showToast(String(e)); } }
 function admCopy(txt) {
   try { navigator.clipboard.writeText(txt).then(() => showToast(adminT3('Copiado','Copied','Copiado'))); }
   catch (e) { showToast(adminT3('Não foi possível copiar','Copy failed','No se pudo copiar')); }
@@ -9321,7 +9321,7 @@ async function admRenderTutor(body) {
     const out = body.querySelector('#admTutorOut');
     out.textContent = T('A pensar…','Thinking…','Pensando…');
     try {
-      const r = await runTutorRequest({ messages: [{ role: 'user', content: body.querySelector('#admTutorQ').value }] });
+      const r = await runTutorRequest({ messages: [{ role: 'user', content: body.querySelector('#admTutorQ').value }], maxTokens: 400 });
       out.textContent = typeof r === 'string' ? r : (r && (r.text || r.content || r.reply)) || JSON.stringify(r);
     } catch (e) { out.textContent = (e && e.message) || String(e); }
   });
