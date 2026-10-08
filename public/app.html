@@ -9493,6 +9493,36 @@ async function bkChatAdmin() {
   const { data: u } = await supabaseClient.auth.getUser();
   if (!u?.user) { body.innerHTML = L('Entre na sua conta.','Sign in first.','Inicia sesión.'); return; }
   dmChatBox(body, { studentId: u.user.id, asAdmin: false, T: L });
+  setTimeout(dmFabRefresh, 1500);
+}
+
+/* Botão flutuante 💬: visível só para alunos autenticados (não admin),
+   com contagem de mensagens do admin ainda não lidas. */
+let dmFabTimer = null;
+async function dmFabRefresh() {
+  const fab = document.getElementById('dmFab');
+  if (!fab) return;
+  const me = _authCache.user;
+  if (!me || _authCache.admin) { fab.classList.remove('show'); return; }
+  fab.classList.add('show');
+  const { count } = await supabaseClient.from('direct_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('student_id', me.id).eq('from_admin', true).is('read_at', null);
+  const old = fab.querySelector('.dm-fab-badge'); if (old) old.remove();
+  if (count) {
+    const b = document.createElement('span');
+    b.className = 'dm-fab-badge'; b.textContent = count > 99 ? '99+' : String(count);
+    fab.appendChild(b);
+  }
+}
+function dmFabStart() {
+  dmFabRefresh();
+  if (dmFabTimer) clearInterval(dmFabTimer);
+  dmFabTimer = setInterval(dmFabRefresh, 30000);
+}
+function dmFabStop() {
+  if (dmFabTimer) { clearInterval(dmFabTimer); dmFabTimer = null; }
+  const fab = document.getElementById('dmFab'); if (fab) fab.classList.remove('show');
 }
 async function admRenderChat(body) {
   const T = adminT3;
