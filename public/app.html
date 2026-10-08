@@ -9426,6 +9426,94 @@ async function bkMyMessages() {
   if (unread.length) supabaseClient.from('feedback_replies').update({ read_at: new Date().toISOString() }).in('id', unread).then(() => {});
 }
 
+/* ---------- Conversas diretas aluno <-> admin ---------- */
+function dmBubbles(msgs, mineIsAdmin, T) {
+  if (!msgs.length) return `<p style="opacity:.7;text-align:center;margin:20px 0;">${T('Ainda sem mensagens. Escreve a primeira!','No messages yet. Write the first one!','Aún sin mensajes. ¡Escribe el primero!')}</p>`;
+  return msgs.map(m => {
+    const mine = m.from_admin === mineIsAdmin;
+    return `<div style="display:flex;justify-content:${mine ? 'flex-end' : 'flex-start'};margin:6px 0;">
+      <div style="max-width:80%;padding:8px 12px;border-radius:14px;background:${mine ? 'var(--primary)' : 'var(--surface2,rgba(127,127,127,.12))'};color:${mine ? 'var(--bg)' : 'var(--text)'};">
+        <div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(m.body)}</div>
+        <div style="font-size:10px;opacity:.7;margin-top:3px;text-align:right;">${new Date(m.created_at).toLocaleString()}${mine && m.read_at ? ' · ✓✓' : ''}</div>
+      </div></div>`;
+  }).join('');
+}
+function dmChatBox(container, { studentId, asAdmin, T }) {
+  container.innerHTML = `<div data-dm-list style="max-height:55vh;overflow:auto;padding:4px;"></div>
+    <div style="display:flex;gap:6px;margin-top:10px;">
+      <textarea class="sb-input" data-dm-text rows="2" maxlength="4000" style="flex:1;" placeholder="${T('Escreve uma mensagem…','Write a message…','Escribe un mensaje…')}"></textarea>
+      <button class="btn" data-dm-send style="padding:6px 14px;">${T('Enviar','Send','Enviar')}</button></div>`;
+  const list = container.querySelector('[data-dm-list]');
+  let msgs = [], timer = null;
+  const load = async () => {
+    if (!document.body.contains(container)) { clearInterval(timer); return; }
+    const { data, error } = await supabaseClient.from('direct_messages').select('*').eq('student_id', studentId).order('created_at').limit(500);
+    if (error) { list.innerHTML = escapeHtml(error.message); return; }
+    const changed = (data||[]).length !== msgs.length || (data||[]).some((m,i) => m.read_at !== msgs[i]?.read_at);
+    msgs = data || [];
+    if (changed) { list.innerHTML = dmBubbles(msgs, asAdmin, T); list.scrollTop = list.scrollHeight; }
+    const unread = msgs.filter(m => m.from_admin !== asAdmin && !m.read_at).map(m => m.id);
+    if (unread.length) supabaseClient.from('direct_messages').update({ read_at: new Date().toISOString() }).in('id', unread).then(() => {});
+  };
+  container.querySelector('[data-dm-send]').addEventListener('click', async ev => {
+    const ta = container.querySelector('[data-dm-text]'); const txt = ta.value.trim(); if (!txt) return;
+    ev.target.disabled = true;
+    const { data: u } = await supabaseClient.auth.getUser();
+    const { error } = await supabaseClient.from('direct_messages').insert({ student_id: studentId, sender_id: u.user.id, from_admin: asAdmin, body: txt.slice(0, 4000) });
+    ev.target.disabled = false;
+    if (error) { showToast(error.message); return; }
+    ta.value = ''; load();
+  });
+  load(); timer = setInterval(load, 8000);
+}
+async function bkChatAdmin() {
+  const L = bkL;
+  const body = bkSheet(L('Falar com o admin','Chat with admin','Hablar con el admin'), L('A carregar…','Loading…','Cargando…'));
+  const { data: u } = await supabaseClient.auth.getUser();
+  if (!u?.user) { body.innerHTML = L('Entre na sua conta.','Sign in first.','Inicia sesión.'); return; }
+  dmChatBox(body, { studentId: u.user.id, asAdmin: false, T: L });
+}
+async function admRenderChat(body) {
+  const T = adminT3;
+  body.innerHTML = T('A carregar…','Loading…','Cargando…');
+  const [{ data: msgs, error }, { data: profs }] = await Promise.all([
+    supabaseClient.from('direct_messages').select('student_id,from_admin,body,read_at,created_at').order('created_at', { ascending: false }).limit(1000),
+    supabaseClient.from('profiles').select('id,name,email').order('name').limit(1000),
+  ]);
+  if (error) { body.innerHTML = escapeHtml(error.message); return; }
+  const pm = Object.fromEntries((profs||[]).map(p => [p.id, p]));
+  const threads = {};
+  (msgs||[]).forEach(m => { const t = threads[m.student_id] = threads[m.student_id] || { last: m, unread: 0 }; if (!m.from_admin && !m.read_at) t.unread++; });
+  const showList = () => {
+    const ids = Object.keys(threads);
+    body.innerHTML = `<div style="display:flex;gap:6px;margin-bottom:12px;">
+        <select class="sb-input" data-new style="flex:1;"><option value="">${T('Nova conversa com aluno…','New chat with student…','Nueva conversación…')}</option>
+        ${(profs||[]).map(p => `<option value="${p.id}">${escapeHtml(p.name || p.email || p.id)}</option>`).join('')}</select>
+        <button class="btn" data-open-new style="padding:6px 12px;">${T('Abrir','Open','Abrir')}</button></div>` +
+      (ids.length ? ids.map(id => { const p = pm[id] || {}, t = threads[id];
+        return `<div class="stat-table-card" data-thread="${id}" style="margin-bottom:8px;padding:12px;cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;gap:8px;"><b style="color:var(--text);">${escapeHtml(p.name || '—')}</b>
+          ${t.unread ? `<span style="background:var(--primary);color:var(--bg);border-radius:10px;padding:0 8px;font-size:11px;">${t.unread}</span>` : ''}</div>
+          <div style="font-size:11px;opacity:.7;">${escapeHtml(p.email || '')} · ${new Date(t.last.created_at).toLocaleString()}</div>
+          <div style="margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.last.from_admin ? T('Tu: ','You: ','Tú: ') : ''}${escapeHtml(t.last.body)}</div></div>`; }).join('')
+      : `<p>${T('Nenhuma conversa ainda.','No conversations yet.','Ninguna conversación.')}</p>`);
+  };
+  const openThread = id => {
+    const p = pm[id] || {};
+    body.innerHTML = `<button class="btn" data-back style="padding:5px 10px;font-size:12px;margin-bottom:10px;">← ${T('Conversas','Conversations','Conversaciones')}</button>
+      <div style="color:var(--text);font-weight:600;">${escapeHtml(p.name || '—')} <span style="font-weight:400;font-size:12px;opacity:.7;">${escapeHtml(p.email || '')}</span></div>
+      <div data-chat style="margin-top:8px;"></div>`;
+    if (threads[id]) threads[id].unread = 0;
+    dmChatBox(body.querySelector('[data-chat]'), { studentId: id, asAdmin: true, T });
+  };
+  body.addEventListener('click', ev => {
+    const th = ev.target.closest('[data-thread]'); if (th) return openThread(th.dataset.thread);
+    if (ev.target.closest('[data-back]')) return admRenderChat(body.cloneNode(false) && body) ;
+    if (ev.target.closest('[data-open-new]')) { const v = body.querySelector('[data-new]').value; if (v) openThread(v); }
+  });
+  showList();
+}
+
 function admCard(inner) { return `<div class="stat-table-card" style="margin-bottom:12px;padding:14px;">${inner}</div>`; }
 
 function admRenderContent(body) {
