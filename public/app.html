@@ -8243,6 +8243,10 @@ function openAdmin(fromPop) {
   document.getElementById('bottomNav').classList.add('hide');
   document.getElementById('homeBtn').classList.add('show');
   renderCrumb('admin');
+  if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
+  adminMfaGate().then(ok => { if (ok) openAdminUnlocked(); });
+}
+function openAdminUnlocked() {
   renderAdminDashboard();
   refreshAdminUsers();
   refreshAdminBooks();
@@ -8250,7 +8254,57 @@ function openAdmin(fromPop) {
   loadAdminLang();
   syncIaBar();
   window.scrollTo(0, 0);
-  if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
+}
+
+/* ============ CÓDIGO DE SEGURANÇA (TOTP) DO ADMIN ============
+   O painel só abre com sessão de nível aal2 (password + código de 6 dígitos
+   de uma app autenticadora). A base de dados exige o mesmo nível: sem ele,
+   is_platform_admin() devolve false e nenhum dado de admin é devolvido. */
+async function adminMfaGate() {
+  const host = document.getElementById('adminView');
+  const L = (pt, en, es) => currentLang === 'en' ? en : currentLang === 'es' ? es : pt;
+  const { data: aal } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && aal.currentLevel === 'aal2') return true;
+  const { data: fl } = await supabaseClient.auth.mfa.listFactors();
+  const verified = (fl && fl.totp || []).find(f => f.status === 'verified');
+  const shell = (inner) => `<div style="max-width:420px;margin:40px auto;padding:22px;" class="stat-table-card">
+      <div style="font-size:28px;text-align:center;">🔐</div>${inner}
+      <input id="mfaCode" class="sb-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="width:100%;text-align:center;font-size:22px;letter-spacing:8px;margin-top:14px;">
+      <div id="mfaErr" style="color:var(--red);font-size:12px;min-height:16px;margin-top:6px;"></div>
+      <button class="btn" id="mfaBtn" style="width:100%;margin-top:8px;">${L('Confirmar','Confirm','Confirmar')}</button>
+      <button class="btn" onclick="doLogout()" style="width:100%;margin-top:8px;">${L('Sair','Sign out','Salir')}</button></div>`;
+  let factorId;
+  if (verified) {
+    factorId = verified.id;
+    host.innerHTML = shell(`<h2 style="text-align:center;font-size:17px;margin:8px 0;color:var(--text);">${L('Código de segurança','Security code','Código de seguridad')}</h2>
+      <p style="text-align:center;font-size:13px;color:var(--text3);">${L('Introduza o código de 6 dígitos da sua app autenticadora.','Enter the 6-digit code from your authenticator app.','Introduzca el código de 6 dígitos de su app autenticadora.')}</p>`);
+  } else {
+    // limpa tentativas de registo anteriores não concluídas
+    for (const f of (fl && fl.all || []).filter(f => f.status !== 'verified')) { try { await supabaseClient.auth.mfa.unenroll({ factorId: f.id }); } catch (e) {} }
+    const { data: en, error } = await supabaseClient.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'BK-CIRURGIA admin ' + Date.now() });
+    if (error) { host.innerHTML = `<div style="padding:30px;text-align:center;color:var(--red);">${escapeHtml(error.message)}</div>`; return false; }
+    factorId = en.id;
+    host.innerHTML = shell(`<h2 style="text-align:center;font-size:17px;margin:8px 0;color:var(--text);">${L('Ativar código de segurança','Set up security code','Activar código de seguridad')}</h2>
+      <p style="font-size:13px;color:var(--text3);">${L('1. Abra o Google Authenticator, Microsoft Authenticator ou Authy e leia este QR code.<br>2. Introduza o código de 6 dígitos que aparece.','1. Open Google Authenticator, Microsoft Authenticator or Authy and scan this QR code.<br>2. Enter the 6-digit code shown.','1. Abra Google Authenticator, Microsoft Authenticator o Authy y escanee este código QR.<br>2. Introduzca el código de 6 dígitos.')}</p>
+      <div style="background:#fff;padding:10px;border-radius:10px;width:200px;margin:10px auto;"><img src="${en.totp.qr_code}" alt="QR" style="width:180px;height:180px;display:block;"></div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;word-break:break-all;">${L('Ou introduza a chave manualmente:','Or enter the key manually:','O introduzca la clave manualmente:')}<br><code>${escapeHtml(en.totp.secret)}</code></div>`);
+  }
+  return new Promise(resolve => {
+    const btn = host.querySelector('#mfaBtn'), inp = host.querySelector('#mfaCode'), err = host.querySelector('#mfaErr');
+    inp.focus();
+    const go = async () => {
+      const code = inp.value.replace(/\D/g, '');
+      if (code.length !== 6) { err.textContent = L('O código tem 6 dígitos.','The code has 6 digits.','El código tiene 6 dígitos.'); return; }
+      btn.disabled = true; err.textContent = '';
+      const { error } = await supabaseClient.auth.mfa.challengeAndVerify({ factorId, code });
+      btn.disabled = false;
+      if (error) { err.textContent = L('Código inválido ou expirado.','Invalid or expired code.','Código inválido o caducado.'); auditLog('admin_mfa_failed'); inp.select(); return; }
+      auditLog(verified ? 'admin_mfa_ok' : 'admin_mfa_enrolled');
+      resolve(true);
+    };
+    btn.addEventListener('click', go);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  });
 }
 function closeAdmin() {
   hideEl(document.getElementById('adminView'));
