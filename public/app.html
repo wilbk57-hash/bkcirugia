@@ -9145,12 +9145,187 @@ function adminStats() {
   };
 }
 const ADMIN_MGMT_ITEMS = [
-  { ic: '🎬', key: 'admin.mgmt.videos' }, { ic: '🖼', key: 'admin.mgmt.images' },
-  { ic: '📚', key: 'admin.mgmt.content' }, { ic: '❓', key: 'admin.mgmt.questions' },
-  { ic: '🤖', key: 'admin.mgmt.tutor' },
+  { ic: '🎬', key: 'admin.mgmt.videos', action: "admPanel('videos')" }, { ic: '🖼', key: 'admin.mgmt.images', action: "admPanel('images')" },
+  { ic: '📚', key: 'admin.mgmt.content', action: "admPanel('content')" }, { ic: '❓', key: 'admin.mgmt.questions', action: "admPanel('questions')" },
+  { ic: '🤖', key: 'admin.mgmt.tutor', action: "admPanel('tutor')" },
   { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
   { ic: '🏛', key: 'admin.mgmt.library', action: 'openMyLibrary()' },
 ];
+
+/* ---------- Painéis de gestão (dados reais dos temas + Lovable Cloud) ---------- */
+function admClosePanel() { const o = document.getElementById('admPanelOverlay'); if (o) o.remove(); }
+function admTopicsList() {
+  return Object.keys(TOPICS).map(id => ({ id, tp: TOPICS[id] }));
+}
+function admEachSection(tp, fn) {
+  (tp.tabs || []).forEach(tab => (tab.sections || []).forEach(s => fn(tab, s)));
+}
+function admOpenTopic(id) { admClosePanel(); closeAdmin(); try { openTopic(id); } catch (e) { showToast(String(e)); } }
+function admCopy(txt) {
+  try { navigator.clipboard.writeText(txt).then(() => showToast(adminT3('Copiado','Copied','Copiado'))); }
+  catch (e) { showToast(adminT3('Não foi possível copiar','Copy failed','No se pudo copiar')); }
+}
+function admPanel(kind) {
+  admClosePanel();
+  const T = adminT3;
+  const titles = {
+    videos: '🎬 ' + T('Vídeos','Videos','Vídeos'), images: '🖼 ' + T('Imagens','Images','Imágenes'),
+    content: '📚 ' + T('Conteúdo','Content','Contenido'), questions: '❓ ' + T('Perguntas','Questions','Preguntas'),
+    tutor: '🤖 ' + T('Tutor IA','AI Tutor','Tutor IA'),
+  };
+  const el = document.createElement('div');
+  el.id = 'admPanelOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9500;background:var(--bg);overflow:auto;padding:18px;';
+  el.innerHTML = `<div style="max-width:860px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <button class="icon-btn" onclick="admClosePanel()" aria-label="${T('Fechar','Close','Cerrar')}">✕</button>
+      <h2 style="font-size:18px;margin:0;color:var(--text);">${titles[kind] || ''}</h2>
+    </div>
+    <div id="admPanelBody" style="color:var(--text2);font-size:13px;"></div></div>`;
+  document.body.appendChild(el);
+  const body = el.querySelector('#admPanelBody');
+  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor }[kind];
+  if (fn) fn(body);
+  auditLog('admin_open_panel', { kind });
+}
+function admCard(inner) { return `<div class="stat-table-card" style="margin-bottom:12px;padding:14px;">${inner}</div>`; }
+
+function admRenderContent(body) {
+  const T = adminT3;
+  let totLessons = 0, totSections = 0, totQ = 0;
+  const rows = admTopicsList().map(({ id, tp }) => {
+    const tabs = tp.tabs || [];
+    const lessons = tabs.filter(t => t.type === 'lesson').length;
+    let secs = 0; admEachSection(tp, () => secs++);
+    const qs = tabs.filter(t => t.type === 'quiz').reduce((n, t) => n + (t.questions || []).length, 0);
+    totLessons += lessons; totSections += secs; totQ += qs;
+    return `<tr><td class="name">${escapeHtml(tp.title || id)}</td><td>${tabs.length}</td><td>${lessons}</td><td>${secs}</td><td>${qs}</td>
+      <td style="text-align:right;"><button class="btn" style="padding:5px 10px;font-size:11px;" onclick="admOpenTopic('${escapeHtml(id)}')">${T('Abrir','Open','Abrir')}</button></td></tr>`;
+  }).join('');
+  body.innerHTML = `
+    <div class="adm-stat-grid">
+      <div class="adm-stat-card"><div class="n">${admTopicsList().length}</div><div class="l">${T('Temas','Topics','Temas')}</div></div>
+      <div class="adm-stat-card"><div class="n">${totLessons}</div><div class="l">${T('Aulas','Lessons','Clases')}</div></div>
+      <div class="adm-stat-card"><div class="n">${totSections}</div><div class="l">${T('Secções','Sections','Secciones')}</div></div>
+      <div class="adm-stat-card"><div class="n">${totQ}</div><div class="l">${T('Perguntas','Questions','Preguntas')}</div></div>
+    </div>
+    <div class="stat-table-card" style="margin-top:12px;"><table class="adm-table">
+      <thead><tr><th>${T('Tema','Topic','Tema')}</th><th>${T('Abas','Tabs','Pestañas')}</th><th>${T('Aulas','Lessons','Clases')}</th><th>${T('Secções','Sections','Secciones')}</th><th>${T('Perguntas','Questions','Preguntas')}</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+}
+
+function admRenderQuestions(body) {
+  const T = adminT3;
+  const all = [];
+  admTopicsList().forEach(({ id, tp }) => (tp.tabs || []).filter(t => t.type === 'quiz')
+    .forEach(t => (t.questions || []).forEach(q => all.push({ topicId: id, topic: tp.title || id, ...q }))));
+  body.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <input id="admQSearch" class="sb-input" placeholder="${T('Pesquisar pergunta…','Search question…','Buscar pregunta…')}" style="flex:1 1 220px;">
+      <select id="admQLevel" class="sb-input" style="width:auto;">
+        <option value="">${T('Todos os níveis','All levels','Todos los niveles')}</option>
+        <option value="facil">${T('Fácil','Easy','Fácil')}</option><option value="medio">${T('Médio','Medium','Medio')}</option><option value="dificil">${T('Difícil','Hard','Difícil')}</option>
+      </select>
+      <select id="admQTopic" class="sb-input" style="width:auto;"><option value="">${T('Todos os temas','All topics','Todos los temas')}</option>
+        ${admTopicsList().map(({ id, tp }) => `<option value="${escapeHtml(id)}">${escapeHtml(tp.title || id)}</option>`).join('')}</select>
+    </div>
+    <div id="admQCount" style="font-size:11px;color:var(--text3);margin-bottom:8px;"></div>
+    <div id="admQList"></div>`;
+  const draw = () => {
+    const s = body.querySelector('#admQSearch').value.trim().toLowerCase();
+    const lv = body.querySelector('#admQLevel').value, tpf = body.querySelector('#admQTopic').value;
+    const list = all.filter(q => (!lv || q.level === lv) && (!tpf || q.topicId === tpf) && (!s || (q.q || '').toLowerCase().includes(s)));
+    body.querySelector('#admQCount').textContent = `${list.length} / ${all.length}`;
+    body.querySelector('#admQList').innerHTML = list.map(q => admCard(`
+      <div style="font-size:10px;color:var(--teal);text-transform:uppercase;margin-bottom:6px;">${escapeHtml(q.topic)} · ${escapeHtml(q.level || '')}</div>
+      <div style="font-weight:600;color:var(--text);margin-bottom:8px;">${escapeHtml(q.q || '')}</div>
+      <ol style="margin:0 0 8px 18px;padding:0;">${(q.options || []).map((o, i) => `<li style="${i === q.correct ? 'color:var(--teal);font-weight:600;' : ''}">${escapeHtml(o)}${i === q.correct ? ' ✓' : ''}</li>`).join('')}</ol>
+      <div style="font-size:12px;color:var(--text3);">${escapeHtml(q.explain || '')}</div>`)).join('') || `<div style="color:var(--text3);">—</div>`;
+  };
+  ['admQSearch', 'admQLevel', 'admQTopic'].forEach(i => body.querySelector('#' + i).addEventListener('input', draw));
+  draw();
+}
+
+function admRenderImages(body) {
+  const T = adminT3;
+  const items = [];
+  admTopicsList().forEach(({ id, tp }) => admEachSection(tp, (tab, s) => { if (s.image) items.push({ id, topic: tp.title || id, tab: tab.label, title: s.title, image: s.image }); }));
+  window._admImages = items;
+  body.innerHTML = `<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">${T(
+    `${items.length} ilustrações descritas nas aulas. Copie a descrição para produzir a imagem.`,
+    `${items.length} illustrations described in lessons. Copy the brief to produce the image.`,
+    `${items.length} ilustraciones descritas en las clases. Copie la descripción para producir la imagen.`)}</div>` +
+    items.map((it, i) => admCard(`
+      <div style="font-size:10px;color:var(--teal);text-transform:uppercase;margin-bottom:6px;">${escapeHtml(it.topic)} · ${escapeHtml(it.tab || '')}</div>
+      <div style="font-weight:600;color:var(--text);margin-bottom:6px;">${escapeHtml(it.title || '')}</div>
+      <div style="margin-bottom:8px;">${escapeHtml(it.image)}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" style="padding:5px 10px;font-size:11px;" onclick="admCopy(window._admImages[${i}].image)">📋 ${T('Copiar','Copy','Copiar')}</button>
+        <button class="btn" style="padding:5px 10px;font-size:11px;" onclick="admOpenTopic('${escapeHtml(it.id)}')">${T('Ver aula','View lesson','Ver clase')}</button>
+      </div>`)).join('');
+}
+
+function admRenderVideos(body) {
+  const T = adminT3;
+  body.innerHTML = `<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">${T(
+    'Pesquise vídeos de referência para cada tema ou abra o tema para rever o conteúdo.',
+    'Search reference videos for each topic or open the topic to review its content.',
+    'Busque videos de referencia para cada tema o abra el tema para revisar el contenido.')}</div>` +
+    admTopicsList().map(({ id, tp }) => {
+      const q = encodeURIComponent((tp.title || id) + ' cirurgia aula');
+      return admCard(`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1 1 200px;font-weight:600;color:var(--text);">${escapeHtml(tp.title || id)}</div>
+        <button class="btn" style="padding:5px 10px;font-size:11px;" onclick="window.open('https://www.youtube.com/results?search_query=${q}','_blank','noopener')">▶ YouTube</button>
+        <button class="btn" style="padding:5px 10px;font-size:11px;" onclick="admOpenTopic('${escapeHtml(id)}')">${T('Abrir tema','Open topic','Abrir tema')}</button>
+      </div>`);
+    }).join('');
+}
+
+async function admRenderTutor(body) {
+  const T = adminT3;
+  body.innerHTML = `<div style="color:var(--text3);">${T('A carregar…','Loading…','Cargando…')}</div>`;
+  const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  const { data, error } = await supabaseClient.from('ai_usage').select('user_id,kind,window_start,count').gte('window_start', since).order('window_start', { ascending: false }).limit(5000);
+  if (error) { body.textContent = error.message; return; }
+  const rows = data || [];
+  const byKind = {}, byUser = {}, byDay = {};
+  const dayAgo = Date.now() - 24 * 3600 * 1000;
+  let last24 = 0;
+  rows.forEach(r => {
+    byKind[r.kind] = (byKind[r.kind] || 0) + r.count;
+    byUser[r.user_id] = (byUser[r.user_id] || 0) + r.count;
+    const d = r.window_start.slice(0, 10); byDay[d] = (byDay[d] || 0) + r.count;
+    if (new Date(r.window_start).getTime() > dayAgo) last24 += r.count;
+  });
+  const total = Object.values(byKind).reduce((a, b) => a + b, 0);
+  const nameOf = uid => { const u = _adminUsersCache.find(x => x.id === uid); return u ? (u.name || u.email) : uid.slice(0, 8); };
+  const days = Object.keys(byDay).sort().slice(-14);
+  const maxD = Math.max(1, ...days.map(d => byDay[d]));
+  body.innerHTML = `
+    <div class="adm-stat-grid">
+      <div class="adm-stat-card"><div class="n">${total}</div><div class="l">${T('Pedidos (30 dias)','Requests (30 days)','Solicitudes (30 días)')}</div></div>
+      <div class="adm-stat-card"><div class="n">${last24}</div><div class="l">${T('Últimas 24h','Last 24h','Últimas 24h')}</div></div>
+      <div class="adm-stat-card"><div class="n">${Object.keys(byUser).length}</div><div class="l">${T('Utilizadores','Users','Usuarios')}</div></div>
+    </div>
+    ${admCard(`<div style="font-weight:600;color:var(--text);margin-bottom:8px;">${T('Por dia','Per day','Por día')}</div>
+      ${days.length ? days.map(d => `<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin:3px 0;"><span style="width:80px;color:var(--text3);">${d}</span><div style="flex:1;background:var(--panel2);border-radius:4px;height:10px;"><div style="width:${Math.round(byDay[d] / maxD * 100)}%;height:100%;background:var(--teal);border-radius:4px;"></div></div><span style="width:36px;text-align:right;">${byDay[d]}</span></div>`).join('') : '—'}`)}
+    <div class="stat-table-card" style="margin-bottom:12px;"><table class="adm-table"><thead><tr><th>${T('Tipo','Type','Tipo')}</th><th>${T('Pedidos','Requests','Solicitudes')}</th></tr></thead>
+      <tbody>${Object.entries(byKind).map(([k, v]) => `<tr><td class="name">${escapeHtml(k)}</td><td>${v}</td></tr>`).join('') || '<tr><td colspan="2">—</td></tr>'}</tbody></table></div>
+    <div class="stat-table-card" style="margin-bottom:12px;"><table class="adm-table"><thead><tr><th>${T('Utilizador','User','Usuario')}</th><th>${T('Pedidos','Requests','Solicitudes')}</th></tr></thead>
+      <tbody>${Object.entries(byUser).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([u, v]) => `<tr><td class="name">${escapeHtml(nameOf(u))}</td><td>${v}</td></tr>`).join('') || '<tr><td colspan="2">—</td></tr>'}</tbody></table></div>
+    ${admCard(`<div style="font-weight:600;color:var(--text);margin-bottom:8px;">${T('Testar o Tutor','Test the Tutor','Probar el Tutor')}</div>
+      <div style="display:flex;gap:8px;"><input id="admTutorQ" class="sb-input" style="flex:1;" value="${T('O que é o pré-operatório?','What is the preoperative period?','¿Qué es el preoperatorio?')}">
+      <button class="btn" id="admTutorBtn" style="padding:6px 12px;">${T('Enviar','Send','Enviar')}</button></div>
+      <div id="admTutorOut" style="margin-top:10px;white-space:pre-wrap;font-size:12px;"></div>`)}`;
+  body.querySelector('#admTutorBtn').addEventListener('click', async () => {
+    const out = body.querySelector('#admTutorOut');
+    out.textContent = T('A pensar…','Thinking…','Pensando…');
+    try {
+      const r = await runTutorRequest({ messages: [{ role: 'user', content: body.querySelector('#admTutorQ').value }], maxTokens: 400 });
+      out.textContent = typeof r === 'string' ? r : (r && (r.text || r.content || r.reply)) || JSON.stringify(r);
+    } catch (e) { out.textContent = (e && e.message) || String(e); }
+  });
+}
 function renderAdminDashboard() {
   const host = document.getElementById('adminView');
   if (!host) return;
