@@ -1164,8 +1164,22 @@
      AUTH SYSTEM — landing / login / cadastro / recuperação / admin
      ============================================================ */
   body.pre-auth #topbarRoot, body.pre-auth main, body.pre-auth #bottomNav,
-  body.pre-auth #iaInputBar, body.pre-auth #appFooter { display: none !important; }
+  body.pre-auth #iaInputBar, body.pre-auth #appFooter, body.pre-auth #dmFab { display: none !important; }
   body.pre-auth { overflow: hidden; }
+
+  /* Botão flutuante de conversa com o admin (só alunos autenticados) */
+  #dmFab {
+    display: none; position: fixed; right: 16px; bottom: 92px; z-index: 850;
+    width: 52px; height: 52px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--primary); color: var(--bg); font-size: 22px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35); align-items: center; justify-content: center;
+  }
+  #dmFab.show { display: flex; }
+  #dmFab .dm-fab-badge {
+    position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px;
+    border-radius: 10px; background: #e5484d; color: #fff; font-size: 11px;
+    font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px;
+  }
 
   #authOverlay {
     display: none; position: fixed; inset: 0; z-index: 900;
@@ -1939,6 +1953,8 @@
 <div class="bottom-nav" id="bottomNav">
   <div class="bottom-nav-inner" id="bottomNavInner" role="tablist" aria-label="Navegação principal"></div>
 </div>
+
+<button id="dmFab" onclick="bkChatAdmin()" aria-label="Falar com o admin" title="Falar com o admin">💬</button>
 
 <div class="ia-input-bar" id="iaInputBar">
   <button class="ia-mic-btn" id="iaMicBtn" onclick="toggleVoiceInput()" aria-label="Falar" title="Falar">🎤</button>
@@ -8204,6 +8220,7 @@ function onAuthGranted(isAdmin) {
   renderBottomNav();
   if (isAdmin) { openAdmin(); } else { switchTab('dashboardView'); }
   resetAuthForms();
+  dmFabStart();
 }
 
 /* Mirrors openSettings()/closeSettings() so the admin panel behaves like
@@ -9127,6 +9144,7 @@ async function doLogout() {
   clearSession();
   showToast(t('auth.toast.loggedout'));
   document.body.classList.add('pre-auth');
+  dmFabStop();
   showAuthScreen('welcome');
   resetAuthForms();
   MAIN_VIEWS.forEach(id => hideEl(document.getElementById(id)));
@@ -9143,6 +9161,7 @@ async function logoutAllDevices() {
   clearSession();
   showToast(t('auth.toast.allloggedout'));
   document.body.classList.add('pre-auth');
+  dmFabStop();
   showAuthScreen('welcome');
   resetAuthForms();
   hideEl(document.getElementById('adminView'));
@@ -9166,6 +9185,7 @@ async function deleteAccount() {
   clearSession();
   showToast(t('auth.toast.accountdeleted'));
   document.body.classList.add('pre-auth');
+  dmFabStop();
   showAuthScreen('welcome');
   hideEl(document.getElementById('adminView'));
   hideEl(document.getElementById('myLibraryView'));
@@ -9477,6 +9497,36 @@ async function bkChatAdmin() {
   const { data: u } = await supabaseClient.auth.getUser();
   if (!u?.user) { body.innerHTML = L('Entre na sua conta.','Sign in first.','Inicia sesión.'); return; }
   dmChatBox(body, { studentId: u.user.id, asAdmin: false, T: L });
+  setTimeout(dmFabRefresh, 1500);
+}
+
+/* Botão flutuante 💬: visível só para alunos autenticados (não admin),
+   com contagem de mensagens do admin ainda não lidas. */
+let dmFabTimer = null;
+async function dmFabRefresh() {
+  const fab = document.getElementById('dmFab');
+  if (!fab) return;
+  const me = _authCache.user;
+  if (!me || _authCache.admin) { fab.classList.remove('show'); return; }
+  fab.classList.add('show');
+  const { count } = await supabaseClient.from('direct_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('student_id', me.id).eq('from_admin', true).is('read_at', null);
+  const old = fab.querySelector('.dm-fab-badge'); if (old) old.remove();
+  if (count) {
+    const b = document.createElement('span');
+    b.className = 'dm-fab-badge'; b.textContent = count > 99 ? '99+' : String(count);
+    fab.appendChild(b);
+  }
+}
+function dmFabStart() {
+  dmFabRefresh();
+  if (dmFabTimer) clearInterval(dmFabTimer);
+  dmFabTimer = setInterval(dmFabRefresh, 30000);
+}
+function dmFabStop() {
+  if (dmFabTimer) { clearInterval(dmFabTimer); dmFabTimer = null; }
+  const fab = document.getElementById('dmFab'); if (fab) fab.classList.remove('show');
 }
 async function admRenderChat(body) {
   const T = adminT3;
@@ -10485,7 +10535,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
 });
 if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
-refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); });
+refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); });
 </script>
 <script>
 // ── Web Push: lembretes de eventos de estudo ──
