@@ -36,6 +36,13 @@
       "when": 1791492495922,
       "tag": "0004_direct_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791494254498,
+      "tag": "0005_peer_messages",
+      "breakpoints": true
     }
   ]
 }
