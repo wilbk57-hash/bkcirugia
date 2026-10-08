@@ -1170,7 +1170,7 @@
   /* Botão flutuante de conversa com o admin (só alunos autenticados) */
   #dmFab {
     display: none; position: fixed; right: 16px; bottom: 92px; z-index: 850;
-    width: 52px; height: 52px; border-radius: 50%; border: 0; cursor: pointer;
+    height: 50px; padding: 0 18px; border-radius: 25px; border: 0; cursor: pointer;
     background: var(--primary); color: var(--bg); font-size: 22px;
     box-shadow: 0 6px 18px rgba(0,0,0,.35); align-items: center; justify-content: center;
   }
@@ -1954,7 +1954,7 @@
   <div class="bottom-nav-inner" id="bottomNavInner" role="tablist" aria-label="Navegação principal"></div>
 </div>
 
-<button id="dmFab" onclick="bkChatAdmin()" aria-label="Falar com o admin" title="Falar com o admin">💬</button>
+<button id="dmFab" onclick="bkBaterPapo()" aria-label="Bater papo" title="Bater papo">💬 <span style="font-size:14px;font-weight:700;margin-left:6px;">Bater papo</span></button>
 
 <div class="ia-input-bar" id="iaInputBar">
   <button class="ia-mic-btn" id="iaMicBtn" onclick="toggleVoiceInput()" aria-label="Falar" title="Falar">🎤</button>
@@ -9500,8 +9500,100 @@ async function bkChatAdmin() {
   setTimeout(dmFabRefresh, 1500);
 }
 
-/* Botão flutuante 💬: visível só para alunos autenticados (não admin),
-   com contagem de mensagens do admin ainda não lidas. */
+/* ---------- Bater papo: conversas estilo WhatsApp (aluno <-> aluno + admin) ---------- */
+function pmAvatar(name) {
+  const ch = escapeHtml((name || '?').trim().charAt(0).toUpperCase() || '?');
+  return `<div style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;">${ch}</div>`;
+}
+function pmTime(d) {
+  const dt = new Date(d), now = new Date();
+  return dt.toDateString() === now.toDateString() ? dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : dt.toLocaleDateString();
+}
+async function bkBaterPapo() {
+  const L = bkL;
+  const body = bkSheet(L('Bater papo','Chat','Chatear'), L('A carregar…','Loading…','Cargando…'));
+  const { data: u } = await supabaseClient.auth.getUser();
+  if (!u?.user) { body.innerHTML = L('Entre na sua conta.','Sign in first.','Inicia sesión.'); return; }
+  const me = u.user.id;
+  const [{ data: pms }, { data: dms }, { data: dir }] = await Promise.all([
+    supabaseClient.from('peer_messages').select('sender_id,recipient_id,body,read_at,created_at').order('created_at', { ascending: false }).limit(1000),
+    supabaseClient.from('direct_messages').select('from_admin,body,read_at,created_at').eq('student_id', me).order('created_at', { ascending: false }).limit(200),
+    supabaseClient.rpc('chat_directory')
+  ]);
+  const names = {}; (dir || []).forEach(p => names[p.id] = p.name);
+  const threads = {};
+  (pms || []).forEach(m => {
+    const other = m.sender_id === me ? m.recipient_id : m.sender_id;
+    const t = threads[other] || (threads[other] = { id: other, last: m, unread: 0 });
+    if (m.recipient_id === me && !m.read_at) t.unread++;
+  });
+  const adminUnread = (dms || []).filter(m => m.from_admin && !m.read_at).length;
+  const adminLast = (dms || [])[0];
+  const row = (attrs, name, last, unread, ts) => `<div ${attrs} style="display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer;">
+      ${pmAvatar(name)}
+      <div style="flex:1;min-width:0;"><div style="display:flex;justify-content:space-between;gap:6px;"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(name)}</b><span style="font-size:11px;opacity:.7;">${ts ? pmTime(ts) : ''}</span></div>
+      <div style="display:flex;justify-content:space-between;gap:6px;"><span style="font-size:13px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(last || '')}</span>${unread ? `<span style="background:#25d366;color:#fff;border-radius:10px;min-width:20px;height:20px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px;">${unread}</span>` : ''}</div></div></div>`;
+  const list = Object.values(threads).sort((a, b) => new Date(b.last.created_at) - new Date(a.last.created_at));
+  body.innerHTML = `<button class="btn" data-pm-new style="width:100%;margin-bottom:10px;">➕ ${L('Nova conversa','New chat','Nuevo chat')}</button>
+    ${row('data-pm-admin', '🛡️ ' + L('Admin (equipa BK)','Admin (BK team)','Admin (equipo BK)'), adminLast?.body || L('Fala com a equipa','Talk to the team','Habla con el equipo'), adminUnread, adminLast?.created_at)}
+    ${list.map(t => row(`data-pm-open="${escapeHtml(t.id)}"`, names[t.id] || L('Aluno','Student','Estudiante'), (t.last.sender_id === me ? '✓ ' : '') + t.last.body, t.unread, t.last.created_at)).join('')}
+    ${list.length ? '' : `<p style="opacity:.7;text-align:center;margin:16px 0;">${L('Toca em “Nova conversa” para falar com um colega.','Tap “New chat” to talk to a classmate.','Toca “Nuevo chat” para hablar con un compañero.')}</p>`}`;
+  body.querySelector('[data-pm-admin]').onclick = () => bkChatAdmin();
+  body.querySelectorAll('[data-pm-open]').forEach(el => el.onclick = () => pmOpen(el.dataset.pmOpen, names[el.dataset.pmOpen] || L('Aluno','Student','Estudiante')));
+  body.querySelector('[data-pm-new]').onclick = () => {
+    body.innerHTML = `<input class="sb-input" data-pm-q placeholder="${L('Pesquisar colega…','Search classmate…','Buscar compañero…')}" style="width:100%;margin-bottom:8px;"><div data-pm-res></div>`;
+    const res = body.querySelector('[data-pm-res]');
+    const draw = q => {
+      const f = (dir || []).filter(p => (p.name || '').toLowerCase().includes(q.toLowerCase())).slice(0, 100);
+      res.innerHTML = f.length ? f.map(p => row(`data-pm-open="${escapeHtml(p.id)}"`, p.name || '?', '', 0, null)).join('') : `<p style="opacity:.7;">${L('Nenhum colega encontrado.','No classmates found.','Ningún compañero encontrado.')}</p>`;
+      res.querySelectorAll('[data-pm-open]').forEach(el => el.onclick = () => pmOpen(el.dataset.pmOpen, names[el.dataset.pmOpen] || '?'));
+    };
+    body.querySelector('[data-pm-q]').oninput = e => draw(e.target.value);
+    draw('');
+  };
+}
+async function pmOpen(otherId, otherName) {
+  const L = bkL;
+  const body = bkSheet('💬 ' + otherName, L('A carregar…','Loading…','Cargando…'));
+  const { data: u } = await supabaseClient.auth.getUser();
+  const me = u.user.id;
+  body.innerHTML = `<div data-pm-list style="max-height:55vh;overflow:auto;padding:4px;"></div>
+    <div style="display:flex;gap:6px;margin-top:10px;">
+      <textarea class="sb-input" data-pm-text rows="2" maxlength="4000" style="flex:1;" placeholder="${L('Escreve uma mensagem…','Write a message…','Escribe un mensaje…')}"></textarea>
+      <button class="btn" data-pm-send style="padding:6px 14px;">${L('Enviar','Send','Enviar')}</button></div>`;
+  const listEl = body.querySelector('[data-pm-list]');
+  let msgs = [], timer = null;
+  const load = async () => {
+    if (!document.body.contains(body)) { clearInterval(timer); dmFabRefresh(); return; }
+    const { data, error } = await supabaseClient.from('peer_messages').select('*')
+      .or(`and(sender_id.eq.${me},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${me})`)
+      .order('created_at').limit(1000);
+    if (error) { listEl.innerHTML = escapeHtml(error.message); return; }
+    const changed = (data||[]).length !== msgs.length || (data||[]).some((m,i) => m.read_at !== msgs[i]?.read_at);
+    msgs = data || [];
+    if (changed) {
+      listEl.innerHTML = dmBubbles(msgs.map(m => ({ ...m, from_admin: m.sender_id === me })), true, L);
+      listEl.scrollTop = listEl.scrollHeight;
+    }
+    const unread = msgs.filter(m => m.recipient_id === me && !m.read_at).map(m => m.id);
+    if (unread.length) supabaseClient.from('peer_messages').update({ read_at: new Date().toISOString() }).in('id', unread).then(() => dmFabRefresh());
+  };
+  const ta = body.querySelector('[data-pm-text]');
+  const send = async () => {
+    const txt = ta.value.trim(); if (!txt) return;
+    const btn = body.querySelector('[data-pm-send]'); btn.disabled = true;
+    const { error } = await supabaseClient.from('peer_messages').insert({ sender_id: me, recipient_id: otherId, body: txt.slice(0, 4000) });
+    btn.disabled = false;
+    if (error) { showToast(error.message); return; }
+    ta.value = ''; load();
+  };
+  body.querySelector('[data-pm-send]').onclick = send;
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  load(); timer = setInterval(load, 5000);
+}
+
+/* Botão flutuante "Bater papo": visível só para alunos autenticados (não admin),
+   com contagem de mensagens ainda não lidas (admin + colegas). */
 let dmFabTimer = null;
 async function dmFabRefresh() {
   const fab = document.getElementById('dmFab');
@@ -9509,14 +9601,18 @@ async function dmFabRefresh() {
   const me = _authCache.user;
   if (!me || _authCache.admin) { fab.classList.remove('show'); return; }
   fab.classList.add('show');
-  const { count } = await supabaseClient.from('direct_messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('student_id', me.id).eq('from_admin', true).is('read_at', null);
+  const [a, b] = await Promise.all([
+    supabaseClient.from('direct_messages').select('id', { count: 'exact', head: true })
+      .eq('student_id', me.id).eq('from_admin', true).is('read_at', null),
+    supabaseClient.from('peer_messages').select('id', { count: 'exact', head: true })
+      .eq('recipient_id', me.id).is('read_at', null)
+  ]);
+  const count = (a.count || 0) + (b.count || 0);
   const old = fab.querySelector('.dm-fab-badge'); if (old) old.remove();
   if (count) {
-    const b = document.createElement('span');
-    b.className = 'dm-fab-badge'; b.textContent = count > 99 ? '99+' : String(count);
-    fab.appendChild(b);
+    const el = document.createElement('span');
+    el.className = 'dm-fab-badge'; el.textContent = count > 99 ? '99+' : String(count);
+    fab.appendChild(el);
   }
 }
 function dmFabStart() {
