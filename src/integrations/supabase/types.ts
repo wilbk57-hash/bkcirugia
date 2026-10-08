@@ -166,6 +166,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_replies: {
+        Row: {
+          admin_id: string
+          created_at: string
+          event_id: string
+          id: string
+          read_at: string | null
+          reply: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          read_at?: string | null
+          reply: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          read_at?: string | null
+          reply?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           admin_lang: string | null

@@ -5316,6 +5316,8 @@ const STR_TABLE = [
  ['admin.mgmt.content','Conteúdos','Content','Contenidos'],
  ['admin.mgmt.questions','Questões','Questions','Preguntas'],
  ['admin.mgmt.tutor','Tutor de IA','AI Tutor','Tutor de IA'],
+ ['admin.mgmt.feedback','Mensagens','Messages','Mensajes'],
+ ['item.mymsgs.label','As minhas mensagens','My messages','Mis mensajes'],
  ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
  ['stub.ia.title','Tutor de IA','AI tutor','Tutor de IA'],
  ['stub.ia.sub','Tire dúvidas, gere resumos e pratique perguntas com o Tutor de IA, que também consulta a Biblioteca Oficial.','Ask questions, generate summaries and practice with the AI Tutor, which also searches the Official Library.','Resuelve dudas, genera resúmenes y practica preguntas con el Tutor de IA, que también consulta la Biblioteca Oficial.'],
@@ -6417,6 +6419,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'nav', label: 'item.reportbug.label', action: "bkFeedback('bug')" },
       { type: 'nav', label: 'item.suggestion.label', action: "bkFeedback('suggestion')" },
       { type: 'nav', label: 'item.rate.label', action: 'bkRate()' },
+      { type: 'nav', label: 'item.mymsgs.label', action: 'bkMyMessages()' },
   ]},
   { sec: 'sec.about', items: [
       { type: 'value', label: 'item.version.label', value: '1.0.0 · pré-lançamento' },
@@ -9305,6 +9308,7 @@ const ADMIN_MGMT_ITEMS = [
   { ic: '🎬', key: 'admin.mgmt.videos', action: "admPanel('videos')" }, { ic: '🖼', key: 'admin.mgmt.images', action: "admPanel('images')" },
   { ic: '📚', key: 'admin.mgmt.content', action: "admPanel('content')" }, { ic: '❓', key: 'admin.mgmt.questions', action: "admPanel('questions')" },
   { ic: '🤖', key: 'admin.mgmt.tutor', action: "admPanel('tutor')" },
+  { ic: '💬', key: 'admin.mgmt.feedback', action: "admPanel('feedback')" },
   { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
   { ic: '🏛', key: 'admin.mgmt.library', action: 'openMyLibrary()' },
 ];
@@ -9329,6 +9333,7 @@ function admPanel(kind) {
     videos: '🎬 ' + T('Vídeos','Videos','Vídeos'), images: '🖼 ' + T('Imagens','Images','Imágenes'),
     content: '📚 ' + T('Conteúdo','Content','Contenido'), questions: '❓ ' + T('Perguntas','Questions','Preguntas'),
     tutor: '🤖 ' + T('Tutor IA','AI Tutor','Tutor IA'),
+    feedback: '💬 ' + T('Mensagens dos alunos','Student messages','Mensajes de alumnos'),
   };
   const el = document.createElement('div');
   el.id = 'admPanelOverlay';
@@ -9341,10 +9346,93 @@ function admPanel(kind) {
     <div id="admPanelBody" style="color:var(--text2);font-size:13px;"></div></div>`;
   document.body.appendChild(el);
   const body = el.querySelector('#admPanelBody');
-  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor }[kind];
+  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback }[kind];
   if (fn) fn(body);
   auditLog('admin_open_panel', { kind });
 }
+
+/* ---------- Mensagens dos alunos (reportes, sugestões, avaliações) ---------- */
+const FB_EVENTS = ['feedback_bug','feedback_suggestion','app_rating'];
+function fbKindLabel(ev, T) {
+  return ev === 'feedback_bug' ? '🐞 ' + T('Problema','Problem','Problema') : ev === 'feedback_suggestion' ? '💡 ' + T('Sugestão','Suggestion','Sugerencia') : '⭐ ' + T('Avaliação','Rating','Valoración');
+}
+function fbBodyHtml(e) {
+  const d = e.detail || {};
+  let h = '';
+  if (e.event === 'app_rating') h += `<div style="font-size:18px;color:var(--warn,#f5b301);">${'★'.repeat(d.stars||0)}${'☆'.repeat(5-(d.stars||0))}</div>`;
+  if (d.text) h += `<div style="white-space:pre-wrap;color:var(--text);margin-top:6px;">${escapeHtml(d.text)}</div>`;
+  return h;
+}
+async function admRenderFeedback(body) {
+  const T = adminT3;
+  body.innerHTML = T('A carregar…','Loading…','Cargando…');
+  const { data: evs, error } = await supabaseClient.from('audit_events').select('id,user_id,event,detail,created_at').in('event', FB_EVENTS).order('created_at', { ascending: false }).limit(300);
+  if (error) { body.innerHTML = escapeHtml(error.message); return; }
+  const ids = [...new Set((evs||[]).map(e => e.user_id).filter(Boolean))];
+  const evIds = (evs||[]).map(e => e.id);
+  const [{ data: profs }, { data: reps }] = await Promise.all([
+    ids.length ? supabaseClient.from('profiles').select('id,name,email').in('id', ids) : { data: [] },
+    evIds.length ? supabaseClient.from('feedback_replies').select('id,event_id,reply,created_at,read_at').in('event_id', evIds).order('created_at') : { data: [] },
+  ]);
+  const pm = Object.fromEntries((profs||[]).map(p => [p.id, p]));
+  const rm = {}; (reps||[]).forEach(r => (rm[r.event_id] = rm[r.event_id] || []).push(r));
+  let filter = 'all';
+  const draw = () => {
+    const list = (evs||[]).filter(e => filter === 'all' || (filter === 'open' ? !rm[e.id] : e.event === filter));
+    const btn = (k, l) => `<button class="btn" data-f="${k}" style="padding:5px 10px;font-size:11px;${filter===k?'':'opacity:.55;'}">${l}</button>`;
+    const counts = { open: (evs||[]).filter(e => !rm[e.id]).length };
+    body.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      ${btn('all', T('Todas','All','Todas') + ' (' + (evs||[]).length + ')')}${btn('open', T('Por responder','Unanswered','Sin responder') + ' (' + counts.open + ')')}
+      ${btn('feedback_bug', T('Problemas','Problems','Problemas'))}${btn('feedback_suggestion', T('Sugestões','Suggestions','Sugerencias'))}${btn('app_rating', T('Avaliações','Ratings','Valoraciones'))}</div>` +
+      (list.length ? list.map(e => {
+        const p = pm[e.user_id] || {};
+        const replies = (rm[e.id]||[]).map(r => `<div style="margin-top:8px;padding:8px 10px;border-left:3px solid var(--primary);background:var(--surface2,rgba(127,127,127,.08));border-radius:6px;">
+          <div style="font-size:11px;opacity:.7;">${T('A tua resposta','Your reply','Tu respuesta')} · ${new Date(r.created_at).toLocaleString()} ${r.read_at ? '· ' + T('lida','read','leída') : ''}</div>
+          <div style="white-space:pre-wrap;color:var(--text);">${escapeHtml(r.reply)}</div></div>`).join('');
+        return admCard(`<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <b style="color:var(--text);">${fbKindLabel(e.event, T)}</b>
+            <span style="font-size:11px;opacity:.7;">${new Date(e.created_at).toLocaleString()}</span></div>
+          <div style="font-size:12px;opacity:.8;margin-top:2px;">${escapeHtml(p.name || '—')} · ${escapeHtml(p.email || '')}</div>
+          ${fbBodyHtml(e)}${replies}
+          <textarea class="sb-input" data-r="${e.id}" rows="2" style="width:100%;margin-top:10px;" placeholder="${T('Escreve a resposta…','Write a reply…','Escribe la respuesta…')}"></textarea>
+          <button class="btn" data-send="${e.id}" style="margin-top:6px;padding:6px 12px;font-size:12px;">${T('Responder','Reply','Responder')}</button>`);
+      }).join('') : `<p>${T('Nenhuma mensagem.','No messages.','Ningún mensaje.')}</p>`);
+  };
+  body.addEventListener('click', async ev => {
+    const f = ev.target.closest('[data-f]'); if (f) { filter = f.dataset.f; draw(); return; }
+    const s = ev.target.closest('[data-send]'); if (!s) return;
+    const id = s.dataset.send, e = evs.find(x => x.id === id);
+    const txt = body.querySelector(`textarea[data-r="${id}"]`).value.trim();
+    if (!txt || !e) return;
+    s.disabled = true;
+    const { data: u } = await supabaseClient.auth.getUser();
+    const { data: row, error } = await supabaseClient.from('feedback_replies').insert({ event_id: id, user_id: e.user_id, admin_id: u.user.id, reply: txt.slice(0, 4000) }).select().single();
+    s.disabled = false;
+    if (error) { showToast(error.message); return; }
+    (rm[id] = rm[id] || []).push(row); draw();
+    showToast(T('Resposta enviada','Reply sent','Respuesta enviada'));
+  });
+  draw();
+}
+async function bkMyMessages() {
+  const L = bkL;
+  const body = bkSheet(L('As minhas mensagens','My messages','Mis mensajes'), L('A carregar…','Loading…','Cargando…'));
+  const { data: u } = await supabaseClient.auth.getUser();
+  if (!u?.user) { body.innerHTML = L('Entre na sua conta.','Sign in first.','Inicia sesión.'); return; }
+  const { data: evs } = await supabaseClient.from('audit_events').select('id,event,detail,created_at').eq('user_id', u.user.id).in('event', FB_EVENTS).order('created_at', { ascending: false }).limit(100);
+  const { data: reps } = await supabaseClient.from('feedback_replies').select('id,event_id,reply,created_at,read_at').eq('user_id', u.user.id).order('created_at');
+  const rm = {}; (reps||[]).forEach(r => (rm[r.event_id] = rm[r.event_id] || []).push(r));
+  body.innerHTML = (evs||[]).length ? evs.map(e => `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;"><b>${fbKindLabel(e.event, L)}</b><span style="font-size:11px;opacity:.7;">${new Date(e.created_at).toLocaleDateString()}</span></div>
+      ${fbBodyHtml(e)}
+      ${(rm[e.id]||[]).map(r => `<div style="margin-top:8px;padding:8px 10px;border-left:3px solid var(--primary);border-radius:6px;background:rgba(127,127,127,.08);">
+        <div style="font-size:11px;opacity:.7;">${L('Resposta da equipa','Team reply','Respuesta del equipo')} · ${new Date(r.created_at).toLocaleDateString()}</div>
+        <div style="white-space:pre-wrap;">${escapeHtml(r.reply)}</div></div>`).join('') || `<div style="font-size:11px;opacity:.6;margin-top:6px;">${L('Ainda sem resposta','No reply yet','Aún sin respuesta')}</div>`}
+    </div>`).join('') : L('Ainda não enviou mensagens.','No messages yet.','Aún no hay mensajes.');
+  const unread = (reps||[]).filter(r => !r.read_at).map(r => r.id);
+  if (unread.length) supabaseClient.from('feedback_replies').update({ read_at: new Date().toISOString() }).in('id', unread).then(() => {});
+}
+
 function admCard(inner) { return `<div class="stat-table-card" style="margin-bottom:12px;padding:14px;">${inner}</div>`; }
 
 function admRenderContent(body) {
