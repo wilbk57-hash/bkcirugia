@@ -9144,6 +9144,7 @@ async function doLogout() {
   clearSession();
   showToast(t('auth.toast.loggedout'));
   document.body.classList.add('pre-auth');
+  dmFabStop();
   showAuthScreen('welcome');
   resetAuthForms();
   MAIN_VIEWS.forEach(id => hideEl(document.getElementById(id)));
@@ -9160,6 +9161,7 @@ async function logoutAllDevices() {
   clearSession();
   showToast(t('auth.toast.allloggedout'));
   document.body.classList.add('pre-auth');
+  dmFabStop();
   showAuthScreen('welcome');
   resetAuthForms();
   hideEl(document.getElementById('adminView'));
@@ -9183,6 +9185,7 @@ async function deleteAccount() {
   clearSession();
   showToast(t('auth.toast.accountdeleted'));
   document.body.classList.add('pre-auth');
+  dmFabStop();
   showAuthScreen('welcome');
   hideEl(document.getElementById('adminView'));
   hideEl(document.getElementById('myLibraryView'));
