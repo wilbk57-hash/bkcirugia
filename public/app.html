@@ -1520,8 +1520,8 @@
         <button class="auth-btn admin" onclick="goToAdminAuth()" data-i18n="auth.welcome.admin">Acesso Administrativo</button>
       </div>
       <div class="auth-footer-links">
-        <span onclick="showToast(t('toast.stub'))" data-i18n="auth.footer.terms">Termos de uso</span>
-        <span onclick="showToast(t('toast.stub'))" data-i18n="auth.footer.privacy">Política de privacidade</span>
+        <span onclick="bkInfo('terms')" data-i18n="auth.footer.terms">Termos de uso</span>
+        <span onclick="bkInfo('privacy')" data-i18n="auth.footer.privacy">Política de privacidade</span>
       </div>
       <div class="auth-version">BK-CIRURGIA · v1.0.0 · pré-lançamento</div>
     </div>
@@ -1619,7 +1619,7 @@
             <div class="auth-err-msg" id="regPwErr"></div>
           </div>
           <div class="auth-check-row">
-            <label><input type="checkbox" id="regTerms"> <span data-i18n="auth.terms.q">Aceito os</span> <a onclick="showToast(t('toast.stub'))" data-i18n="auth.footer.terms">termos de uso</a></label>
+            <label><input type="checkbox" id="regTerms"> <span data-i18n="auth.terms.q">Aceito os</span> <a onclick="bkInfo('terms')" data-i18n="auth.footer.terms">termos de uso</a></label>
           </div>
         </div>
 
@@ -6183,8 +6183,163 @@ function setSetting(key, value) {
 
 function stubAction(labelKey) { showToast(t('toast.stub')); }
 
-function clearCache() { showToast(t('toast.cache')); }
-function checkUpdates() { showToast(t('toast.updates')); }
+/* ============ Ações reais que substituem os antigos botões ilustrativos ============ */
+function bkL(pt, en, es) { return currentLang === 'en' ? en : currentLang === 'es' ? es : pt; }
+function bkCloseSheet() { const o = document.getElementById('bkSheet'); if (o) o.remove(); }
+function bkSheet(title, html) {
+  bkCloseSheet();
+  const el = document.createElement('div');
+  el.id = 'bkSheet';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9600;background:var(--bg);overflow:auto;padding:18px;';
+  el.innerHTML = `<div style="max-width:720px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <button class="icon-btn" onclick="bkCloseSheet()" aria-label="${bkL('Fechar','Close','Cerrar')}">✕</button>
+      <h2 style="font-size:18px;margin:0;color:var(--text);">${title}</h2>
+    </div>
+    <div id="bkSheetBody" style="color:var(--text2);font-size:14px;line-height:1.6;">${html}</div></div>`;
+  document.body.appendChild(el);
+  return el.querySelector('#bkSheetBody');
+}
+const BK_INFO = {
+  terms: () => [bkL('Termos de uso','Terms of use','Términos de uso'), bkL(
+    '<p>O BK-CIRURGIA é uma plataforma educativa para estudantes e profissionais de saúde. O conteúdo e as respostas do Tutor IA servem apenas para estudo e não substituem julgamento clínico, protocolos institucionais nem supervisão médica.</p><p>A conta é pessoal e intransferível. É proibido partilhar credenciais, copiar em massa o conteúdo ou usar o serviço para fins ilegais. O administrador pode suspender contas que violem estas regras.</p><p>Os livros da Biblioteca Oficial são disponibilizados apenas para leitura dentro do app.</p>',
+    '<p>BK-CIRURGIA is an educational platform for health students and professionals. Content and AI Tutor answers are for study only and do not replace clinical judgement, institutional protocols or medical supervision.</p><p>Accounts are personal. Sharing credentials, bulk copying content or illegal use is forbidden. The administrator may suspend accounts that break these rules.</p><p>Official Library books are provided for in-app reading only.</p>',
+    '<p>BK-CIRURGIA es una plataforma educativa para estudiantes y profesionales de la salud. El contenido y las respuestas del Tutor IA son solo para estudio y no sustituyen el juicio clínico, los protocolos institucionales ni la supervisión médica.</p><p>La cuenta es personal. Está prohibido compartir credenciales, copiar masivamente el contenido o usar el servicio con fines ilegales. El administrador puede suspender cuentas que incumplan estas reglas.</p><p>Los libros de la Biblioteca Oficial se ofrecen solo para lectura dentro de la app.</p>')],
+  privacy: () => [bkL('Política de privacidade','Privacy policy','Política de privacidad'), bkL(
+    '<p>Guardamos apenas o necessário para o app funcionar: nome, e-mail, dados de perfil que você preencher, progresso nos quizzes, eventos de estudo, notas, casos clínicos e subscrições de notificações.</p><p>As perguntas ao Tutor IA são enviadas a um fornecedor de IA para gerar a resposta e não são usadas para publicidade. Não vendemos dados a terceiros.</p><p>Pode exportar os seus dados em Configurações → Exportar dados, e pedir a eliminação da conta em Configurações.</p>',
+    '<p>We store only what the app needs: name, email, profile details you fill in, quiz progress, study events, notes, clinical cases and notification subscriptions.</p><p>Questions to the AI Tutor are sent to an AI provider to generate the answer and are not used for advertising. We do not sell data.</p><p>You can export your data in Settings → Export data, and delete your account in Settings.</p>',
+    '<p>Guardamos solo lo necesario: nombre, correo, datos de perfil que completes, progreso en los quizzes, eventos de estudio, notas, casos clínicos y suscripciones de notificaciones.</p><p>Las preguntas al Tutor IA se envían a un proveedor de IA para generar la respuesta y no se usan para publicidad. No vendemos datos.</p><p>Puedes exportar tus datos en Configuración → Exportar datos y eliminar tu cuenta en Configuración.</p>')],
+  help: () => [bkL('Central de ajuda','Help center','Centro de ayuda'), bkL(
+    '<p><b>Estudar:</b> abra um tema em Temas e siga as abas (conceito, quiz, caso).</p><p><b>Tutor IA:</b> pergunte qualquer dúvida; selecione texto numa aula e toque em ✨ para uma explicação.</p><p><b>Casos clínicos:</b> na aba Casos, gere um caso simulado passo a passo.</p><p><b>Biblioteca:</b> leia os livros oficiais; o Tutor usa-os nas respostas.</p><p><b>Lembretes:</b> ative as notificações em Configurações → Permissões.</p><p>Ainda com dúvidas? Use “Reportar problema”.</p>',
+    '<p><b>Study:</b> open a topic and follow its tabs (concept, quiz, case).</p><p><b>AI Tutor:</b> ask anything; select text in a lesson and tap ✨ for an explanation.</p><p><b>Clinical cases:</b> in the Cases tab, generate a step-by-step simulated case.</p><p><b>Library:</b> read official books; the Tutor uses them in answers.</p><p><b>Reminders:</b> enable notifications in Settings → Permissions.</p><p>Still stuck? Use “Report a problem”.</p>',
+    '<p><b>Estudiar:</b> abre un tema y sigue sus pestañas (concepto, quiz, caso).</p><p><b>Tutor IA:</b> pregunta cualquier duda; selecciona texto y toca ✨ para una explicación.</p><p><b>Casos clínicos:</b> en Casos, genera un caso simulado paso a paso.</p><p><b>Biblioteca:</b> lee los libros oficiales; el Tutor los usa en sus respuestas.</p><p><b>Recordatorios:</b> activa las notificaciones en Configuración → Permisos.</p><p>¿Aún con dudas? Usa “Reportar problema”.</p>')],
+  faq: () => [bkL('Perguntas frequentes','FAQ','Preguntas frecuentes'), bkL(
+    '<p><b>O app é gratuito?</b> Sim, para alunos registados.</p><p><b>Funciona offline?</b> As páginas já abertas ficam disponíveis; o Tutor precisa de internet.</p><p><b>Posso instalar no telemóvel?</b> Sim, use o botão “Instalar app”.</p><p><b>Há limite de perguntas ao Tutor?</b> Sim, um limite por hora para evitar abusos.</p><p><b>Esqueci a senha.</b> No ecrã Entrar, toque em “Esqueci a senha”.</p>',
+    '<p><b>Is it free?</b> Yes, for registered students.</p><p><b>Does it work offline?</b> Pages already opened stay available; the Tutor needs internet.</p><p><b>Can I install it on my phone?</b> Yes, use the “Install app” button.</p><p><b>Is there a Tutor limit?</b> Yes, an hourly limit to prevent abuse.</p><p><b>Forgot my password.</b> On the sign-in screen tap “Forgot password”.</p>',
+    '<p><b>¿Es gratis?</b> Sí, para alumnos registrados.</p><p><b>¿Funciona sin conexión?</b> Las páginas ya abiertas siguen disponibles; el Tutor necesita internet.</p><p><b>¿Puedo instalarla en el móvil?</b> Sí, usa el botón “Instalar app”.</p><p><b>¿Hay límite en el Tutor?</b> Sí, un límite por hora para evitar abusos.</p><p><b>Olvidé mi contraseña.</b> En la pantalla de acceso toca “Olvidé la contraseña”.</p>')],
+};
+function bkInfo(kind) { const f = BK_INFO[kind]; if (!f) return; const [ti, html] = f(); bkSheet(ti, html); }
+
+function bkAskTutor(text) {
+  if (typeof closeSettings === 'function' && document.getElementById('settingsView').classList.contains('show')) closeSettings();
+  switchTab('iaView');
+  setTimeout(() => { const i = document.getElementById('iaInput'); if (!i) return; i.value = text; sendIaMessage(); }, 300);
+}
+const BK_LIB_PROMPTS = {
+  'lib.atlas': ['Faz um atlas cirúrgico resumido: principais regiões anatómicas abordadas em cirurgia geral e as incisões clássicas de cada uma.','Give a short surgical atlas: main anatomical regions in general surgery and the classic incisions for each.','Haz un atlas quirúrgico breve: principales regiones anatómicas en cirugía general y las incisiones clásicas de cada una.'],
+  'lib.anatomia': ['Resume a anatomia cirúrgica da parede abdominal e do canal inguinal, com pontos de referência importantes.','Summarise the surgical anatomy of the abdominal wall and inguinal canal, with key landmarks.','Resume la anatomía quirúrgica de la pared abdominal y el canal inguinal, con puntos de referencia clave.'],
+  'lib.protocolos': ['Lista os principais protocolos perioperatórios (jejum, profilaxia antibiótica, tromboprofilaxia, ERAS) com as recomendações essenciais.','List the main perioperative protocols (fasting, antibiotic prophylaxis, thromboprophylaxis, ERAS) with key recommendations.','Enumera los principales protocolos perioperatorios (ayuno, profilaxis antibiótica, tromboprofilaxis, ERAS) con las recomendaciones clave.'],
+  'lib.farmacos': ['Faz uma tabela dos fármacos mais usados em cirurgia (analgésicos, antibióticos profiláticos, anticoagulantes) com dose habitual e cuidados.','Make a table of drugs most used in surgery (analgesics, prophylactic antibiotics, anticoagulants) with usual dose and cautions.','Haz una tabla de los fármacos más usados en cirugía (analgésicos, antibióticos profilácticos, anticoagulantes) con dosis habitual y precauciones.'],
+  'lib.lab': ['Quais exames laboratoriais pré-operatórios pedir e como interpretar valores alterados (hemograma, coagulação, função renal, eletrólitos)?','Which pre-op lab tests to order and how to interpret abnormal values (CBC, coagulation, renal function, electrolytes)?','¿Qué exámenes de laboratorio preoperatorios pedir y cómo interpretar valores alterados (hemograma, coagulación, función renal, electrolitos)?'],
+};
+function bkLibItem(key) {
+  if (key === 'lib.videos') { window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(bkL('aula cirurgia geral','general surgery lecture','clase cirugía general')), '_blank', 'noopener'); return; }
+  const p = BK_LIB_PROMPTS[key];
+  if (p) bkAskTutor(bkL(p[0], p[1], p[2])); else switchTab('iaView');
+}
+function bkCaseFor(topicId) {
+  switchTab('casosView');
+  setTimeout(() => { const sel = document.getElementById('ccTopicSel'); if (sel) sel.value = topicId; ccGenerate(); }, 400);
+}
+
+async function bkSaveProfileField(field, value) {
+  try { const u = await seAwaitUser(); if (u) await supabaseClient.from('profiles').update({ [field]: value }).eq('id', u.id); } catch (e) {}
+}
+function bkPickList(title, options, current, onPick) {
+  const body = bkSheet(title, `<input class="sb-input" id="bkPickQ" placeholder="${bkL('Pesquisar…','Search…','Buscar…')}" style="width:100%;margin-bottom:10px;"><div id="bkPickList"></div>`);
+  const draw = () => {
+    const q = body.querySelector('#bkPickQ').value.toLowerCase();
+    body.querySelector('#bkPickList').innerHTML = options.filter(o => o.toLowerCase().includes(q)).slice(0, 200)
+      .map(o => `<button class="btn" data-v="${escapeHtml(o)}" style="display:block;width:100%;text-align:left;margin-bottom:6px;${o === current ? 'border-color:var(--teal);color:var(--teal);' : ''}">${escapeHtml(o)}</button>`).join('');
+  };
+  body.addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; onPick(b.dataset.v); bkCloseSheet(); renderSettings(); showToast(t('toast.saved')); });
+  body.querySelector('#bkPickQ').addEventListener('input', draw);
+  draw();
+}
+const BK_COUNTRIES = ['Angola','Brasil','Cabo Verde','Guiné-Bissau','Guiné Equatorial','Moçambique','Portugal','São Tomé e Príncipe','Timor-Leste','Argentina','Chile','Colômbia','Espanha','França','Alemanha','Itália','México','Peru','Reino Unido','Estados Unidos','Senegal','Gabão','Camarões','Costa do Marfim','Nigéria','África do Sul','Marrocos','Canadá','Suíça','Bélgica','Uruguai','Paraguai','Venezuela','Bolívia','Equador','Outro'];
+function bkPickCountry() {
+  bkPickList(bkL('País','Country','País'), BK_COUNTRIES, SETTINGS_STATE.country, v => { SETTINGS_STATE.country = v; saveSettingsState(); bkSaveProfileField('country', v); });
+}
+function bkPickTimezone() {
+  let zones = [];
+  try { zones = Intl.supportedValuesOf('timeZone'); } catch (e) { zones = ['UTC','Africa/Bissau','Africa/Luanda','Africa/Maputo','America/Sao_Paulo','Europe/Lisbon','Europe/Madrid','America/New_York']; }
+  bkPickList(bkL('Fuso horário','Time zone','Zona horaria'), zones, SETTINGS_STATE.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, v => { SETTINGS_STATE.timezone = v; saveSettingsState(); });
+}
+
+async function bkPermissions() {
+  const L = bkL;
+  const notif = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const label = { granted: L('Permitidas','Allowed','Permitidas'), denied: L('Bloqueadas','Blocked','Bloqueadas'), default: L('Por decidir','Not decided','Sin decidir'), unsupported: L('Não suportadas','Not supported','No soportadas') }[notif];
+  const body = bkSheet(L('Permissões','Permissions','Permisos'), `
+    <div class="stat-table-card" style="padding:14px;margin-bottom:12px;">
+      <div style="font-weight:600;color:var(--text);">🔔 ${L('Notificações','Notifications','Notificaciones')}</div>
+      <div style="margin:6px 0 10px;">${label}</div>
+      ${notif === 'default' ? `<button class="btn" id="bkReqNotif">${L('Permitir notificações','Allow notifications','Permitir notificaciones')}</button>` : ''}
+      ${notif === 'denied' ? `<div style="font-size:12px;color:var(--text3);">${L('Para reativar, abra as definições do navegador para este site.','To re-enable, open your browser settings for this site.','Para reactivarlas, abre la configuración del navegador para este sitio.')}</div>` : ''}
+    </div>`);
+  const b = body.querySelector('#bkReqNotif');
+  if (b) b.addEventListener('click', async () => { await Notification.requestPermission(); bkPermissions(); });
+}
+
+async function bkExportData() {
+  const u = await seAwaitUser();
+  if (!u) { showToast(bkL('Entre na sua conta primeiro.','Sign in first.','Inicia sesión primero.')); return; }
+  showToast(bkL('A preparar os seus dados…','Preparing your data…','Preparando tus datos…'));
+  const out = { exported_at: new Date().toISOString() };
+  for (const tb of ['profiles','study_progress','study_events','study_notes','clinical_cases']) {
+    const q = supabaseClient.from(tb).select('*');
+    const { data } = await (tb === 'profiles' ? q.eq('id', u.id) : q.eq('user_id', u.id));
+    out[tb] = data || [];
+  }
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'bk-cirurgia-dados.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function bkFeedback(kind) {
+  const L = bkL;
+  const title = kind === 'bug' ? L('Reportar problema','Report a problem','Reportar problema') : L('Enviar sugestão','Send a suggestion','Enviar sugerencia');
+  const body = bkSheet(title, `
+    <textarea id="bkFbText" class="sb-input" rows="6" style="width:100%;resize:vertical;" placeholder="${kind === 'bug' ? L('Descreva o que aconteceu e onde…','Describe what happened and where…','Describe qué pasó y dónde…') : L('Escreva a sua ideia…','Write your idea…','Escribe tu idea…')}"></textarea>
+    <button class="btn" id="bkFbSend" style="margin-top:10px;">${L('Enviar','Send','Enviar')}</button>`);
+  body.querySelector('#bkFbSend').addEventListener('click', async () => {
+    const text = body.querySelector('#bkFbText').value.trim();
+    if (!text) return;
+    const { error } = await supabaseClient.rpc('log_event', { p_event: 'feedback_' + kind, p_detail: { text: text.slice(0, 4000), page: location.hash, ua: navigator.userAgent } });
+    if (error) { showToast(error.message); return; }
+    bkCloseSheet(); showToast(L('Obrigado! Mensagem enviada.','Thanks! Message sent.','¡Gracias! Mensaje enviado.'));
+  });
+}
+function bkRate() {
+  const L = bkL;
+  const body = bkSheet(L('Avaliar o app','Rate the app','Valorar la app'), `
+    <div style="font-size:34px;letter-spacing:6px;margin-bottom:12px;" id="bkStars">${[1,2,3,4,5].map(n => `<span data-n="${n}" style="cursor:pointer;">☆</span>`).join('')}</div>
+    <textarea id="bkRateText" class="sb-input" rows="3" style="width:100%;" placeholder="${L('Comentário (opcional)','Comment (optional)','Comentario (opcional)')}"></textarea>
+    <button class="btn" id="bkRateSend" style="margin-top:10px;">${L('Enviar','Send','Enviar')}</button>`);
+  let stars = 0;
+  body.querySelector('#bkStars').addEventListener('click', e => {
+    const s = e.target.closest('[data-n]'); if (!s) return;
+    stars = +s.dataset.n;
+    body.querySelectorAll('#bkStars span').forEach(x => x.textContent = (+x.dataset.n <= stars) ? '★' : '☆');
+  });
+  body.querySelector('#bkRateSend').addEventListener('click', async () => {
+    if (!stars) { showToast(L('Escolha de 1 a 5 estrelas.','Pick 1 to 5 stars.','Elige de 1 a 5 estrellas.')); return; }
+    const { error } = await supabaseClient.rpc('log_event', { p_event: 'app_rating', p_detail: { stars, text: body.querySelector('#bkRateText').value.trim().slice(0, 2000) } });
+    if (error) { showToast(error.message); return; }
+    bkCloseSheet(); showToast(L('Obrigado pela avaliação!','Thanks for rating!','¡Gracias por tu valoración!'));
+  });
+}
+
+async function clearCache() {
+  try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } } catch (e) {}
+  showToast(t('toast.cache'));
+}
+async function checkUpdates() {
+  try { const r = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (r) await r.update(); } catch (e) {}
+  showToast(t('toast.updates'));
+}
 /* logoutAllDevices() and deleteAccount() are implemented once, in the
    AUTH SYSTEM block below, where session/user data actually lives. */
 
@@ -6238,8 +6393,8 @@ const SETTINGS_SECTIONS = () => [
       { type: 'nav', label: 'item.logoutall.label', action: 'logoutAllDevices()' },
   ]},
   { sec: 'sec.region', items: [
-      { type: 'nav', label: 'item.country.label', value: 'Brasil', action: 'stubAction()' },
-      { type: 'nav', label: 'item.timezone.label', value: 'GMT-3', action: 'stubAction()' },
+      { type: 'nav', label: 'item.country.label', value: SETTINGS_STATE.country || 'Brasil', action: 'bkPickCountry()' },
+      { type: 'nav', label: 'item.timezone.label', value: SETTINGS_STATE.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone, action: 'bkPickTimezone()' },
       { type: 'select', key: '_dateformat', label: 'item.dateformat.label', opts: [['dmy','DD/MM/AAAA'],['mdy','MM/DD/YYYY'],['ymd','AAAA-MM-DD']], noI18nOpts: true },
       { type: 'segmented2', key: '_timeformat', label: 'item.timeformat.label', opts: [['24','24h'],['12','12h']], noI18nOpts: true },
       { type: 'segmented2', key: '_units', label: 'item.units.label', opts: [['metric','item.units.metric'],['imperial','item.units.imperial']] },
@@ -6252,18 +6407,18 @@ const SETTINGS_SECTIONS = () => [
       { type: 'toggle', key: 'voiceCommands', label: 'item.voice.label' },
   ]},
   { sec: 'sec.privacy', items: [
-      { type: 'nav', label: 'item.privacypolicy.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.terms.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.permissions.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.exportdata.label', action: 'stubAction()' },
+      { type: 'nav', label: 'item.privacypolicy.label', action: "bkInfo('privacy')" },
+      { type: 'nav', label: 'item.terms.label', action: "bkInfo('terms')" },
+      { type: 'nav', label: 'item.permissions.label', action: 'bkPermissions()' },
+      { type: 'nav', label: 'item.exportdata.label', action: 'bkExportData()' },
       { type: 'nav', label: 'item.deleteaccount.label', action: 'deleteAccount()', danger: true },
   ]},
   { sec: 'sec.support', items: [
-      { type: 'nav', label: 'item.helpcenter.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.faq.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.reportbug.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.suggestion.label', action: 'stubAction()' },
-      { type: 'nav', label: 'item.rate.label', action: 'stubAction()' },
+      { type: 'nav', label: 'item.helpcenter.label', action: "bkInfo('help')" },
+      { type: 'nav', label: 'item.faq.label', action: "bkInfo('faq')" },
+      { type: 'nav', label: 'item.reportbug.label', action: "bkFeedback('bug')" },
+      { type: 'nav', label: 'item.suggestion.label', action: "bkFeedback('suggestion')" },
+      { type: 'nav', label: 'item.rate.label', action: 'bkRate()' },
   ]},
   { sec: 'sec.about', items: [
       { type: 'value', label: 'item.version.label', value: '1.0.0 · pré-lançamento' },
@@ -6641,7 +6796,7 @@ const LIB_ITEMS = [
 ];
 function renderLibrary() {
   document.getElementById('libGrid').innerHTML = LIB_ITEMS.map(l => `
-    <div class="lib-item" onclick="${l.action || `showToast(t('toast.stub'))`}">
+    <div class="lib-item" onclick="${l.action || `bkLibItem('${l.key}')`}">
       <div class="lib-icon">${l.icon}</div>
       <div class="lib-label">${t(l.key)}</div>
     </div>`).join('');
@@ -6689,8 +6844,8 @@ function renderStatTable() {
 /* 12. Casos Clínicos Recomendados */
 const RECOMMENDED_CASES = [
   { emoji: '🩹', tagKey: 'case.tag1', titleKey: 'case.title1', level: 'case.level.basic', time: '8 min', action: "openTopic('pre-operatorio','caso')" },
-  { emoji: '🫀', tagKey: 'case.tag2', titleKey: 'case.title2', level: 'case.level.inter', time: '12 min', action: "showToast(t('toast.stub'))" },
-  { emoji: '🚑', tagKey: 'case.tag3', titleKey: 'case.title3', level: 'case.level.adv', time: '15 min', action: "showToast(t('toast.stub'))" },
+  { emoji: '🫀', tagKey: 'case.tag2', titleKey: 'case.title2', level: 'case.level.inter', time: '12 min', action: "bkCaseFor('pre-operatorio')" },
+  { emoji: '🚑', tagKey: 'case.tag3', titleKey: 'case.title3', level: 'case.level.adv', time: '15 min', action: "bkCaseFor('choque')" },
 ];
 function renderCases() {
   document.getElementById('caseScroll').innerHTML = RECOMMENDED_CASES.map(c => `
@@ -6712,7 +6867,7 @@ const FEATURED_SURGERIES = [
 ];
 function renderSurgeries() {
   document.getElementById('surgeryScroll').innerHTML = FEATURED_SURGERIES.map(s => `
-    <div class="surgery-chip" onclick="showToast(t('toast.stub'))"><span>${s.icon}</span><span>${t(s.key)}</span></div>`).join('');
+    <div class="surgery-chip" onclick="bkAskTutor(t('${s.key}'))"><span>${s.icon}</span><span>${t(s.key)}</span></div>`).join('');
 }
 
 /* 15. Desempenho Semanal */
@@ -6794,7 +6949,7 @@ function renderNews() {
   if (!SETTINGS_STATE.showNews) { section.style.display = 'none'; return; }
   section.style.display = 'block';
   document.getElementById('newsList').innerHTML = MEDICAL_NEWS.map(n => `
-    <div class="news-row" onclick="showToast(t('toast.stub'))">
+    <div class="news-row" onclick="window.open('https://news.google.com/search?q='+encodeURIComponent(t('${n.key}')),'_blank','noopener')">
       <div class="news-thumb">${n.icon}</div>
       <div><div class="news-title" data-i18n="${n.key}">${t(n.key)}</div><div class="news-source" data-i18n="${n.source}">${t(n.source)}</div></div>
     </div>`).join('');
@@ -8956,7 +9111,7 @@ function showLoginMethodInfo() {
   const admin = getCurrentAdmin();
   if (user) showToast(`${t('auth.field.email')}: ${user.email}`);
   else if (admin) showToast(`${t('auth.field.adminuser')}: ${admin.username}`);
-  else showToast(t('toast.stub'));
+  else showAuthScreen('login');
 }
 
 async function doLogout() {
