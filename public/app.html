@@ -8220,6 +8220,7 @@ function onAuthGranted(isAdmin) {
   renderBottomNav();
   if (isAdmin) { openAdmin(); } else { switchTab('dashboardView'); }
   resetAuthForms();
+  dmFabStart();
 }
 
 /* Mirrors openSettings()/closeSettings() so the admin panel behaves like
@@ -10531,7 +10532,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
 });
 if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
-refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); });
+refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); });
 </script>
 <script>
 // ── Web Push: lembretes de eventos de estudo ──
