@@ -8244,7 +8244,7 @@ function openAdmin(fromPop) {
   document.getElementById('homeBtn').classList.add('show');
   renderCrumb('admin');
   if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
-  adminMfaGate().then(ok => { if (ok) openAdminUnlocked(); });
+  openAdminUnlocked();
 }
 function openAdminUnlocked() {
   renderAdminDashboard();
