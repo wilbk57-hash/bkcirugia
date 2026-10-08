@@ -9376,14 +9376,8 @@ async function admRenderFeedback(body) {
   ]);
   const pm = Object.fromEntries((profs||[]).map(p => [p.id, p]));
   const rm = {}; (reps||[]).forEach(r => (rm[r.event_id] = rm[r.event_id] || []).push(r));
-  let filter = 'all';
   const draw = () => {
-    const list = (evs||[]).filter(e => filter === 'all' || (filter === 'open' ? !rm[e.id] : e.event === filter));
-    const btn = (k, l) => `<button class="btn" data-f="${k}" style="padding:5px 10px;font-size:11px;${filter===k?'':'opacity:.55;'}">${l}</button>`;
-    const counts = { open: (evs||[]).filter(e => !rm[e.id]).length };
-    body.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-      ${btn('all', T('Todas','All','Todas') + ' (' + (evs||[]).length + ')')}${btn('open', T('Por responder','Unanswered','Sin responder') + ' (' + counts.open + ')')}
-      ${btn('feedback_bug', T('Problemas','Problems','Problemas'))}${btn('feedback_suggestion', T('Sugestões','Suggestions','Sugerencias'))}${btn('app_rating', T('Avaliações','Ratings','Valoraciones'))}</div>` +
+    const list = filter === 'all' ? (evs||[]) : (evs||[]).filter(e => !rm[e.id]);
       (list.length ? list.map(e => {
         const p = pm[e.user_id] || {};
         const replies = (rm[e.id]||[]).map(r => `<div style="margin-top:8px;padding:8px 10px;border-left:3px solid var(--primary);background:var(--surface2,rgba(127,127,127,.08));border-radius:6px;">
