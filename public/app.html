@@ -1250,6 +1250,10 @@
   .auth-oauth-btn { flex: 1; display:flex; align-items:center; justify-content:center; gap:6px; font-size: 12px; font-weight: 600; color: var(--text2); background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 8px; cursor: pointer; }
   .auth-oauth-btn:hover { border-color: var(--teal); color: var(--text); }
 
+  .auth-social-sep { text-align:center; font-size:12px; color: var(--text2); margin:16px 0 10px; }
+  .auth-social { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .auth-social-btn { font-family:'Space Grotesk'; font-size:13px; font-weight:600; padding:11px 6px; border-radius:11px; cursor:pointer; background:transparent; color: var(--text); border:1px solid rgba(255,255,255,.18); }
+  .auth-social-btn:hover { border-color: var(--teal); }
   .auth-switch { text-align: center; font-size: 12.5px; color: var(--text2); margin-top: 18px; }
   .auth-switch b { color: var(--teal); cursor: pointer; }
   .auth-panel.admin .auth-switch b { color: var(--violet); }
@@ -1548,6 +1552,14 @@
           <a onclick="showAuthScreen('recovery')" data-i18n="auth.forgot">Esqueci minha senha</a>
         </div>
         <button class="auth-submit" id="loginBtn" onclick="doLogin()" data-i18n="auth.login.submit">Entrar</button>
+
+        <div class="auth-social-sep"><span data-i18n="auth.social.or">ou continue com</span></div>
+        <div class="auth-social">
+          <button type="button" class="auth-social-btn" onclick="doSocialLogin('google')">Google</button>
+          <button type="button" class="auth-social-btn" onclick="doSocialLogin('apple')">Apple</button>
+          <button type="button" class="auth-social-btn" onclick="doSocialLogin('microsoft')">Microsoft</button>
+        </div>
+        <div class="auth-err-msg" id="socialErr"></div>
 
         <div class="auth-switch"><span data-i18n="auth.login.switch.q">Não tem conta?</span> <b onclick="showAuthScreen('register')" data-i18n="auth.welcome.register">Criar conta</b></div>
       </div>
@@ -5610,6 +5622,7 @@ const STR_TABLE = [
  ['auth.err.pwmatch','As senhas não coincidem.','Passwords do not match.','Las contraseñas no coinciden.'],
  ['auth.err.terms','É preciso aceitar os termos de uso.','You must accept the terms of use.','Debes aceptar los términos de uso.'],
  ['auth.err.code','Código inválido ou expirado.','Invalid or expired code.','Código inválido o vencido.'],
+ ['auth.social.or','ou continue com','or continue with','o continúa con'],
  ['auth.err.admin','Usuário, senha ou código de segurança incorretos.','Incorrect username, password or security code.','Usuario, contraseña o código de seguridad incorrectos.'],
  ['auth.err.blocked','Esta conta foi bloqueada. Fale com um administrador.','This account has been blocked. Contact an administrator.','Esta cuenta fue bloqueada. Contacta a un administrador.'],
  ['auth.toast.codesent','Código enviado (veja abaixo — simulação sem servidor de e-mail).','Code sent (see below — simulated, no email server).','Código enviado (ver abajo — simulación sin servidor de correo).'],
@@ -9934,6 +9947,38 @@ supabaseClient.auth.onAuthStateChange((event) => {
   }
 });
 
+
+/* ---- LOGIN SOCIAL (Google / Apple / Microsoft) ----
+   O fluxo OAuth corre na página-mãe (/app); ela devolve a sessão por postMessage. */
+function doSocialLogin(provider) {
+  const err = document.getElementById('socialErr'); if (err) err.textContent = '';
+  if (window.parent === window) { window.location.href = '/app'; return; }
+  window.parent.postMessage({ type: 'bk-oauth-start', provider }, window.location.origin);
+}
+async function bkApplySocialSession(tokens) {
+  const cur = await supabaseClient.auth.getSession();
+  if (cur.data.session && cur.data.session.user && tokens.user_id === cur.data.session.user.id) return;
+  const { data, error } = await supabaseClient.auth.setSession({ access_token: tokens.access_token, refresh_token: tokens.refresh_token });
+  if (error || !data.user) return;
+  await refreshAuthCache();
+  if (_authCache.user && _authCache.user.status === 'suspended') {
+    await supabaseClient.auth.signOut(); clearSession();
+    const e = document.getElementById('socialErr'); if (e) e.textContent = t('auth.err.blocked');
+    return;
+  }
+  auditLog('login', data.user.email);
+  const m = data.user.user_metadata || {};
+  completeAuth(String(m.name || m.full_name || data.user.email).split(' ')[0], !!_authCache.admin);
+}
+window.addEventListener('message', (ev) => {
+  if (ev.origin !== window.location.origin || !ev.data) return;
+  if (ev.data.type === 'bk-oauth-session') bkApplySocialSession(ev.data);
+  if (ev.data.type === 'bk-oauth-error') { const e = document.getElementById('socialErr'); if (e) e.textContent = ev.data.message || 'Erro'; }
+});
+supabaseClient.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
+});
+if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
 refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); });
 </script>
 <script>

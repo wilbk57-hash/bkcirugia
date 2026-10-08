@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { registerAppServiceWorker } from "@/lib/register-sw";
+import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/app")({
   head: () => ({
@@ -115,6 +117,45 @@ function AppShell() {
       window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
       window.removeEventListener("appinstalled", handleInstalled);
       standaloneQuery.removeEventListener("change", updateInstalledState);
+    };
+  }, []);
+
+  // Login social: o iframe pede, esta página corre o OAuth e devolve a sessão.
+  useEffect(() => {
+    const post = (msg: Record<string, unknown>) => {
+      const frame = document.querySelector("iframe");
+      frame?.contentWindow?.postMessage(msg, window.location.origin);
+    };
+    const sendSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const s = data.session;
+      if (s) post({ type: "bk-oauth-session", access_token: s.access_token, refresh_token: s.refresh_token, user_id: s.user.id });
+    };
+    const onMessage = async (ev: MessageEvent) => {
+      if (ev.origin !== window.location.origin || !ev.data) return;
+      if (ev.data.type === "bk-frame-ready") void sendSession();
+      if (ev.data.type === "bk-signout") void supabase.auth.signOut();
+      if (ev.data.type === "bk-oauth-start") {
+        const provider = ev.data.provider as "google" | "apple" | "microsoft";
+        if (!["google", "apple", "microsoft"].includes(provider)) return;
+        const result = await lovable.auth.signInWithOAuth(provider, {
+          redirect_uri: `${window.location.origin}/app`,
+        });
+        if (result.error) {
+          post({ type: "bk-oauth-error", message: "Não foi possível entrar. Tente novamente." });
+          return;
+        }
+        if (result.redirected) return;
+        void sendSession();
+      }
+    };
+    window.addEventListener("message", onMessage);
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") void sendSession();
+    });
+    return () => {
+      window.removeEventListener("message", onMessage);
+      sub.subscription.unsubscribe();
     };
   }, []);
 
