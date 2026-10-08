@@ -168,6 +168,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_lang: string | null
           country: string | null
           course: string | null
           created_at: string
@@ -182,6 +183,7 @@ export type Database = {
           year: string | null
         }
         Insert: {
+          admin_lang?: string | null
           country?: string | null
           course?: string | null
           created_at?: string
@@ -196,6 +198,7 @@ export type Database = {
           year?: string | null
         }
         Update: {
+          admin_lang?: string | null
           country?: string | null
           course?: string | null
           created_at?: string
@@ -422,6 +425,7 @@ export type Database = {
           ocr_pages_done: number
           ocr_total_pages: number | null
           page_count: number | null
+          published: boolean
           size_bytes: number | null
           status: string
           title: string
@@ -446,6 +450,7 @@ export type Database = {
           ocr_pages_done?: number
           ocr_total_pages?: number | null
           page_count?: number | null
+          published?: boolean
           size_bytes?: number | null
           status?: string
           title: string
@@ -470,6 +475,7 @@ export type Database = {
           ocr_pages_done?: number
           ocr_total_pages?: number | null
           page_count?: number | null
+          published?: boolean
           size_bytes?: number | null
           status?: string
           title?: string
