@@ -1,7 +1,6 @@
-const CACHE_NAME = 'bk-cirurgia-v5';
-// Assets estáticos versionados: nunca mudam sem trocar o nome do arquivo,
-// então podem ser cache-first com segurança.
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'bk-cirurgia-v6';
+// Recursos estáveis (nome do ficheiro não muda) — seguros para pré-cache.
+const PRECACHE = [
   './app.html',
   './manifest.json',
   './icons/icon-192.png',
@@ -11,7 +10,7 @@ const ASSETS_TO_CACHE = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE).catch(() => {}))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE).catch(() => {}))
   );
   self.skipWaiting();
 });
@@ -19,9 +18,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
@@ -34,34 +31,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Nunca cachear chamadas de API — dados têm que ser sempre ao vivo.
+  // Nunca cachear API — Tutor, pesquisa, OCR, sync e lembretes têm de ser
+  // sempre pedidos ao vivo, mesmo com o resto do app offline.
   if (url.pathname.startsWith('/api/')) return;
 
-  const isStatic =
-    url.pathname.endsWith('/manifest.json') || url.pathname.includes('/icons/');
-
-  if (isStatic) {
-    // Ícones e manifest: cache-first (só mudam quando trocamos o nome do arquivo).
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        });
-      })
-    );
-    return;
-  }
-
-  // App shell (app.html), a rota /app e qualquer HTML/JS/CSS do mesmo site:
-  // network-first (pega sempre a versão mais nova quando há internet), mas
-  // se a rede falhar (offline), cai para a última cópia guardada em vez de
-  // mostrar uma tela quebrada. É isto que faz o app instalado funcionar
-  // sem internet.
+  // Network-first com fallback para cache em tudo o resto (documento /app,
+  // app.html, manifest, ícones, JS/CSS). Isto é o que faz o app aberto
+  // antes continuar a abrir sem internet, sem nunca servir uma versão
+  // desatualizada enquanto há rede.
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -77,7 +54,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// ── Web Push: lembretes de eventos de estudo ──
+// ── Web Push: lembretes de eventos de estudo (mantém-se igual ao que já existia) ──
 self.addEventListener('push', (event) => {
   let payload = {};
   try {
@@ -85,7 +62,6 @@ self.addEventListener('push', (event) => {
   } catch (_) {
     payload = { body: event.data ? event.data.text() : '' };
   }
-
   const title = payload.title || 'BK-CIRURGIA';
   const options = {
     body: payload.body || '',
@@ -96,7 +72,6 @@ self.addEventListener('push', (event) => {
     requireInteraction: false,
     data: { url: payload.url || './app.html' }
   };
-
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
@@ -106,7 +81,6 @@ self.addEventListener('notificationclick', (event) => {
     (event.notification.data && event.notification.data.url) || './app.html',
     self.location.origin
   ).href;
-
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
