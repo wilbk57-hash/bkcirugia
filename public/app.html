@@ -5296,7 +5296,9 @@ const STR_TABLE = [
  ['item.suggestion.label','Enviar sugestão','Send feedback','Enviar sugerencia'],
  ['item.rate.label','Avaliar aplicativo','Rate the app','Calificar la app'],
  ['sec.about','Sobre o aplicativo','About the app','Acerca de la app'],
- ['item.version.label','Versão atual','Current version','Versión actual'],
+['item.version.label','Versão atual','Current version','Versión actual'],
+['item.installapp.label','Instalar aplicação','Install app','Instalar aplicación'],
+['item.installapp.installed','Aplicação instalada','App installed','Aplicación instalada'],
  ['item.checkupdates.label','Verificar atualizações','Check for updates','Buscar actualizaciones'],
  ['footer.text','BK-CIRURGIA · módulo piloto: Pré-operatório · demais temas em construção','BK-CIRURGIA · pilot module: Pre-operative · other topics in progress','BK-CIRURGIA · módulo piloto: Preoperatorio · demás temas en construcción'],
  ['toast.saved','Preferência salva','Preference saved','Preferencia guardada'],
@@ -6299,6 +6301,11 @@ async function bkPermissions() {
   if (b) b.addEventListener('click', async () => { await Notification.requestPermission(); bkPermissions(); });
 }
 
+window._bkInstalled = false;
+function bkRequestInstall() {
+  if (window._bkInstalled) return;
+  if (window.parent !== window) window.parent.postMessage({ type: 'bk-install-request' }, window.location.origin);
+}
 async function bkExportData() {
   const u = await seAwaitUser();
   if (!u) { showToast(bkL('Entre na sua conta primeiro.','Sign in first.','Inicia sesión primero.')); return; }
@@ -6441,6 +6448,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'nav', label: 'item.chatadmin.label', action: 'bkChatAdmin()' },
   ]},
   { sec: 'sec.about', items: [
+      { type: 'nav', label: 'item.installapp.label', value: window._bkInstalled ? t('item.installapp.installed') : '', action: 'bkRequestInstall()' },
       { type: 'value', label: 'item.version.label', value: '1.0.0 · pré-lançamento' },
       { type: 'nav', label: 'item.checkupdates.label', action: 'checkUpdates()' },
   ]},
@@ -10626,6 +10634,7 @@ window.addEventListener('message', (ev) => {
   if (ev.origin !== window.location.origin || !ev.data) return;
   if (ev.data.type === 'bk-oauth-session') bkApplySocialSession(ev.data);
   if (ev.data.type === 'bk-oauth-error') { const e = document.getElementById('socialErr'); if (e) e.textContent = ev.data.message || 'Erro'; }
+  if (ev.data.type === 'bk-pwa-installed') { window._bkInstalled = true; if (typeof renderSettings === 'function' && document.getElementById('settingsView')?.classList.contains('show')) renderSettings(); }
 });
 supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
