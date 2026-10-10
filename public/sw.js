@@ -2,7 +2,7 @@ const CACHE_NAME = 'bk-cirurgia-v6';
 // Recursos estáveis (nome do ficheiro não muda) — seguros para pré-cache.
 const PRECACHE = [
   './app.html',
-  './manifest.json',
+  './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png'
