@@ -110,7 +110,7 @@ export const Route = createFileRoute("/resumos/cirurgia-geral")({
               "@type": "ListItem",
               position: 1,
               name: "Início",
-              item: "https://trypixelperfect.app/",
+              item: "https://bkcirugia.lovable.app/",
             },
             { "@type": "ListItem", position: 2, name: "Resumo de cirurgia geral", item: URL },
           ],
