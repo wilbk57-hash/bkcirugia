@@ -42,7 +42,7 @@ export const Route = createFileRoute("/app")({
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
     ],
     links: [
-      { rel: "manifest", href: "/manifest.json" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/icons/icon-192.png", sizes: "192x192" },
       { rel: "icon", href: "/icons/icon-512.png", type: "image/png", sizes: "512x512" },
     ],
