@@ -580,6 +580,76 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_messages: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string
+          id: string
+          message: Json
+          role: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string
+          id?: string
+          message?: Json
+          role: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          message?: Json
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_state: {
+        Row: {
+          cleared_at: string | null
+          preferred_name: string
+          profile: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cleared_at?: string | null
+          preferred_name?: string
+          profile?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cleared_at?: string | null
+          preferred_name?: string
+          profile?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_books: {
         Row: {
           author: string | null
