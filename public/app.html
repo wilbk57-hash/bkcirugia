@@ -5339,6 +5339,7 @@ const STR_TABLE = [
  ['admin.mgmt.chat','Conversas','Chats','Conversaciones'],
  ['item.chatadmin.label','Falar com o admin','Chat with admin','Hablar con el admin'],
  ['admin.mgmt.payments','Pagamentos','Payments','Pagos'],
+ ['admin.mgmt.access','Acesso dos alunos','Student access','Acceso de alumnos'],
  ['item.payments.label','Plano Premium','Premium plan','Plan Premium'],
  ['item.payments.desc','Pagar por Orange Money','Pay via Orange Money','Pagar por Orange Money'],
  ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
@@ -9402,6 +9403,7 @@ const ADMIN_MGMT_ITEMS = [
   { ic: '💬', key: 'admin.mgmt.feedback', action: "admPanel('feedback')" },
   { ic: '✉️', key: 'admin.mgmt.chat', action: "admPanel('chat')" },
   { ic: '💳', key: 'admin.mgmt.payments', action: "admPanel('payments')" },
+  { ic: '👥', key: 'admin.mgmt.access', action: "admPanel('access')" },
   { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
   { ic: '🏛', key: 'admin.mgmt.library', action: 'openMyLibrary()' },
 ];
@@ -9429,6 +9431,7 @@ function admPanel(kind) {
     chat: '✉️ ' + T('Conversas com alunos','Student chats','Conversaciones'),
     feedback: '💬 ' + T('Mensagens dos alunos','Student messages','Mensajes de alumnos'),
     payments: '💳 ' + T('Pagamentos','Payments','Pagos'),
+    access: '👥 ' + T('Acesso dos alunos','Student access','Acceso de alumnos'),
   };
   const el = document.createElement('div');
   el.id = 'admPanelOverlay';
@@ -9441,7 +9444,7 @@ function admPanel(kind) {
     <div id="admPanelBody" style="color:var(--text2);font-size:13px;"></div></div>`;
   document.body.appendChild(el);
   const body = el.querySelector('#admPanelBody');
-  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback, chat: admRenderChat, payments: admRenderPayments }[kind];
+  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback, chat: admRenderChat, payments: admRenderPayments, access: admRenderStudentAccess }[kind];
   if (fn) fn(body);
   auditLog('admin_open_panel', { kind });
 }
@@ -9824,6 +9827,120 @@ async function admRenderChat(body) {
 }
 
 function admCard(inner) { return `<div class="stat-table-card" style="margin-bottom:12px;padding:14px;">${inner}</div>`; }
+
+async function admRenderStudentAccess(body) {
+  const T = adminT3;
+  body.textContent = T('A carregar…','Loading…','Cargando…');
+  try {
+    const loadAll = async (table, columns, order) => {
+      const all = [];
+      for (let start = 0; ; start += 500) {
+        const { data, error } = await supabaseClient.from(table).select(columns).order(order).order('id').range(start, start + 499);
+        if (error) throw error;
+        all.push(...(data || []));
+        if (!data || data.length < 500) return all;
+      }
+    };
+    const [profiles, subscriptions, payments, admins] = await Promise.all([
+      loadAll('profiles', 'id,name,email,status', 'name'),
+      loadAll('subscriptions', 'id,user_id,plan,paid_until', 'user_id'),
+      loadAll('payment_submissions', '*', 'created_at'),
+      loadAll('admin_roles', 'id,user_id', 'user_id'),
+    ]);
+    if (!body.isConnected) return;
+    const adminIds = new Set(admins.map(a => a.user_id));
+    const students = profiles.filter(p => !adminIds.has(p.id));
+    const subs = new Map(subscriptions.map(s => [s.user_id, s]));
+    const history = new Map();
+    payments.reverse().forEach(p => {
+      if (!history.has(p.user_id)) history.set(p.user_id, []);
+      history.get(p.user_id).push(p);
+    });
+    const plans = { ...PAY_PLAN_LABEL(T), trial: T('Experiência grátis','Free trial','Prueba gratis') };
+    const date = value => value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString() : '—';
+    const state = p => {
+      if (p.status === 'suspended') return 'suspended';
+      const sub = subs.get(p.id);
+      if (!sub || !(Date.parse(sub.paid_until) > Date.now())) return 'expired';
+      return sub.plan === 'trial' ? 'trial' : 'active';
+    };
+    const labels = {
+      suspended: T('Bloqueado — conta suspensa','Blocked — suspended account','Bloqueado — cuenta suspendida'),
+      expired: T('Bloqueado — sem acesso válido','Blocked — no valid access','Bloqueado — sin acceso válido'),
+      trial: T('Experiência ativa','Active trial','Prueba activa'),
+      active: T('Acesso ativo','Active access','Acceso activo'),
+    };
+    body.innerHTML = `<style>
+      #admPanelBody .access-tools{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+      #admPanelBody .access-tools .sb-input{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:6px;padding:10px;font:inherit;max-width:100%;box-sizing:border-box}
+      #admPanelBody .access-tools input{flex:1;min-width:180px}
+      #admPanelBody .access-list{border-top:1px solid var(--border)}
+      #admPanelBody .access-student{padding:16px 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+      #admPanelBody .access-meta{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0;color:var(--text2)}
+      #admPanelBody .access-status{color:var(--text);font-weight:700}
+      #admPanelBody .access-student summary{cursor:pointer;color:var(--text);padding:8px 0}
+      #admPanelBody .access-history{padding:10px 0;border-top:1px solid var(--border)}
+    </style>
+    <div data-access-count aria-live="polite"></div>
+    <div class="access-tools">
+      <input class="sb-input" data-access-search type="search" aria-label="${T('Pesquisar aluno','Search student','Buscar alumno')}" placeholder="${T('Pesquisar nome ou e-mail','Search name or email','Buscar nombre o correo')}">
+      <select class="sb-input" data-access-filter aria-label="${T('Estado de acesso','Access status','Estado de acceso')}">
+        <option value="all">${T('Todos os alunos','All students','Todos los alumnos')}</option>
+        <option value="blocked">${T('Bloqueados','Blocked','Bloqueados')}</option>
+        <option value="trial">${labels.trial}</option><option value="active">${labels.active}</option>
+      </select>
+      <button class="icon-btn" data-access-refresh aria-label="${T('Atualizar lista','Refresh list','Actualizar lista')}" title="${T('Atualizar lista','Refresh list','Actualizar lista')}">↻</button>
+    </div><div class="access-list" data-access-list></div>`;
+    const draw = () => {
+      const query = body.querySelector('[data-access-search]').value.trim().toLocaleLowerCase();
+      const filter = body.querySelector('[data-access-filter]').value;
+      const blocked = students.filter(p => ['expired','suspended'].includes(state(p))).length;
+      const visible = students.filter(p => {
+        const status = state(p);
+        return `${p.name} ${p.email}`.toLocaleLowerCase().includes(query) &&
+          (filter === 'all' || (filter === 'blocked' ? ['expired','suspended'].includes(status) : status === filter));
+      });
+      body.querySelector('[data-access-count]').textContent = `${students.length} ${T('alunos','students','alumnos')} · ${blocked} ${T('bloqueados','blocked','bloqueados')} · ${visible.length} ${T('na lista','shown','en la lista')}`;
+      body.querySelector('[data-access-list]').innerHTML = visible.map(p => {
+        const sub = subs.get(p.id), records = history.get(p.id) || [], status = state(p);
+        return `<section class="access-student">
+          <b style="color:var(--text)">${escapeHtml(p.name || T('Sem nome','Unnamed','Sin nombre'))}</b>
+          <div>${escapeHtml(p.email || '')}</div>
+          <div class="access-meta"><span>${T('Plano','Plan','Plan')}: <b>${escapeHtml(sub ? plans[sub.plan] || sub.plan : T('Sem plano','No plan','Sin plan'))}</b></span>
+          <span>${T('Expiração','Expiry','Vencimiento')}: ${escapeHtml(date(sub?.paid_until))}</span></div>
+          <div class="access-status">${['expired','suspended'].includes(status) ? '🔒' : '✓'} ${labels[status]}</div>
+          <details><summary>${T('Histórico de pagamentos','Payment history','Historial de pagos')} (${records.length})</summary>
+          ${records.length ? records.map(r => `<div class="access-history">
+            <b>${escapeHtml(plans[r.plan] || r.plan)} · ${Number(r.amount).toLocaleString()} CFA</b> · ${bkPayStatus(r.status, T)}
+            <div>${T('Enviado','Submitted','Enviado')}: ${escapeHtml(date(r.created_at))}</div>
+            ${r.decided_at ? `<div>${T('Decisão','Decision','Decisión')}: ${escapeHtml(date(r.decided_at))}</div>` : ''}
+            ${r.sender_phone ? `<div>${escapeHtml(r.sender_phone)}</div>` : ''}
+            ${r.admin_note ? `<div>${escapeHtml(r.admin_note)}</div>` : ''}
+            <button class="btn" data-access-receipt="${escapeHtml(r.id)}">${T('Ver comprovativo','View receipt','Ver comprobante')}</button>
+          </div>`).join('') : `<p>${T('Nenhum pagamento enviado.','No payments submitted.','Ningún pago enviado.')}</p>`}</details>
+        </section>`;
+      }).join('') || `<p>${T('Nenhum aluno encontrado.','No students found.','Ningún alumno encontrado.')}</p>`;
+    };
+    body.querySelector('[data-access-search]').oninput = draw;
+    body.querySelector('[data-access-filter]').onchange = draw;
+    body.querySelector('[data-access-refresh]').onclick = () => admPanel('access');
+    body.querySelector('[data-access-list]').onclick = async ev => {
+      const button = ev.target.closest('[data-access-receipt]');
+      if (!button) return;
+      const payment = payments.find(p => p.id === button.dataset.accessReceipt);
+      if (!payment) return;
+      button.disabled = true;
+      const { data, error } = await supabaseClient.storage.from('payment-receipts').createSignedUrl(payment.receipt_path, 600);
+      button.disabled = false;
+      if (error || !data?.signedUrl) { showToast(T('Não foi possível abrir o comprovativo','Could not open receipt','No se pudo abrir el comprobante')); return; }
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    };
+    draw();
+  } catch (error) {
+    body.textContent = T('Não foi possível carregar os alunos.','Could not load students.','No se pudieron cargar los alumnos.');
+    showToast(error.message || String(error));
+  }
+}
 
 async function admRenderPayments(body) {
   const T = adminT3;
