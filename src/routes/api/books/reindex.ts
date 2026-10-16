@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { callerIsAdmin, clientForRequest } from '@/lib/rag-auth.server'
 import { MAX_PAGES, chunkPages, detectContents, embedTexts, extractEpubPages, extractPdfPages } from '@/lib/rag.server'
-import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 const BUCKET = 'user-books'
 const BATCH_SIZE = 24
@@ -27,8 +26,6 @@ export const Route = createFileRoute('/api/books/reindex')({
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
         const { supabase, userId } = caller
-
-        if (!(await consumeAiQuota(supabase, 'reindex'))) return rateLimitResponse('reindex')
 
         let parsed
         try {
