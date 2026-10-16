@@ -1,7 +1,8 @@
 import { extractText, getDocumentProxy } from 'unpdf'
 import { unzipSync, strFromU8 } from 'fflate'
 
-export const MAX_PAGES = 400
+// No silent truncation: every page/spine entry belongs to the index.
+export const MAX_PAGES = Number.MAX_SAFE_INTEGER
 export const EMBED_MODEL = 'openai/text-embedding-3-small'
 export const EMBED_DIMS = 1536
 const CHUNK_CHARS = 1200
@@ -20,6 +21,7 @@ export async function extractPdfPages(buffer: ArrayBuffer): Promise<string[]> {
   const total = Math.min(pdf.numPages, MAX_PAGES)
   const { text } = await extractText(pdf, { mergePages: false })
   const pages = Array.isArray(text) ? text : [String(text)]
+  await pdf.destroy()
   return pages.slice(0, total).map((p) => clean(String(p ?? '')))
 }
 
@@ -41,7 +43,7 @@ function stripHtml(html: string) {
 
 function resolvePath(base: string, href: string) {
   const parts = base.split('/').slice(0, -1)
-  for (const seg of decodeURIComponent(href.split('#')[0]!).split('/')) {
+  for (const seg of decodeURIComponent(href.split('#')[0] ?? '').split('/')) {
     if (seg === '.' || seg === '') continue
     if (seg === '..') parts.pop()
     else parts.push(seg)
@@ -55,7 +57,7 @@ function resolvePath(base: string, href: string) {
  */
 export async function extractEpubPages(buffer: ArrayBuffer): Promise<string[]> {
   const files = unzipSync(new Uint8Array(buffer))
-  const read = (p: string) => (files[p] ? strFromU8(files[p]!) : '')
+  const read = (p: string) => { const file = files[p]; return file ? strFromU8(file) : '' }
 
   const container = read('META-INF/container.xml')
   const opfPath =
@@ -85,7 +87,7 @@ export async function extractEpubPages(buffer: ArrayBuffer): Promise<string[]> {
 
   return paths
     .slice(0, MAX_PAGES)
-    .map((p) => (files[p] ? stripHtml(strFromU8(files[p]!)) : ''))
+    .map((p) => stripHtml(read(p)))
 }
 
 /** Splits page text into overlapping chunks, keeping the source page number. */
@@ -136,6 +138,9 @@ async function embedBatch(inputs: string[], apiKey: string): Promise<number[][]>
   data.data.forEach((d) => {
     out[d.index] = d.embedding
   })
+  for (let i = 0; i < inputs.length; i++) {
+    if (!out[i] || out[i]?.length !== EMBED_DIMS) throw new Error('Invalid embedding response')
+  }
   return out
 }
 
@@ -151,5 +156,18 @@ export async function embedTexts(texts: string[], apiKey: string): Promise<numbe
 
 export async function embedQuery(text: string, apiKey: string): Promise<number[]> {
   const [vector] = await embedTexts([text.slice(0, 4000)], apiKey)
-  return vector!
+  if (!vector) throw new Error('Missing query embedding')
+  return vector
+}
+
+/** Conservative chapter detection when the file contains no embedded bookmarks. */
+export function detectContents(pages: string[]) {
+  const entries: Array<{ title: string; page: number; level: number }> = []
+  pages.forEach((text, index) => {
+    const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
+    const heading = lines.slice(0, 12).find(line =>
+      line.length < 160 && /^(cap[ií]tulo|chapter|parte|part|se[cç][aã]o|section|unidad|unidade)\s+[\dIVXLCDM]+\b/i.test(line))
+    if (heading && !entries.some(entry => entry.title === heading)) entries.push({ title: heading, page: index + 1, level: 0 })
+  })
+  return entries
 }
