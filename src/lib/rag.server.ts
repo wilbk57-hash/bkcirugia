@@ -21,7 +21,6 @@ export async function extractPdfPages(buffer: ArrayBuffer): Promise<string[]> {
   const total = Math.min(pdf.numPages, MAX_PAGES)
   const { text } = await extractText(pdf, { mergePages: false })
   const pages = Array.isArray(text) ? text : [String(text)]
-  await pdf.destroy()
   return pages.slice(0, total).map((p) => clean(String(p ?? '')))
 }
 
