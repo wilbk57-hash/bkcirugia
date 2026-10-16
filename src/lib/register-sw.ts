@@ -20,7 +20,8 @@ async function unregisterExisting() {
     const regs = await navigator.serviceWorker.getRegistrations();
     await Promise.allSettled(
       regs
-        .filter((r) => (r.active?.scriptURL ?? r.installing?.scriptURL ?? "").endsWith(SW_URL))
+        .filter((r) => [r.active, r.installing, r.waiting].some((worker) =>
+          worker && new URL(worker.scriptURL).pathname === SW_URL))
         .map((r) => r.unregister()),
     );
   } catch {

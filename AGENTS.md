@@ -8,6 +8,8 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Generate the app-shell /sw.js with vite-plugin-pwa into dist/client, with NetworkFirst documents, API/OAuth exclusions and only the guarded register-sw wrapper registering it; this prevents stale preview caches while retaining offline support.
+- Keep messaging handlers in public/push-events.js imported by the generated worker at the same /sw.js scope; this preserves existing push subscriptions when updating offline caching.
  
 - The admin student-access overview reads paginated profiles, subscriptions and payment submissions through the existing authenticated client and RLS; use subscription expiry plus account suspension for status, so students without payments remain visible and no separate access state drifts out of sync.
 - The standalone Tutor uses public/tutor-memory.js with account-owned RLS history and profile records; clearing chat advances a visibility cursor instead of deleting messages, and model context retrieves recent and relevant saved messages without unbounded prompts.
