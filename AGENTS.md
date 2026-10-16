@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
  
 - The admin student-access overview reads paginated profiles, subscriptions and payment submissions through the existing authenticated client and RLS; use subscription expiry plus account suspension for status, so students without payments remain visible and no separate access state drifts out of sync.
+- The standalone Tutor uses public/tutor-memory.js with account-owned RLS history and profile records; clearing chat advances a visibility cursor instead of deleting messages, and model context retrieves recent and relevant saved messages without unbounded prompts.

@@ -1994,6 +1994,7 @@
 <!-- Botão flutuante que aparece ao selecionar um trecho do texto durante a leitura -->
 <button class="explain-select-btn" id="explainSelectBtn" onmousedown="event.preventDefault()" onclick="explainSelection()">✨ <span id="explainSelectLabel">Explicar</span></button>
 
+<script src="/tutor-memory.js"></script>
 <script>
 /* ============================================================
    ÍNDICE DE TEMAS
@@ -4303,26 +4304,19 @@ function loadIaChat() {
   } catch (e) {}
   return [];
 }
-let IA_MESSAGES = loadIaChat();
+let IA_MESSAGES = [];
 function saveIaChat() {
-  try { localStorage.setItem(IA_CHAT_STORAGE, JSON.stringify(IA_MESSAGES)); } catch (e) {}
+  return tutorMemorySave();
 }
 let iaSending = false;
 
 /* ---- Memória do aluno entre sessões (localStorage, chave própria) ---- */
 const TUTOR_PROFILE_STORAGE = 'bkcirurgia_tutor_perfil_v1';
 function getTutorProfile() {
-  try {
-    const raw = localStorage.getItem(TUTOR_PROFILE_STORAGE);
-    if (raw) {
-      const p = JSON.parse(raw);
-      if (p && typeof p === 'object') return p;
-    }
-  } catch (e) {}
-  return { nivel: 'auto', ultimaSessao: null, dificuldades: {} };
+  return { nivel: 'auto', ultimaSessao: null, dificuldades: {}, ...tutorMemoryState.profile };
 }
 function saveTutorProfile(p) {
-  try { localStorage.setItem(TUTOR_PROFILE_STORAGE, JSON.stringify(p)); } catch (e) {}
+  tutorMemorySaveProfile(p).catch(() => {});
 }
 function setNivelAluno(value) {
   const p = getTutorProfile();
@@ -4755,11 +4749,7 @@ function useIaSuggestion(text) {
   sendIaMessage();
 }
 function clearIaChat() {
-  if (!confirm(t('ia.clear.confirm'))) return;
-  stopSpeaking();
-  IA_MESSAGES = [];
-  saveIaChat();
-  renderIaMessages();
+  return tutorMemoryClear();
 }
 
 /* ============================================================
@@ -4974,6 +4964,7 @@ async function fetchMyBooksContext(question) {
 
 async function sendIaMessage() {
   if (iaSending) return;
+  await tutorMemoryInit();
   const input = document.getElementById('iaInput');
   const text = (input.value || '').trim();
   if (!text) return;
@@ -4991,16 +4982,20 @@ async function sendIaMessage() {
   IA_MESSAGES.push({ role: 'user', content: text });
   input.value = '';
   autoGrowIa(input);
-  saveIaChat();
   iaSending = true;
   renderIaMessages();
 
   let newAssistantIdx = null;
   try {
+    await saveIaChat();
+    const memoryContext = await tutorMemoryContext(text);
+    const profile = getTutorProfile();
+    profile.atividadesRecentes = buildStudentFootprint();
+    await tutorMemorySaveProfile(profile);
     const booksContext = await fetchMyBooksContext(text);
     const out = await runTutorRequest({
-      system: buildIaSystemPrompt() + (booksContext || ''),
-      messages: IA_MESSAGES.filter(m => !m.limitNotice).map(m => ({ role: m.role, content: m.content })),
+      system: buildIaSystemPrompt() + memoryContext + (booksContext || ''),
+      messages: IA_MESSAGES.filter(m => !m.limitNotice && !m.error).slice(-40).map(m => ({ role: m.role, content: m.content.slice(0, 20000) })),
       maxTokens: 1500,
       webSearch: !!SETTINGS_STATE.webSearchEnabled,
     });
@@ -5032,7 +5027,7 @@ async function sendIaMessage() {
     }
   } finally {
     iaSending = false;
-    saveIaChat();
+    await saveIaChat().catch(() => {});
     renderIaMessages();
     if (newAssistantIdx !== null && SETTINGS_STATE.autoSpeakTutor) speakIaMessage(newAssistantIdx);
   }
@@ -5552,7 +5547,7 @@ const STR_TABLE = [
  ['ia.intro.title','Tutor de IA','AI Tutor','Tutor de IA'],
  ['ia.intro.sub','Tire dúvidas de Cirurgia, peça para gerar um caso extra ou simular uma pergunta de prova prática. Respostas em português, com base no seu material de estudo.','Ask surgery questions, request an extra case, or simulate a practical exam question. Answers in Portuguese, grounded in your study material.','Resuelve dudas de Cirugía, pide un caso extra o simula una pregunta de examen práctico. Respuestas en portugués, basadas en tu material de estudio.'],
  ['ia.clear','Limpar conversa','Clear conversation','Borrar conversación'],
- ['ia.clear.confirm','Isso vai apagar toda a conversa com o tutor. Deseja continuar?','This will erase your whole conversation with the tutor. Continue?','Esto borrará toda la conversación con el tutor. ¿Continuar?'],
+ ['ia.clear.confirm','Limpar a conversa do ecrã? O Tutor continuará a lembrar-se do teu nome e dos teus estudos.','Clear the conversation from the screen? The Tutor will still remember your name and studies.','¿Limpiar la conversación de la pantalla? El Tutor seguirá recordando tu nombre y tus estudios.'],
  ['ia.error.prefix','Não consegui responder agora.','I could not respond right now.','No pude responder ahora.'],
  ['ia.empty.response','(resposta vazia)','(empty response)','(respuesta vacía)'],
  ['ia.error.limit.title','Limite de uso atingido','Usage limit reached','Límite de uso alcanzado'],
@@ -8235,6 +8230,7 @@ function onAuthGranted(isAdmin) {
   resetAuthForms();
   dmFabStart();
   bkAccessCheck();
+  void tutorMemoryInit();
 }
 
 /* ---------- Experiência grátis (1 dia) + bloqueio sem pagamento ---------- */
@@ -9208,6 +9204,8 @@ function showLoginMethodInfo() {
 }
 
 async function doLogout() {
+  await tutorMemoryQueue.catch(() => {});
+  tutorMemoryReset();
   document.getElementById('bkPayGate')?.remove(); document.getElementById('bkPayBar')?.remove(); document.getElementById('bkPayPill')?.remove();
   await supabaseClient.auth.signOut();
   clearSession();
@@ -9224,6 +9222,8 @@ async function doLogout() {
   document.getElementById('bottomNav').classList.remove('hide');
 }
 async function logoutAllDevices() {
+  await tutorMemoryQueue.catch(() => {});
+  tutorMemoryReset();
   /* Invalida também as sessões noutros dispositivos (Supabase revoga
      os refresh tokens ativos desta conta). */
   await supabaseClient.auth.signOut({ scope: 'global' });
@@ -11004,7 +11004,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
 });
 if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
-refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); });
+refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); void tutorMemoryInit(); });
 </script>
 <script>
 // ── Web Push: lembretes de eventos de estudo ──

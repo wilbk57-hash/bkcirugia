@@ -6,7 +6,6 @@ import {
   createLovableResponsesProvider,
 } from '@/lib/ai-gateway.server'
 import { clientForRequest } from '@/lib/rag-auth.server'
-import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 const BodySchema = z.object({
   provider: z.enum(['gemini', 'openai']),
@@ -41,9 +40,6 @@ export const Route = createFileRoute('/api/tutor')({
       POST: async ({ request }) => {
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
-
-        // Limite por aluno e por hora — evita custos de IA descontrolados.
-        if (!(await consumeAiQuota(caller.supabase, 'tutor'))) return rateLimitResponse('tutor')
 
         let parsed
         try {
