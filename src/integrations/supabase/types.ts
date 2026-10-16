@@ -674,6 +674,13 @@ export type Database = {
         Args: { _kind: string; _limit: number }
         Returns: boolean
       }
+      get_payment_info: {
+        Args: never
+        Returns: {
+          key: string
+          value: string
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       log_event: {
