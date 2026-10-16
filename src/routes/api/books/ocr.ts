@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { callerIsAdmin, clientForRequest } from '@/lib/rag-auth.server'
 import { chunkPages, embedTexts } from '@/lib/rag.server'
-import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 export const OCR_MAX_PAGES = 1000
 const OCR_MODEL = 'google/gemini-3.1-flash-lite'
@@ -75,8 +74,6 @@ export const Route = createFileRoute('/api/books/ocr')({
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
         const { supabase, userId } = caller
-
-        if (!(await consumeAiQuota(supabase, 'ocr'))) return rateLimitResponse('ocr')
 
         let parsed
         try {

@@ -3,3 +3,9 @@
 - [x] Guardar memória e conversas por aluno; limpar apenas a conversa visível.
 - [x] Perguntar e guardar o nome preferido ao iniciar o app.
 - [x] Verificar conversa, limpeza e recuperação após recarregar.
+
+# Biblioteca e Tutor
+- [x] Preparar automaticamente livros e mostrar progresso e erros.
+- [x] Pesquisar toda a biblioteca nas perguntas do Tutor com fontes e explicações estruturadas.
+- [x] Acrescentar índice interativo e ampliação no leitor.
+- [x] Verificar preparação, resposta com fontes e navegação/ampliação.

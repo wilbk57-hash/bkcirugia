@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { clientForRequest } from '@/lib/rag-auth.server'
 import { embedQuery } from '@/lib/rag.server'
-import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 const BodySchema = z.object({
   query: z.string().min(3).max(2000),
@@ -24,8 +23,6 @@ export const Route = createFileRoute('/api/books/search')({
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
 
-        if (!(await consumeAiQuota(caller.supabase, 'search'))) return rateLimitResponse('search')
-
         let parsed
         try {
           parsed = BodySchema.parse(await request.json())
@@ -38,30 +35,31 @@ export const Route = createFileRoute('/api/books/search')({
 
         try {
           const vector = await embedQuery(parsed.query, apiKey)
-          // match_book_chunks is SECURITY INVOKER and filters on auth.uid():
-          // a student can never reach another student's chunks.
-          const { data, error } = await caller.supabase.rpc('match_book_chunks', {
+          // Search the complete shared library, keeping several books represented.
+          const { data, error } = await caller.supabase.rpc('match_library_chunks', {
             query_embedding: JSON.stringify(vector) as unknown as string,
-            match_count: parsed.matchCount ?? 6,
-            ...(parsed.bookId ? { filter_book_id: parsed.bookId } : {}),
+            match_count: parsed.matchCount ?? 12,
           })
           if (error) return json({ error: 'failed', message: error.message }, 502)
 
           const rows = (data ?? []).filter((r) => (r.similarity ?? 0) >= 0.25)
           const bookIds = [...new Set(rows.map((r) => r.book_id))]
           let titles: Record<string, string> = {}
+          let editions: Record<string, string> = {}
           if (bookIds.length) {
             const { data: books } = await caller.supabase
               .from('user_books')
-              .select('id, title')
+              .select('id, title, edition')
               .in('id', bookIds)
             titles = Object.fromEntries((books ?? []).map((b) => [b.id, b.title]))
+            editions = Object.fromEntries((books ?? []).map((b) => [b.id, b.edition ?? '']))
           }
 
           return json({
             chunks: rows.map((r) => ({
               bookId: r.book_id,
               title: titles[r.book_id] ?? '',
+              edition: editions[r.book_id] ?? '',
               page: r.page,
               content: r.content,
               similarity: r.similarity,
@@ -70,6 +68,7 @@ export const Route = createFileRoute('/api/books/search')({
         } catch (err: unknown) {
           const e = err as { status?: number; message?: string }
           if (e?.status === 429) return json({ error: 'limit' }, 429)
+          if (e?.status === 402 || e?.status === 403 || e?.status === 404) return json({ error: 'unavailable', message: e.message || 'Pesquisa indisponível' }, e.status)
           return json({ error: 'failed', message: e?.message || 'search failed' }, 502)
         }
       },

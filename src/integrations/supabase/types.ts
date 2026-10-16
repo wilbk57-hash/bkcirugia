@@ -655,6 +655,7 @@ export type Database = {
           author: string | null
           category: string | null
           chunk_count: number
+          contents: Json
           created_at: string
           edition: string | null
           file_hash: string | null
@@ -673,6 +674,7 @@ export type Database = {
           size_bytes: number | null
           status: string
           title: string
+          total_chunks: number | null
           updated_at: string
           user_id: string
         }
@@ -680,6 +682,7 @@ export type Database = {
           author?: string | null
           category?: string | null
           chunk_count?: number
+          contents?: Json
           created_at?: string
           edition?: string | null
           file_hash?: string | null
@@ -698,6 +701,7 @@ export type Database = {
           size_bytes?: number | null
           status?: string
           title: string
+          total_chunks?: number | null
           updated_at?: string
           user_id: string
         }
@@ -705,6 +709,7 @@ export type Database = {
           author?: string | null
           category?: string | null
           chunk_count?: number
+          contents?: Json
           created_at?: string
           edition?: string | null
           file_hash?: string | null
@@ -723,6 +728,7 @@ export type Database = {
           size_bytes?: number | null
           status?: string
           title?: string
+          total_chunks?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -763,6 +769,16 @@ export type Database = {
           match_count?: number
           query_embedding: string
         }
+        Returns: {
+          book_id: string
+          content: string
+          id: string
+          page: number
+          similarity: number
+        }[]
+      }
+      match_library_chunks: {
+        Args: { match_count?: number; query_embedding: string }
         Returns: {
           book_id: string
           content: string

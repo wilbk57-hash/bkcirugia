@@ -68,10 +68,16 @@ function AppShell() {
   const [isAndroid, setIsAndroid] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isMac, setIsMac] = useState(false);
-  const [dismissed, setDismissed] = useState(() => {
-    const until = Number(localStorage.getItem(DISMISS_KEY) || 0);
-    return Date.now() < until;
-  });
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    try {
+      const until = Number(localStorage.getItem(DISMISS_KEY) || 0);
+      setDismissed(Date.now() < until);
+    } catch {
+      setDismissed(false);
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
