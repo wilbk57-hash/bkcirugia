@@ -5338,6 +5338,9 @@ const STR_TABLE = [
  ['item.mymsgs.label','As minhas mensagens','My messages','Mis mensajes'],
  ['admin.mgmt.chat','Conversas','Chats','Conversaciones'],
  ['item.chatadmin.label','Falar com o admin','Chat with admin','Hablar con el admin'],
+ ['admin.mgmt.payments','Pagamentos','Payments','Pagos'],
+ ['item.payments.label','Plano Premium','Premium plan','Plan Premium'],
+ ['item.payments.desc','Pagar por MTN Mobile Money','Pay via MTN Mobile Money','Pagar por MTN Mobile Money'],
  ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
  ['stub.ia.title','Tutor de IA','AI tutor','Tutor de IA'],
  ['stub.ia.sub','Tire dúvidas, gere resumos e pratique perguntas com o Tutor de IA, que também consulta a Biblioteca Oficial.','Ask questions, generate summaries and practice with the AI Tutor, which also searches the Official Library.','Resuelve dudas, genera resúmenes y practica preguntas con el Tutor de IA, que también consulta la Biblioteca Oficial.'],
@@ -6439,6 +6442,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'nav', label: 'item.deleteaccount.label', action: 'deleteAccount()', danger: true },
   ]},
   { sec: 'sec.support', items: [
+      { type: 'nav', label: 'item.payments.label', desc: 'item.payments.desc', action: 'bkPayments()' },
       { type: 'nav', label: 'item.helpcenter.label', action: "bkInfo('help')" },
       { type: 'nav', label: 'item.faq.label', action: "bkInfo('faq')" },
       { type: 'nav', label: 'item.reportbug.label', action: "bkFeedback('bug')" },
@@ -9341,6 +9345,7 @@ const ADMIN_MGMT_ITEMS = [
   { ic: '🤖', key: 'admin.mgmt.tutor', action: "admPanel('tutor')" },
   { ic: '💬', key: 'admin.mgmt.feedback', action: "admPanel('feedback')" },
   { ic: '✉️', key: 'admin.mgmt.chat', action: "admPanel('chat')" },
+  { ic: '💳', key: 'admin.mgmt.payments', action: "admPanel('payments')" },
   { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
   { ic: '🏛', key: 'admin.mgmt.library', action: 'openMyLibrary()' },
 ];
@@ -9367,6 +9372,7 @@ function admPanel(kind) {
     tutor: '🤖 ' + T('Tutor IA','AI Tutor','Tutor IA'),
     chat: '✉️ ' + T('Conversas com alunos','Student chats','Conversaciones'),
     feedback: '💬 ' + T('Mensagens dos alunos','Student messages','Mensajes de alumnos'),
+    payments: '💳 ' + T('Pagamentos','Payments','Pagos'),
   };
   const el = document.createElement('div');
   el.id = 'admPanelOverlay';
@@ -9379,7 +9385,7 @@ function admPanel(kind) {
     <div id="admPanelBody" style="color:var(--text2);font-size:13px;"></div></div>`;
   document.body.appendChild(el);
   const body = el.querySelector('#admPanelBody');
-  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback, chat: admRenderChat }[kind];
+  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback, chat: admRenderChat, payments: admRenderPayments }[kind];
   if (fn) fn(body);
   auditLog('admin_open_panel', { kind });
 }
