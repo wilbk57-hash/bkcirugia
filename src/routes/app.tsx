@@ -62,7 +62,6 @@ declare global {
 }
 
 function AppShell() {
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -120,12 +119,10 @@ function AppShell() {
     const handleInstallPrompt = (event: Event) => {
       event.preventDefault();
       installPromptRef.current = event as BeforeInstallPromptEvent;
-      setInstallPrompt(event as BeforeInstallPromptEvent);
     };
     const handleInstalled = () => {
       installPromptRef.current = null;
       installedRef.current = true;
-      setInstallPrompt(null);
       setIsInstalled(true);
       setShowInstallHelp(false);
       notifyAppFrame("installed");
@@ -204,7 +201,6 @@ function AppShell() {
       setShowInstallHelp(true);
     } finally {
       installPromptRef.current = null;
-      setInstallPrompt(null);
     }
   };
 

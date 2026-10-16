@@ -1,7 +1,7 @@
-# Tutor
 # Instalação PWA
-- [ ] Configurar cache offline controlada preservando lembretes push.
-- [ ] Verificar manifesto, ícones e instalação Android/Windows e instruções iOS.
+- [x] Configurar cache offline controlada preservando lembretes push.
+- [x] Verificar manifesto, ícones, pedido de instalação e instruções iOS no navegador.
+- [ ] Validar instalação nativa e abertura offline após publicação em dispositivos reais — depende da publicação e de teste num dispositivo.
 
 # Tutor
 - [x] Retirar a quota de utilização do Tutor sem alterar os outros limites ou o acesso pago.
