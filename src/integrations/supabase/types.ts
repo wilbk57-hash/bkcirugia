@@ -226,6 +226,66 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      payment_submissions: {
+        Row: {
+          admin_note: string
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          plan: string
+          receipt_path: string
+          sender_phone: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string
+          amount: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          plan: string
+          receipt_path: string
+          sender_phone?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          plan?: string
+          receipt_path?: string
+          sender_phone?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       peer_messages: {
         Row: {
           body: string
@@ -489,6 +549,33 @@ export type Database = {
           topic_id?: string
           total?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          id: string
+          paid_until: string
+          plan: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          paid_until: string
+          plan?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          paid_until?: string
+          plan?: string
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string
         }
         Relationships: []
