@@ -11,7 +11,7 @@ function tutorMemoryReset() {
 }
 function tutorMemoryError(error) {
   console.error('[tutor-memory]', error?.message || 'save failed');
-  showToast(T('Não foi possível guardar a memória do Tutor. Tenta novamente.', 'Could not save Tutor memory. Please try again.', 'No se pudo guardar la memoria del Tutor. Inténtalo de nuevo.'));
+  showToast(bkL('Não foi possível guardar a memória do Tutor. Tenta novamente.', 'Could not save Tutor memory. Please try again.', 'No se pudo guardar la memoria del Tutor. Inténtalo de nuevo.'));
 }
 function tutorMemoryEnqueue(work) {
   const next = tutorMemoryQueue.catch(() => {}).then(work);
@@ -59,7 +59,7 @@ async function tutorMemoryClear() {
 }
 function tutorAskName() {
   if (!tutorMemoryUser || tutorMemoryState.preferred_name || getCurrentAdmin() || document.getElementById('bkTutorName')) return;
-  bkSheet(T('Tutor de IA', 'AI Tutor', 'Tutor de IA'), `<form id="bkTutorName"><label for="bkTutorNameInput">${T('Olá! Como gostarias que te chamasse?', 'Hello! What would you like me to call you?', '¡Hola! ¿Cómo te gustaría que te llamara?')}</label><input id="bkTutorNameInput" class="auth-input" maxlength="80" required autocomplete="nickname"><button class="auth-btn" type="submit">${T('Guardar', 'Save', 'Guardar')}</button></form>`);
+  bkSheet(bkL('Tutor de IA', 'AI Tutor', 'Tutor de IA'), `<form id="bkTutorName"><label for="bkTutorNameInput">${bkL('Olá! Como gostarias que te chamasse?', 'Hello! What would you like me to call you?', '¡Hola! ¿Cómo te gustaría que te llamara?')}</label><input id="bkTutorNameInput" class="auth-input" maxlength="80" required autocomplete="nickname"><button class="auth-btn" type="submit">${bkL('Guardar', 'Save', 'Guardar')}</button></form>`);
   const form = document.getElementById('bkTutorName');
   form?.addEventListener('submit', async event => {
     event.preventDefault();
@@ -71,7 +71,7 @@ function tutorAskName() {
     try {
       await tutorMemorySaveProfile(tutorMemoryState.profile);
       bkCloseSheet();
-      showToast(T('Combinado, ', 'Of course, ', 'De acuerdo, ') + name + '!');
+      showToast(bkL('Combinado, ', 'Of course, ', 'De acuerdo, ') + name + '!');
     } catch (_) { tutorMemoryState.preferred_name = ''; button.disabled = false; }
   });
   document.getElementById('bkTutorNameInput')?.focus();
