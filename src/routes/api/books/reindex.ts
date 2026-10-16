@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { callerIsAdmin, clientForRequest } from '@/lib/rag-auth.server'
-import { MAX_PAGES, chunkPages, embedTexts, extractEpubPages, extractPdfPages } from '@/lib/rag.server'
+import { MAX_PAGES, chunkPages, detectContents, embedTexts, extractEpubPages, extractPdfPages } from '@/lib/rag.server'
 import { consumeAiQuota, rateLimitResponse } from '@/lib/rate-limit.server'
 
 const BUCKET = 'user-books'
@@ -44,7 +44,7 @@ export const Route = createFileRoute('/api/books/reindex')({
         // Shared official library book.
         const { data: book, error: bookErr } = await supabase
           .from('user_books')
-          .select('id, user_id, file_path, mime_type')
+           .select('id, user_id, file_path, mime_type, contents')
           .eq('id', parsed.bookId)
           .maybeSingle()
         if (bookErr || !book) return json({ error: 'not_found' }, 404)
@@ -85,6 +85,13 @@ export const Route = createFileRoute('/api/books/reindex')({
           const bytes = await file.arrayBuffer()
           const pages = isPdf ? await extractPdfPages(bytes) : await extractEpubPages(bytes)
           const chunks = chunkPages(pages)
+          const contents = detectContents(pages)
+          const { error: metadataError } = await supabase.from('user_books').update({
+            total_chunks: chunks.length,
+            page_count: pages.length,
+            ...(Array.isArray(book.contents) && book.contents.length ? {} : { contents }),
+          }).eq('id', book.id)
+          if (metadataError) return await fail(metadataError.message)
 
           if (!chunks.length) {
             await supabase
@@ -144,7 +151,10 @@ export const Route = createFileRoute('/api/books/reindex')({
         } catch (err: unknown) {
           const e = err as { status?: number; message?: string }
           if (e?.status === 429) return json({ error: 'limit', message: e.message || 'rate limited' }, 429)
-          if (e?.status === 402) return json({ error: 'credits', message: e.message || 'no credits' }, 402)
+          if (e?.status === 402 || e?.status === 403 || e?.status === 404) {
+            await supabase.from('user_books').update({ index_status: 'failed', index_error: e.message || 'AI unavailable' }).eq('id', book.id)
+            return json({ error: 'unavailable', message: e.message || 'AI unavailable' }, e.status)
+          }
           return await fail(e?.message || 'indexing failed')
         }
       },
