@@ -5338,6 +5338,9 @@ const STR_TABLE = [
  ['item.mymsgs.label','As minhas mensagens','My messages','Mis mensajes'],
  ['admin.mgmt.chat','Conversas','Chats','Conversaciones'],
  ['item.chatadmin.label','Falar com o admin','Chat with admin','Hablar con el admin'],
+ ['admin.mgmt.payments','Pagamentos','Payments','Pagos'],
+ ['item.payments.label','Plano Premium','Premium plan','Plan Premium'],
+ ['item.payments.desc','Pagar por MTN Mobile Money','Pay via MTN Mobile Money','Pagar por MTN Mobile Money'],
  ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
  ['stub.ia.title','Tutor de IA','AI tutor','Tutor de IA'],
  ['stub.ia.sub','Tire dúvidas, gere resumos e pratique perguntas com o Tutor de IA, que também consulta a Biblioteca Oficial.','Ask questions, generate summaries and practice with the AI Tutor, which also searches the Official Library.','Resuelve dudas, genera resúmenes y practica preguntas con el Tutor de IA, que también consulta la Biblioteca Oficial.'],
@@ -6439,6 +6442,7 @@ const SETTINGS_SECTIONS = () => [
       { type: 'nav', label: 'item.deleteaccount.label', action: 'deleteAccount()', danger: true },
   ]},
   { sec: 'sec.support', items: [
+      { type: 'nav', label: 'item.payments.label', desc: 'item.payments.desc', action: 'bkPayments()' },
       { type: 'nav', label: 'item.helpcenter.label', action: "bkInfo('help')" },
       { type: 'nav', label: 'item.faq.label', action: "bkInfo('faq')" },
       { type: 'nav', label: 'item.reportbug.label', action: "bkFeedback('bug')" },
@@ -9341,6 +9345,7 @@ const ADMIN_MGMT_ITEMS = [
   { ic: '🤖', key: 'admin.mgmt.tutor', action: "admPanel('tutor')" },
   { ic: '💬', key: 'admin.mgmt.feedback', action: "admPanel('feedback')" },
   { ic: '✉️', key: 'admin.mgmt.chat', action: "admPanel('chat')" },
+  { ic: '💳', key: 'admin.mgmt.payments', action: "admPanel('payments')" },
   { ic: '📊', key: 'admin.mgmt.reports', action: 'spOpenReports()' },
   { ic: '🏛', key: 'admin.mgmt.library', action: 'openMyLibrary()' },
 ];
@@ -9367,6 +9372,7 @@ function admPanel(kind) {
     tutor: '🤖 ' + T('Tutor IA','AI Tutor','Tutor IA'),
     chat: '✉️ ' + T('Conversas com alunos','Student chats','Conversaciones'),
     feedback: '💬 ' + T('Mensagens dos alunos','Student messages','Mensajes de alumnos'),
+    payments: '💳 ' + T('Pagamentos','Payments','Pagos'),
   };
   const el = document.createElement('div');
   el.id = 'admPanelOverlay';
@@ -9379,7 +9385,7 @@ function admPanel(kind) {
     <div id="admPanelBody" style="color:var(--text2);font-size:13px;"></div></div>`;
   document.body.appendChild(el);
   const body = el.querySelector('#admPanelBody');
-  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback, chat: admRenderChat }[kind];
+  const fn = { videos: admRenderVideos, images: admRenderImages, content: admRenderContent, questions: admRenderQuestions, tutor: admRenderTutor, feedback: admRenderFeedback, chat: admRenderChat, payments: admRenderPayments }[kind];
   if (fn) fn(body);
   auditLog('admin_open_panel', { kind });
 }
@@ -9457,6 +9463,94 @@ async function bkMyMessages() {
     </div>`).join('') : L('Ainda não enviou mensagens.','No messages yet.','Aún no hay mensajes.');
   const unread = (reps||[]).filter(r => !r.read_at).map(r => r.id);
   if (unread.length) supabaseClient.from('feedback_replies').update({ read_at: new Date().toISOString() }).in('id', unread).then(() => {});
+}
+
+/* ---------- Plano Premium (MTN Mobile Money) ---------- */
+const PAY_PLAN_LABEL = (T) => ({ monthly: T('Mensal','Monthly','Mensual'), quarterly: T('Trimestral','Quarterly','Trimestral'), yearly: T('Anual','Yearly','Anual') });
+function bkPayStatus(s, T) {
+  return s === 'approved' ? `<span style="color:var(--ok,#22c55e);">✓ ${T('Aprovado','Approved','Aprobado')}</span>`
+    : s === 'rejected' ? `<span style="color:var(--red);">✕ ${T('Recusado','Rejected','Rechazado')}</span>`
+    : `<span style="color:var(--warn,#f5b301);">⏳ ${T('Em análise','Under review','En revisión')}</span>`;
+}
+async function bkPayments() {
+  const L = bkL;
+  const body = bkSheet(L('Plano Premium','Premium plan','Plan Premium'), L('A carregar…','Loading…','Cargando…'));
+  const { data: u } = await supabaseClient.auth.getUser();
+  if (!u?.user) { body.innerHTML = L('Entre na sua conta.','Sign in first.','Inicia sesión.'); return; }
+  const uid = u.user.id;
+  const [{ data: setts }, { data: sub }, { data: subs }] = await Promise.all([
+    supabaseClient.from('payment_settings').select('key,value'),
+    supabaseClient.from('subscriptions').select('plan,paid_until').eq('user_id', uid).maybeSingle(),
+    supabaseClient.from('payment_submissions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(20),
+  ]);
+  const sv = Object.fromEntries((setts||[]).map(s => [s.key, s.value]));
+  const PLANS = [
+    ['monthly', sv.price_monthly, L('Mensal','Monthly','Mensual'), L('30 dias','30 days','30 días')],
+    ['quarterly', sv.price_quarterly, L('Trimestral','Quarterly','Trimestral'), L('90 dias','90 days','90 días')],
+    ['yearly', sv.price_yearly, L('Anual','Yearly','Anual'), L('365 dias','365 days','365 días')],
+  ];
+  const active = sub && new Date(sub.paid_until) > new Date();
+  let html = '';
+  if (active) html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(34,197,94,.12);margin-bottom:12px;"><b style="color:var(--ok,#22c55e);">✓ ${L('Acesso Premium ativo','Premium access active','Acceso Premium activo')}</b> — ${PAY_PLAN_LABEL(L)[sub.plan] || ''} · ${L('até','until','hasta')} ${new Date(sub.paid_until).toLocaleDateString()}</div>`;
+  html += `<p style="margin:0 0 12px;font-size:13px;">${L('Paga por MTN Mobile Money e envia aqui a fotografia do comprovativo. A equipa confirma e o teu acesso ativa-se.','Pay via MTN Mobile Money and upload a photo of the receipt here. The team confirms and your access is activated.','Paga por MTN Mobile Money y envía aquí la foto del comprobante.')}</p>`;
+  if (!sv.mtn_number) html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(245,179,1,.12);margin-bottom:12px;">${L('Os pagamentos ainda estão a ser configurados. Fala com a equipa.','Payments are still being set up. Contact the team.','Los pagos aún se están configurando.')}</div>`;
+  html += PLANS.map(([k, price, name, dur]) => `<button class="btn" data-plan="${k}" data-price="${price || ''}" style="width:100%;justify-content:space-between;display:flex;margin-bottom:8px;"><span>${name} · ${dur}</span><b>${price ? Number(price).toLocaleString() + ' CFA' : '—'}</b></button>`).join('');
+  html += `<div id="bkPayForm" style="display:none;"></div>`;
+  if ((subs||[]).length) html += `<div style="margin-top:14px;"><b style="font-size:13px;">${L('Os teus pedidos','Your requests','Tus solicitudes')}</b>` + subs.map(s => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <div style="display:flex;justify-content:space-between;"><b>${PAY_PLAN_LABEL(L)[s.plan] || s.plan}</b>${bkPayStatus(s.status, L)}</div>
+      <div style="opacity:.7;">${Number(s.amount).toLocaleString()} CFA · ${new Date(s.created_at).toLocaleString()}</div>
+      ${s.admin_note ? `<div style="margin-top:4px;opacity:.85;">${L('Nota da equipa','Team note','Nota del equipo')}: ${escapeHtml(s.admin_note)}</div>` : ''}
+    </div>`).join('') + '</div>';
+  body.innerHTML = html;
+  body.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-plan]'); if (!b) return;
+    bkPayForm(b.dataset.plan, b.dataset.price, sv.mtn_number, body);
+  });
+}
+function bkPayForm(k, price, mtn, body) {
+  const L = bkL;
+  const form = body.querySelector('#bkPayForm');
+  if (!form) return;
+  form.style.display = 'block';
+  form.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0;">
+    <b>${L('Como pagar','How to pay','Cómo pagar')}</b>
+    <ol style="margin:8px 0 8px 18px;padding:0;font-size:12px;line-height:1.6;">
+      <li>${L('Envia','Send','Envía')} <b>${price ? Number(price).toLocaleString() : '—'} CFA</b> ${L('por MTN MoMo para','via MTN MoMo to','por MTN MoMo a')} <b>${escapeHtml(mtn || L('número em configuração','number being set up','número en configuración'))}</b>${mtn ? ` <button class="btn" id="bkCopyMtn" style="padding:2px 8px;font-size:11px;margin-left:6px;">${L('Copiar','Copy','Copiar')}</button>` : ''}</li>
+      <li>${L('Tira uma fotografia do comprovativo.','Take a photo of the receipt.','Toma una foto del comprobante.')}</li>
+      <li>${L('Envia aqui o comprovativo. A equipa confirma e o acesso ativa-se.','Upload the receipt here. The team confirms and your access is activated.','Sube el comprobante aquí.')}</li>
+    </ol>
+    <input class="sb-input" id="bkPayPhone" style="width:100%;margin-bottom:8px;" placeholder="${L('O teu número MTN (quem pagou)','Your MTN number (who paid)','Tu número MTN')}">
+    <input type="file" id="bkPayFile" accept="image/*" style="width:100%;font-size:12px;">
+    <button class="btn" id="bkPaySend" style="margin-top:8px;width:100%;">${L('Enviar comprovativo','Send receipt','Enviar comprobante')}</button>
+    <div id="bkPayMsg" style="font-size:12px;margin-top:6px;"></div>
+  </div>`;
+  try { form.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+  const cp = form.querySelector('#bkCopyMtn');
+  if (cp) cp.onclick = () => { try { navigator.clipboard.writeText(mtn); showToast(L('Número copiado','Number copied','Número copiado')); } catch (e) {} };
+  form.querySelector('#bkPaySend').onclick = async () => {
+    const btn = form.querySelector('#bkPaySend');
+    const file = form.querySelector('#bkPayFile').files[0];
+    const phone = form.querySelector('#bkPayPhone').value.trim().slice(0, 40);
+    const msg = form.querySelector('#bkPayMsg');
+    if (!file) { msg.innerHTML = `<span style="color:var(--red);">${L('Escolhe a fotografia do comprovativo.','Choose the receipt photo.','Elige la foto del comprobante.')}</span>`; return; }
+    const { data: u } = await supabaseClient.auth.getUser();
+    if (!u?.user) return;
+    btn.disabled = true; btn.textContent = L('A enviar…','Uploading…','Enviando…');
+    try {
+      const ext = ((file.name.split('.').pop() || 'jpg').toLowerCase().slice(0, 5)) || 'jpg';
+      const path = `${u.user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabaseClient.storage.from('payment-receipts').upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabaseClient.from('payment_submissions').insert({ user_id: u.user.id, plan: k, amount: Number(price) || 0, sender_phone: phone, receipt_path: path });
+      if (dbErr) throw dbErr;
+      auditLog('payment_submitted', { plan: k });
+      msg.innerHTML = `<span style="color:var(--ok,#22c55e);">✓ ${L('Comprovativo enviado! Aguarda a confirmação da equipa.','Receipt sent! Waiting for team confirmation.','¡Comprobante enviado! Espera la confirmación.')}</span>`;
+      form.querySelector('#bkPayFile').value = '';
+    } catch (e) {
+      msg.innerHTML = `<span style="color:var(--red);">${escapeHtml(e.message || String(e))}</span>`;
+    }
+    btn.disabled = false; btn.textContent = L('Enviar comprovativo','Send receipt','Enviar comprobante');
+  };
 }
 
 /* ---------- Conversas diretas aluno <-> admin ---------- */
@@ -9674,6 +9768,103 @@ async function admRenderChat(body) {
 }
 
 function admCard(inner) { return `<div class="stat-table-card" style="margin-bottom:12px;padding:14px;">${inner}</div>`; }
+
+async function admRenderPayments(body) {
+  const T = adminT3;
+  body.innerHTML = T('A carregar…','Loading…','Cargando…');
+  const [{ data: rows, error }, { data: setts }] = await Promise.all([
+    supabaseClient.from('payment_submissions').select('*').order('created_at', { ascending: false }).limit(300),
+    supabaseClient.from('payment_settings').select('key,value'),
+  ]);
+  if (error) { body.innerHTML = escapeHtml(error.message); return; }
+  const ids = [...new Set((rows||[]).map(r => r.user_id))];
+  const [{ data: profs }, { data: accs }] = await Promise.all([
+    ids.length ? supabaseClient.from('profiles').select('id,name,email').in('id', ids) : { data: [] },
+    ids.length ? supabaseClient.from('subscriptions').select('user_id,plan,paid_until').in('user_id', ids) : { data: [] },
+  ]);
+  const pm = Object.fromEntries((profs||[]).map(p => [p.id, p]));
+  const am = Object.fromEntries((accs||[]).map(a => [a.user_id, a]));
+  const sv = Object.fromEntries((setts||[]).map(s => [s.key, s.value]));
+  const PL = { monthly: ['Mensal',30], quarterly: ['Trimestral',90], yearly: ['Anual',365] };
+  const draw = () => {
+    const settings = admCard(`<b style="color:var(--text);">${T('Configuração do pagamento','Payment setup','Configuración de pago')}</b>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+        <input class="sb-input" id="admMtn" style="flex:1;min-width:180px;" value="${escapeHtml(sv.mtn_number||'')}" placeholder="${T('Número MTN MoMo','MTN MoMo number','Número MTN MoMo')}">
+        <input class="sb-input" id="admPriceM" style="width:110px;" value="${escapeHtml(sv.price_monthly||'')}" placeholder="${T('Mensal (CFA)','Monthly (CFA)','Mensual')}">
+        <input class="sb-input" id="admPriceQ" style="width:110px;" value="${escapeHtml(sv.price_quarterly||'')}" placeholder="${T('Trimestral (CFA)','Quarterly (CFA)','Trimestral')}">
+        <input class="sb-input" id="admPriceY" style="width:110px;" value="${escapeHtml(sv.price_yearly||'')}" placeholder="${T('Anual (CFA)','Yearly (CFA)','Anual')}">
+        <button class="btn" id="admSavePay" style="padding:6px 14px;font-size:12px;">${T('Guardar','Save','Guardar')}</button>
+      </div>`);
+    const list = (rows||[]).map(r => {
+      const p = pm[r.user_id] || {};
+      const acc = am[r.user_id];
+      return admCard(`<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <b style="color:var(--text);">${PL[r.plan] ? PL[r.plan][0] : r.plan} · ${Number(r.amount).toLocaleString()} CFA</b>
+          ${bkPayStatus(r.status, T)}</div>
+        <div style="font-size:12px;opacity:.8;margin-top:2px;">${escapeHtml(p.name||'—')} · ${escapeHtml(p.email||'')}</div>
+        <div style="font-size:11px;opacity:.7;margin-top:2px;">${new Date(r.created_at).toLocaleString()}${r.sender_phone ? ' · ' + escapeHtml(r.sender_phone) : ''}${acc && new Date(acc.paid_until) > new Date() ? ' · ' + T('Premium até','Premium until','Premium hasta') + ' ' + new Date(acc.paid_until).toLocaleDateString() : ''}</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" data-view="${r.id}" style="padding:5px 10px;font-size:12px;">${T('Ver comprovativo','View receipt','Ver comprobante')}</button>
+          <textarea class="sb-input" data-note="${r.id}" rows="1" style="flex:1;min-width:140px;" placeholder="${T('Nota (opcional)','Note (optional)','Nota')}">${escapeHtml(r.admin_note||'')}</textarea>
+        </div>
+        ${r.status === 'pending' ? `<div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn" data-ok="${r.id}" style="padding:5px 12px;font-size:12px;">${T('✓ Aprovar','✓ Approve','✓ Aprobar')}</button>
+          <button class="btn" data-no="${r.id}" style="padding:5px 12px;font-size:12px;">${T('✕ Recusar','✕ Reject','✕ Rechazar')}</button>
+        </div>` : (r.admin_note ? `<div style="margin-top:6px;font-size:12px;opacity:.8;">${escapeHtml(r.admin_note)}</div>` : '')}`);
+    }).join('');
+    body.innerHTML = settings + (list || `<p>${T('Nenhum pedido de pagamento.','No payment requests.','Ninguna solicitud.')}</p>`);
+  };
+  draw();
+  body.addEventListener('click', async ev => {
+    const save = ev.target.closest('#admSavePay');
+    if (save) {
+      save.disabled = true;
+      const vals = {
+        mtn_number: body.querySelector('#admMtn').value.trim().slice(0, 60),
+        price_monthly: body.querySelector('#admPriceM').value.trim().slice(0, 20),
+        price_quarterly: body.querySelector('#admPriceQ').value.trim().slice(0, 20),
+        price_yearly: body.querySelector('#admPriceY').value.trim().slice(0, 20),
+      };
+      const { error } = await supabaseClient.from('payment_settings').upsert(Object.entries(vals).map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() })));
+      save.disabled = false;
+      showToast(error ? error.message : T('Guardado','Saved','Guardado'));
+      if (!error) Object.assign(sv, vals);
+      return;
+    }
+    const v = ev.target.closest('[data-view]');
+    if (v) {
+      const r = (rows||[]).find(x => x.id === v.dataset.view);
+      if (!r) return;
+      const { data } = await supabaseClient.storage.from('payment-receipts').createSignedUrl(r.receipt_path, 600);
+      if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+      else showToast(T('Não foi possível abrir','Could not open','No se pudo abrir'));
+      return;
+    }
+    const approve = ev.target.closest('[data-ok]');
+    const reject = ev.target.closest('[data-no]');
+    if (!approve && !reject) return;
+    const r = (rows||[]).find(x => x.id === (approve ? approve.dataset.ok : reject.dataset.no));
+    if (!r || r.status !== 'pending') return;
+    const noteEl = body.querySelector(`textarea[data-note="${r.id}"]`);
+    const note = noteEl ? noteEl.value.trim().slice(0, 1000) : '';
+    const { data: u } = await supabaseClient.auth.getUser();
+    if (!u?.user) return;
+    if (approve) {
+      const days = PL[r.plan] ? PL[r.plan][1] : 30;
+      const cur = am[r.user_id] && new Date(am[r.user_id].paid_until) > new Date() ? new Date(am[r.user_id].paid_until) : new Date();
+      const until = new Date(cur.getTime() + days * 86400000).toISOString();
+      const { error: e1 } = await supabaseClient.from('subscriptions').upsert({ user_id: r.user_id, plan: r.plan, paid_until: until, updated_by: u.user.id, updated_at: new Date().toISOString() });
+      if (e1) { showToast(e1.message); return; }
+      am[r.user_id] = { user_id: r.user_id, plan: r.plan, paid_until: until };
+    }
+    const { error: e2 } = await supabaseClient.from('payment_submissions').update({ status: approve ? 'approved' : 'rejected', admin_note: note, decided_by: u.user.id, decided_at: new Date().toISOString() }).eq('id', r.id);
+    if (e2) { showToast(e2.message); return; }
+    auditLog(approve ? 'payment_approved' : 'payment_rejected', { id: r.id });
+    r.status = approve ? 'approved' : 'rejected'; r.admin_note = note; r.decided_at = new Date().toISOString();
+    draw();
+    showToast(T('Atualizado','Updated','Actualizado'));
+  });
+}
 
 function admRenderContent(body) {
   const T = adminT3;

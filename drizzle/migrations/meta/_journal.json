@@ -43,6 +43,13 @@
       "when": 1791494254498,
       "tag": "0005_peer_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792113417078,
+      "tag": "0006_mtn_payments",
+      "breakpoints": true
     }
   ]
 }
