@@ -68,14 +68,6 @@ export const Route = createFileRoute('/api/books/reindex')({
         }
 
         try {
-          if (offset === 0) {
-            await supabase
-              .from('user_books')
-              .update({ index_status: 'indexing', index_error: null, chunk_count: 0 })
-              .eq('id', book.id)
-            await supabase.from('book_chunks').delete().eq('book_id', book.id)
-          }
-
           const { data: file, error: dlErr } = await supabase.storage.from(BUCKET).download(book.file_path)
           if (dlErr || !file) return await fail(dlErr?.message || 'download failed')
 
@@ -89,6 +81,11 @@ export const Route = createFileRoute('/api/books/reindex')({
             ...(Array.isArray(book.contents) && book.contents.length ? {} : { contents }),
           }).eq('id', book.id)
           if (metadataError) return await fail(metadataError.message)
+          if (offset === 0 && chunks.length) {
+            const { error: resetError } = await supabase.from('book_chunks').delete().eq('book_id', book.id)
+            if (resetError) return await fail(resetError.message)
+          }
+          await supabase.from('user_books').update({ index_status: 'indexing', index_error: null }).eq('id', book.id)
 
           if (!chunks.length) {
             await supabase
