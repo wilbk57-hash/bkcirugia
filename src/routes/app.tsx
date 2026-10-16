@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -69,6 +69,8 @@ function AppShell() {
   const [isIOS, setIsIOS] = useState(false);
   const [isMac, setIsMac] = useState(false);
   const [dismissed, setDismissed] = useState(true);
+  const installPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const installedRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -109,6 +111,7 @@ function AppShell() {
     const updateInstalledState = () => {
       const installed = standaloneQuery.matches || window.navigator.standalone === true;
       setIsInstalled(installed);
+      installedRef.current = installed;
       if (installed) notifyAppFrame(standaloneQuery.matches ? "standalone" : "ios-standalone");
     };
     updateInstalledState();
@@ -116,22 +119,33 @@ function AppShell() {
 
     const handleInstallPrompt = (event: Event) => {
       event.preventDefault();
+      installPromptRef.current = event as BeforeInstallPromptEvent;
       setInstallPrompt(event as BeforeInstallPromptEvent);
     };
     const handleInstalled = () => {
+      installPromptRef.current = null;
+      installedRef.current = true;
       setInstallPrompt(null);
       setIsInstalled(true);
       setShowInstallHelp(false);
       notifyAppFrame("installed");
     };
+    const handleInstallRequest = (event: MessageEvent) => {
+      const frame = document.querySelector("iframe");
+      if (event.origin !== window.location.origin || event.source !== frame?.contentWindow) return;
+      if (event.data?.type === "bk-install-request") void installApp();
+      if (event.data?.type === "bk-frame-ready") updateInstalledState();
+    };
 
     window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+    window.addEventListener("message", handleInstallRequest);
     window.addEventListener("appinstalled", handleInstalled);
     standaloneQuery.addEventListener("change", updateInstalledState);
 
     return () => {
       window.clearTimeout(initialPing);
       window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+      window.removeEventListener("message", handleInstallRequest);
       window.removeEventListener("appinstalled", handleInstalled);
       standaloneQuery.removeEventListener("change", updateInstalledState);
     };
@@ -152,7 +166,6 @@ function AppShell() {
       if (ev.origin !== window.location.origin || !ev.data) return;
       if (ev.data.type === "bk-frame-ready") void sendSession();
       if (ev.data.type === "bk-signout") void supabase.auth.signOut();
-      if (ev.data.type === "bk-install-request") void installApp();
       if (ev.data.type === "bk-oauth-start") {
         const provider = ev.data.provider as "google" | "apple" | "microsoft";
         if (!["google", "apple", "microsoft"].includes(provider)) return;
@@ -178,18 +191,27 @@ function AppShell() {
   }, []);
 
   const installApp = async () => {
-    if (!installPrompt) {
+    if (installedRef.current) return;
+    const prompt = installPromptRef.current;
+    if (!prompt) {
       setShowInstallHelp(true);
       return;
     }
-    await installPrompt.prompt();
-    const choice = await installPrompt.userChoice;
-    if (choice.outcome === "accepted") setIsInstalled(true);
-    setInstallPrompt(null);
+    try {
+      await prompt.prompt();
+      await prompt.userChoice;
+    } catch {
+      setShowInstallHelp(true);
+    } finally {
+      installPromptRef.current = null;
+      setInstallPrompt(null);
+    }
   };
 
   const dismissInstall = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_DAYS * 86400000));
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_DAYS * 86400000));
+    } catch { /* The dialog can still be dismissed when storage is unavailable. */ }
     setDismissed(true);
     setShowInstallHelp(false);
   };
@@ -224,11 +246,11 @@ function AppShell() {
           onClick={installApp}
           variant="outline"
           className="fixed bottom-20 right-4 z-50 min-h-11 bg-background px-4 font-semibold shadow-lg"
-          aria-label="Instalar BK-CIRURGIA"
+            aria-label="Instalar Aplicação"
           title="Instalar BK-CIRURGIA"
         >
           <Download aria-hidden="true" className="size-4" />
-          Instalar app
+          Instalar Aplicação
         </Button>
       ) : null}
       <Dialog open={showInstallHelp} onOpenChange={setShowInstallHelp}>
@@ -243,13 +265,14 @@ function AppShell() {
               Abrir no Chrome
             </Button>
           ) : null}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={dismissInstall}
             className="text-xs text-muted-foreground underline underline-offset-2 mt-1"
           >
             Agora não, não voltar a perguntar por 14 dias
-          </button>
+          </Button>
         </DialogContent>
       </Dialog>
     </>
