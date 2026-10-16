@@ -131,6 +131,18 @@ function Index() {
                 para provas de residência.
               </p>
             </li>
+            <li>
+              <a
+                href="/resumos/trauma-toracico.html"
+                className="font-medium text-primary hover:underline"
+              >
+                Traumatismo torácico
+              </a>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Abordagem inicial, lesões com risco de vida e condutas no trauma torácico — resumo
+                completo para estudo e revisão.
+              </p>
+            </li>
           </ul>
         </section>
 
