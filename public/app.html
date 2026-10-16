@@ -8242,9 +8242,13 @@ async function bkAccessCheck() {
   const L = bkL;
   const { data: u } = await supabaseClient.auth.getUser();
   const old = document.getElementById('bkPayGate'); const bar = document.getElementById('bkPayBar');
-  if (!u?.user) { old?.remove(); bar?.remove(); return; }
+  const pill = document.getElementById('bkPayPill');
+  if (!u?.user) { old?.remove(); bar?.remove(); pill?.remove(); return; }
   const { data: adm } = await supabaseClient.rpc('is_platform_admin');
-  if (adm === true) { old?.remove(); bar?.remove(); return; }
+  if (adm === true) { old?.remove(); bar?.remove(); pill?.remove(); return; }
+  if (!pill) { const pp = document.createElement('button'); pp.id = 'bkPayPill'; pp.type = 'button'; pp.onclick = () => bkPayments();
+    pp.style.cssText = 'position:fixed;left:16px;bottom:84px;z-index:900;border:0;border-radius:999px;padding:10px 14px;font-weight:700;font-size:13px;background:#f97316;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.25);';
+    pp.textContent = '💳 ' + L('Pagamento','Payment','Pago'); document.body.appendChild(pp); }
   const { data: sub } = await supabaseClient.from('subscriptions').select('plan,paid_until').eq('user_id', u.user.id).maybeSingle();
   const until = sub ? new Date(sub.paid_until) : new Date(0);
   const left = until - Date.now();
@@ -9203,7 +9207,7 @@ function showLoginMethodInfo() {
 }
 
 async function doLogout() {
-  document.getElementById('bkPayGate')?.remove(); document.getElementById('bkPayBar')?.remove();
+  document.getElementById('bkPayGate')?.remove(); document.getElementById('bkPayBar')?.remove(); document.getElementById('bkPayPill')?.remove();
   await supabaseClient.auth.signOut();
   clearSession();
   showToast(t('auth.toast.loggedout'));
