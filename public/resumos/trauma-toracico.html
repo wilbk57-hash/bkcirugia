@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traumatismo Torácico · Trauma · BK-CIRURGIA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F6F8; --surface:#FFFFFF; --surface-2:#E9F0F3; --border:#D8E2E8;
+  --ink:#152C38; --ink-muted:#5B7180;
+  --teal:#0E7490; --teal-dark:#0B3142; --teal-deep:#0A4B5C; --hero-a:#5C1010; --hero-b:#0B3142;
+  --amber:#B45309; --amber-bg:#FFF7E8; --amber-bd:#F0D8A8;
+  --red:#B91C1C; --red-bg:#FDF0EF; --red-bd:#F0C4C0;
+  --green:#15803D; --green-bg:#F0F8F1; --green-bd:#C7E0CC;
+  --blue:#1D4ED8; --blue-bg:#EEF3FD; --blue-bd:#C6D6F5;
+  --purple:#6D28D9; --purple-bg:#F4F0FC; --purple-bd:#D9CBF2;
+  --radius:10px; --shadow:0 1px 2px rgba(11,49,66,.06), 0 4px 16px rgba(11,49,66,.06);
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg:#0C1B23; --surface:#122631; --surface-2:#16303C; --border:#26414D;
+    --ink:#E7F0F3; --ink-muted:#93ACB8;
+    --teal:#38B4D4; --teal-dark:#DCEEF3; --teal-deep:#7FD4EA;
+    --amber:#E8A94C; --amber-bg:#2A2210; --amber-bd:#4A3A14;
+    --red:#F0847C; --red-bg:#2C1616; --red-bd:#4A2320;
+    --green:#6FCB8E; --green-bg:#122A1B; --green-bd:#234832;
+    --blue:#8CB0F5; --blue-bg:#131E33; --blue-bd:#233457;
+    --purple:#BFA0F0; --purple-bg:#1E1730; --purple-bd:#352550;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1B23; --surface:#122631; --surface-2:#16303C; --border:#26414D;
+  --ink:#E7F0F3; --ink-muted:#93ACB8;
+  --teal:#38B4D4; --teal-dark:#DCEEF3; --teal-deep:#7FD4EA;
+  --amber:#E8A94C; --amber-bg:#2A2210; --amber-bd:#4A3A14;
+  --red:#F0847C; --red-bg:#2C1616; --red-bd:#4A2320;
+  --green:#6FCB8E; --green-bg:#122A1B; --green-bd:#234832;
+  --blue:#8CB0F5; --blue-bg:#131E33; --blue-bd:#233457;
+  --purple:#BFA0F0; --purple-bg:#1E1730; --purple-bd:#352550;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:"Source Serif 4",Georgia,serif;font-weight:600;color:var(--ink);margin:0 0 .5em;}
+p{margin:0 0 1em;color:var(--ink);}
+.container{max-width:960px;margin:0 auto;padding:0 20px;}
+.hero{background:linear-gradient(160deg,var(--hero-a) 0%, var(--hero-b) 100%);color:#EAF6FA;padding:52px 0 34px;position:relative;overflow:hidden;}
+.hero::after{content:'';position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);}
+.hero .eyebrow{font-size:.78rem;letter-spacing:.04em;color:#F3C9C9;margin-bottom:10px;font-weight:500;position:relative;}
+.hero h1{font-size:2.35rem;color:#fff;margin-bottom:10px;line-height:1.15;max-width:22ch;position:relative;}
+.hero .lede{font-size:1.05rem;color:#EAD9D3;max-width:64ch;margin-bottom:18px;position:relative;}
+.hero .sources{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;position:relative;}
+.hero .source-tag{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#FCE9E4;font-size:.74rem;padding:5px 11px;border-radius:999px;}
+.hero .hero-controls{display:flex;gap:8px;margin-top:18px;position:relative;}
+.hero .hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 13px;border-radius:8px;font-size:.8rem;cursor:pointer;font-family:inherit;}
+.progress-outer{height:4px;background:var(--surface-2);}
+#pg{height:100%;background:var(--teal);width:0;transition:width .3s ease;}
+.tabnav{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow);}
+.tabnav-scroll{display:flex;gap:2px;overflow-x:auto;max-width:960px;margin:0 auto;padding:0 20px;scrollbar-width:thin;align-items:center;}
+.tabnav button{appearance:none;border:none;background:none;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-size:.85rem;font-weight:500;color:var(--ink-muted);padding:14px 13px 11px;white-space:nowrap;border-bottom:3px solid transparent;transition:color .15s ease, border-color .15s ease;}
+.tabnav button:hover{color:var(--teal);}
+.tabnav button.active{color:var(--teal);border-bottom-color:var(--teal);font-weight:600;}
+.tabnav button.seen{color:var(--ink);}
+.nav-divider{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);padding:14px 6px 11px 16px;white-space:nowrap;opacity:.7;}
+.tabpanel{display:none;padding:34px 0 70px;animation:fadein .25s ease;}
+.tabpanel.active{display:block;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.section{margin-bottom:34px;}
+.section h2{font-size:1.5rem;border-bottom:2px solid var(--surface-2);padding-bottom:10px;margin-bottom:16px;}
+.section h3{font-size:1.14rem;color:var(--teal-deep);margin-top:22px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);}
+.box{border-radius:var(--radius);padding:16px 18px;margin:16px 0;border:1px solid;}
+.box .box-label{font-weight:600;font-size:.78rem;letter-spacing:.02em;margin-bottom:6px;display:flex;align-items:center;gap:7px;}
+.box p:last-child{margin-bottom:0;}
+.box.concept{background:var(--blue-bg);border-color:var(--blue-bd);} .box.concept .box-label{color:var(--blue);}
+.box.alert{background:var(--red-bg);border-color:var(--red-bd);} .box.alert .box-label{color:var(--red);}
+.box.tip{background:var(--green-bg);border-color:var(--green-bd);} .box.tip .box-label{color:var(--green);}
+.box.value{background:var(--amber-bg);border-color:var(--amber-bd);} .box.value .box-label{color:var(--amber);}
+.box.source{background:var(--purple-bg);border-color:var(--purple-bd);font-size:.86rem;} .box.source .box-label{color:var(--purple);}
+.box.key{background:var(--surface-2);border-color:var(--teal)}.box.key .box-label{color:var(--teal)}
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--border);border-radius:var(--radius);}
+table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px;}
+th{background:var(--surface-2);color:var(--ink);text-align:left;padding:10px 12px;font-weight:600;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--ink);}
+tr:last-child td{border-bottom:none;} tr:hover td{background:var(--surface-2);}
+td.hl-red{color:var(--red);font-weight:600;} td.hl-amber{color:var(--amber);font-weight:600;} td.hl-green{color:var(--green);font-weight:600;}
+.formula{font-family:"IBM Plex Mono",monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.86rem;text-align:center;color:var(--teal-deep);}
+.accordion{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;background:var(--surface);}
+.accordion-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;cursor:pointer;font-weight:600;color:var(--teal-deep);font-family:"Source Serif 4",serif;font-size:1.02rem;}
+.accordion-head:hover{background:var(--surface-2);}
+.accordion-head .chev{transition:transform .2s ease;color:var(--teal);font-size:.8rem;}
+.accordion.open .chev{transform:rotate(90deg);}
+.accordion-body{max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 18px;}
+.accordion.open .accordion-body{padding:0 18px 18px;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;}
+.chip{background:var(--surface-2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;font-size:.82rem;color:var(--ink);}
+.case-toggle{width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;cursor:pointer;font-weight:600;color:var(--ink);display:flex;justify-content:space-between;align-items:center;font-family:"IBM Plex Sans";font-size:.94rem;}
+.case-toggle .tag{font-size:.7rem;font-weight:500;color:var(--teal);background:var(--surface-2);padding:2px 9px;border-radius:999px;margin-right:8px;}
+.case-toggle:hover{border-color:var(--teal);}
+.case-content{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+.case-content-inner{padding:14px 4px 6px 4px;}
+.case-wrap.open .case-content{max-height:1500px;}
+.case-wrap.open .case-toggle{border-color:var(--teal);background:var(--surface-2);}
+.case-wrap{margin-bottom:8px;}
+.flash-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.flash-progress{font-size:.85rem;color:var(--ink-muted);}
+.flashcard-scene{perspective:1400px;max-width:560px;margin:0 auto 20px;height:270px;}
+.flashcard{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.2,.2,1);cursor:pointer;}
+.flashcard.flipped{transform:rotateY(180deg);}
+.flash-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;padding:26px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.flash-front{background:var(--surface);}
+.flash-back{background:var(--teal-dark);color:#EAF6FA;transform:rotateY(180deg);}
+.flash-back .flash-text{color:#EAF6FA;}
+.flash-text{font-size:1.0rem;font-family:"Source Serif 4",serif;color:var(--ink);}
+.flash-kicker{position:absolute;top:14px;left:18px;font-size:.72rem;color:var(--ink-muted);letter-spacing:.02em;}
+.flash-back .flash-kicker{color:#9FD9E8;}
+.flash-hint{position:absolute;bottom:12px;right:16px;font-size:.68rem;color:var(--ink-muted);}
+.flash-back .flash-hint{color:#9FD9E8;}
+.flash-nav{display:flex;gap:10px;justify-content:center;}
+.btn{appearance:none;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:9px 18px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s ease;}
+.btn:hover{border-color:var(--teal);color:var(--teal);}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
+.btn.primary:hover{background:var(--teal-deep);color:#fff;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.quiz-q{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);}
+.quiz-q .qn{font-size:.76rem;color:var(--teal);font-weight:700;letter-spacing:.03em;margin-bottom:6px;}
+.quiz-q .qtext{font-family:"Source Serif 4",serif;font-size:1.06rem;margin-bottom:14px;}
+.quiz-opt{display:block;width:100%;text-align:left;background:var(--surface-2);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:.9rem;color:var(--ink);transition:all .15s ease;}
+.quiz-opt:hover{border-color:var(--teal);}
+.quiz-opt.selected{border-color:var(--teal);background:var(--blue-bg);}
+.quiz-opt.correct{border-color:var(--green);background:var(--green-bg);color:var(--green);font-weight:600;}
+.quiz-opt.incorrect{border-color:var(--red);background:var(--red-bg);color:var(--red);font-weight:600;}
+.quiz-opt:disabled{cursor:default;}
+.quiz-explain{margin-top:10px;padding:12px 14px;border-radius:8px;background:var(--surface-2);font-size:.85rem;color:var(--ink-muted);display:none;}
+.quiz-explain.show{display:block;}
+#quiz-result{text-align:center;padding:30px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:none;}
+#quiz-result.show{display:block;}
+#quiz-result .score{font-family:"Source Serif 4",serif;font-size:2.4rem;color:var(--teal);margin-bottom:6px;}
+.mmap{display:flex;flex-direction:column;align-items:center;gap:0;}
+.mmap-root{background:var(--teal-dark);color:#EAF6FA;padding:14px 26px;border-radius:12px;font-family:"Source Serif 4",serif;font-weight:600;font-size:1.1rem;margin-bottom:6px;box-shadow:var(--shadow);text-align:center;}
+.mmap-connector{width:2px;height:22px;background:var(--border);}
+.mmap-branches{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%;margin-top:6px;}
+.mmap-branch{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);}
+.mmap-branch h4{font-size:.95rem;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--surface-2);}
+.mmap-branch ul{margin:0;padding-left:18px;font-size:.83rem;color:var(--ink-muted);}
+.mmap-branch li{margin-bottom:5px;}
+.mmap-branch.c-blue h4{color:var(--blue);} .mmap-branch.c-red h4{color:var(--red);} .mmap-branch.c-green h4{color:var(--green);}
+.mmap-branch.c-amber h4{color:var(--amber);} .mmap-branch.c-purple h4{color:var(--purple);} .mmap-branch.c-teal h4{color:var(--teal);}
+ul.plain{padding-left:20px;margin:0 0 1em;} ul.plain li{margin-bottom:6px;}
+.small-note{font-size:.8rem;color:var(--ink-muted);margin-top:10px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:680px){.two-col{grid-template-columns:1fr;}.three-col{grid-template-columns:1fr;}}
+.footer-note{text-align:center;padding:30px 20px 50px;color:var(--ink-muted);font-size:.8rem;}
+strong{color:var(--ink);}
+.tempo{font-size:.72rem;font-family:"IBM Plex Sans",sans-serif;font-weight:500;color:var(--ink-muted);margin-left:8px}
+.bar2{height:6px;background:var(--surface-2);border-radius:99px;margin-top:4px;overflow:hidden;}
+.bar2 i{display:block;height:100%;background:var(--teal);}
+dl#gl dt{font-weight:600;color:var(--teal-deep);font-family:"Source Serif 4",serif;margin-top:14px;}
+dl#gl dd{margin:4px 0 0;color:var(--ink-muted);font-size:.9rem;}
+.flow-svg{width:100%;height:auto;font-family:"IBM Plex Sans",sans-serif;font-size:11px;fill:var(--ink);}
+.gq-wrap{margin-bottom:16px;}
+.gq-wrap input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-family:inherit;font-size:.9rem;}
+.step-list{counter-reset:step;list-style:none;padding:0;margin:0;}
+.step-list li{counter-increment:step;position:relative;padding:6px 0 6px 34px;margin-bottom:4px;}
+.step-list li::before{content:counter(step);position:absolute;left:0;top:5px;width:22px;height:22px;border-radius:50%;background:var(--teal);color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+/* ---- new, higher-polish components for this module ---- */
+.deadly-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0;}
+.deadly-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.deadly-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--dc,var(--red));}
+.deadly-card .n{font-family:"IBM Plex Mono",monospace;font-size:.68rem;color:var(--ink-muted);}
+.deadly-card .t{font-weight:600;font-size:.86rem;margin-top:2px;}
+.sev-meter{display:flex;align-items:center;gap:10px;margin:10px 0;}
+.sev-track{flex:1;height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden;position:relative;border:1px solid var(--border);}
+.sev-fill{height:100%;border-radius:99px;}
+.sev-label{font-size:.78rem;font-weight:600;min-width:70px;}
+.badge{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;text-transform:uppercase;}
+.badge.em{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.badge.u1{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);}
+.badge.u2{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.anatomy-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;box-shadow:var(--shadow);margin:16px 0;}
+.proc-card{display:flex;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow);align-items:flex-start;}
+.proc-num{flex:none;width:30px;height:30px;border-radius:8px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:"IBM Plex Mono",monospace;font-size:.85rem;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="container">
+    <div class="eyebrow">BK-CIRURGIA · Trauma</div>
+    <h1>Traumatismo torácico</h1>
+    <p class="lede">Da parede torácica aos grandes vasos: fisiopatologia da ventilação, avaliação sistemática, as lesões que matam em minutos — e como reconhecê-las e tratá-las antes que o façam. Construído sobre 80 páginas do tratado cubano de trauma, capítulo por capítulo.</p>
+    <div class="sources">
+      <span class="source-tag">Cirugía, Tomo VI — Parte 27: Lesiones traumáticas del tórax y los grandes vasos</span>
+      <span class="source-tag">Cap. 239–243 (pp. 233–303)</span>
+    </div>
+    <div class="hero-controls">
+      <button class="hbtn" id="th" aria-label="Alternar tema claro/escuro">☀/☾ Tema</button>
+    </div>
+  </div>
+</div>
+<div class="progress-outer"><div id="pg"></div></div>
+
+<nav class="tabnav"><div class="tabnav-scroll" id="tabnav"></div></nav>
+
+<div class="container">
+
+<!-- ================= INÍCIO ================= -->
+<div class="tabpanel" id="tab-ini">
+  <div class="section">
+    <h2>Por que este tema importa</h2>
+    <p>O trauma torácico é responsável, direta ou indiretamente, por metade de todas as mortes por trauma no mundo: cerca de <strong>25% das mortes diretamente</strong> pela lesão torácica em si, e outro <strong>25%</strong> em que ela é fator associado decisivo. Mais de um terço dos politraumatizados por trauma fechado tem o tórax envolvido. A boa notícia: menos de 10% dos traumas fechados e 15-30% dos penetrantes exigem toracotomia — a maioria dos lesionados pode ser tratada com procedimentos simples (drenagem pleural, analgesia, fisioterapia), desde que as lesões que matam rapidamente sejam reconhecidas a tempo.</p>
+    <div class="box concept">
+      <div class="box-label">CONCEITO-CHAVE</div>
+      <p>O tórax abriga simultaneamente o motor da ventilação (parede, pleura, pulmão) e o motor da circulação (coração, grandes vasos). Por isso uma única lesão torácica pode matar por dois mecanismos ao mesmo tempo — hipóxia e choque — e a avaliação inicial precisa sempre checar os dois.</p>
+    </div>
+    <h3>As lesões que matam em minutos — a "dúzia mortal" do tórax</h3>
+    <p>Seis são emergências imediatas (ABC comprometido agora) e seis são urgências graves (ameaçam a vida se não tratadas logo). Cada uma tem sua própria aba de estudo mais adiante neste módulo.</p>
+    <div class="deadly-grid">
+      <div class="deadly-card" style="--dc:var(--red)"><span class="badge em">Emergência</span><div class="n">01</div><div class="t">Obstrução de via aérea</div></div>
+      <div class="deadly-card" style="--dc:var(--red)"><span class="badge em">Emergência</span><div class="n">02</div><div class="t">Pneumotórax hipertensivo</div></div>
+      <div class="deadly-card" style="--dc:var(--red)"><span class="badge em">Emergência</span><div class="n">03</div><div class="t">Pneumotórax aberto</div></div>
+      <div class="deadly-card" style="--dc:var(--red)"><span class="badge em">Emergência</span><div class="n">04</div><div class="t">Hemotórax maciço</div></div>
+      <div class="deadly-card" style="--dc:var(--red)"><span class="badge em">Emergência</span><div class="n">05</div><div class="t">Tamponamento cardíaco</div></div>
+      <div class="deadly-card" style="--dc:var(--red)"><span class="badge em">Emergência</span><div class="n">06</div><div class="t">Tórax instável (volet)</div></div>
+      <div class="deadly-card" style="--dc:var(--amber)"><span class="badge u1">Urgência I</span><div class="n">07</div><div class="t">Contusão pulmonar</div></div>
+      <div class="deadly-card" style="--dc:var(--amber)"><span class="badge u1">Urgência I</span><div class="n">08</div><div class="t">Ruptura aórtica</div></div>
+      <div class="deadly-card" style="--dc:var(--amber)"><span class="badge u1">Urgência I</span><div class="n">09</div><div class="t">Lesão traqueobrônquica</div></div>
+      <div class="deadly-card" style="--dc:var(--amber)"><span class="badge u1">Urgência I</span><div class="n">10</div><div class="t">Ruptura diafragmática</div></div>
+      <div class="deadly-card" style="--dc:var(--amber)"><span class="badge u1">Urgência I</span><div class="n">11</div><div class="t">Ruptura esofágica</div></div>
+      <div class="deadly-card" style="--dc:var(--amber)"><span class="badge u1">Urgência I</span><div class="n">12</div><div class="t">Contusão miocárdica</div></div>
+    </div>
+    <h3>O que você vai encontrar neste módulo</h3>
+    <ul class="plain">
+      <li>Anatomia funcional e fisiopatologia da ventilação aplicadas ao trauma — com diagrama interativo.</li>
+      <li>Classificação completa (aberto/fechado, por gravidade) e avaliação clínica sistemática.</li>
+      <li>Cada lesão da "dúzia mortal" em profundidade: mecanismo, clínica, diagnóstico e conduta.</li>
+      <li>Trauma cardíaco (contusão, concussão, tamponamento) e lesão de grandes vasos (ruptura aórtica).</li>
+      <li>Procedimentos: drenagem pleural passo a passo e toracotomia de emergência — indicações e técnica.</li>
+      <li>Fluxograma de decisão, caso clínico simulado, mapa mental, glossário, flashcards e questões.</li>
+    </ul>
+    <div class="box source">
+      <div class="box-label">FONTE DESTE MÓDULO</div>
+      <p>Soler Vaillant R, Mederos Curbelo ON. <em>Cirugía</em>, Tomo VI — Lesiones graves por traumatismo, Parte 27 "Lesiones traumáticas del tórax y los grandes vasos": Cap. 239 Trauma torácico — generalidades (pp. 233–247); Cap. 240 Tórax inestable, contusión pulmonar y fractura del esternón (pp. 248–261); Cap. 241 Hemoneumotórax traumático y ruptura traqueobronquial (pp. 262–275); Cap. 242 Traumas cardiacos (pp. 276–295); Cap. 243 Lesión traumática de los grandes vasos del tórax (pp. 296–303).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ANATOMIA/FISIOPATOLOGIA ================= -->
+<div class="tabpanel" id="tab-anatomia">
+  <div class="section">
+    <h2>Anatomia funcional e fisiopatologia</h2>
+    <p>O tórax tem a forma de um funil: estreito no ápice, com o diafragma formando sua base. Doze pares de costelas o sustentam — as 7 primeiras ("verdadeiras") articulam-se diretamente com o esterno; as 3 seguintes ("falsas") articulam-se indiretamente, por cartilagens; as 2 últimas são "flutuantes". Ao longo da borda inferior de cada costela corre um feixe vasculonervoso — por isso toda fratura costal é também risco de sangramento.</p>
+    <div class="anatomy-wrap"><svg viewBox="0 0 700 260" class="flow-svg" id="anat"></svg></div>
+    <h3>O mecanismo da ventilação, em uma frase</h3>
+    <p>Na inspiração, diafragma e intercostais se contraem, o volume torácico aumenta, a pressão intratorácica cai abaixo da atmosférica, e o ar entra. Qualquer lesão que quebre essa diferença de pressão — um furo na parede, ar livre na pleura, um segmento ósseo instável — compromete a ventilação, mesmo que o pulmão em si esteja intacto.</p>
+    <h3>Três vias para a hipóxia no trauma torácico</h3>
+    <ul class="plain">
+      <li><strong>Hipoxemia</strong> — por obstrução de via aérea, pneumotórax, ruptura da árvore traqueobrônquica, contusão pulmonar, tórax instável ou ruptura diafragmática.</li>
+      <li><strong>Hipovolemia</strong> — por hemorragia intratorácica (hemotórax); até 30% da volemia pode se acumular em um único hemitórax.</li>
+      <li><strong>Falha de bomba miocárdica</strong> — tanto por trauma penetrante quanto fechado; o mecanismo mais comum é o hemopericárdio com tamponamento, seguido por ruptura septal, de músculo papilar ou embolia aérea coronariana.</li>
+    </ul>
+    <div class="box alert">
+      <div class="box-label">O QUE COMPROMETE A VENTILAÇÃO — CHECAR SEMPRE</div>
+      <p>Pneumotórax hipertensivo · pneumotórax aberto · hemopneumotórax · tórax instável com contusão pulmonar · tamponamento cardíaco. Nenhum desses deve esperar confirmação radiológica quando a suspeita clínica é forte — o tratamento é clínico e imediato.</p>
+    </div>
+    <h3>Um pouco de história</h3>
+    <p>Os traumatismos torácicos foram a primeira causa de morte em meados do século XX. Na Primeira Guerra Mundial a mortalidade chegou a 30%; caiu para 11% na Segunda Guerra e 4% na Guerra da Coreia — graças à drenagem sob selo de água, à reanimação com sangue, aos antibióticos e à redução do tempo entre a lesão e o atendimento (o helicóptero foi decisivo no Vietnã). A quarta parte das mortes do politraumatizado se deve ao trauma torácico em si — e muitas são evitáveis com diagnóstico correto e tratamento precoce.</p>
+    <div class="box value">
+      <div class="box-label">NÚMEROS QUE ORIENTAM A SUSPEITA</div>
+      <p>Mortalidade geral do trauma torácico fechado: 4–12% isolado, dobra se houver lesões extratorácicas associadas. Penetrante por arma branca: 2–4%. Penetrante por arma de fogo: 4–20%. Cerca de 20% dos traumas torácicos são fatais, e lesões associadas — sobretudo cranioencefálicas (80% das mortes) — pioram ainda mais o prognóstico.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CLASSIFICAÇÃO ================= -->
+<div class="tabpanel" id="tab-classificacao">
+  <div class="section">
+    <h2>Classificação</h2>
+    <h3>Por continuidade da parede</h3>
+    <p>Desde Guy de Chauliac (século XIV), o trauma torácico se divide em <strong>aberto</strong> (não penetrante, penetrante ou perfurante — "transfixiante" quando atravessa de lado a lado, "a sedal" quando entrada e saída estão do mesmo lado) e <strong>fechado</strong> (com ou sem fratura costal/esternal). Também se classifica por associação: torácico puro, toracoabdominal, cervicotorácico.</p>
+    <h3>Por mecanismo</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Mecanismo</th><th>Lesões típicas</th></tr>
+      <tr><td>Penetrante (arma branca, fogo, fragmentos, empalamento)</td><td>Qualquer estrutura da cavidade pode ser lesada diretamente; &gt;60% dos traumas torácicos civis</td></tr>
+      <tr><td>Fechado por desaceleração (colisão, queda)</td><td>Ruptura aórtica, tamponamento, pneumotórax — por cisalhamento entre estruturas móveis e fixas</td></tr>
+      <tr><td>Fechado por compressão direta</td><td>Fraturas costais/esternais localizadas; raramente lesão vascular/cardíaca importante</td></tr>
+      <tr><td>Compressão torácica ou abdominal alta prolongada</td><td>Asfixia traumática — típica de soterramentos e desabamentos</td></tr>
+    </table></div>
+    <h3>Por gravidade e urgência</h3>
+    <div class="three-col">
+      <div class="card"><span class="badge em">Emergências</span><p style="margin:8px 0 0;font-size:.88rem">Rapidamente mortais: obstrução de via aérea, pneumotórax hipertensivo, tamponamento cardíaco, ruptura aórtica, pneumotórax aberto, hemotórax maciço, tórax instável, ruptura traqueobrônquica.</p></div>
+      <div class="card"><span class="badge u1">Urgência grau I</span><p style="margin:8px 0 0;font-size:.88rem">Potencialmente mortais: contusão pulmonar, ruptura esofágica, contusão miocárdica, ruptura diafragmática.</p></div>
+      <div class="card"><span class="badge u2">Urgência grau II</span><p style="margin:8px 0 0;font-size:.88rem">Geralmente não mortais: fraturas ósseas isoladas, lesão de partes moles, corpo estranho intratorácico, hemopneumotórax pequeno/médio.</p></div>
+    </div>
+    <h3>Lista completa por estrutura acometida</h3>
+    <ul class="plain">
+      <li>Fraturas costais, com ou sem instabilidade da parede (tórax batiente)</li>
+      <li>Fratura do esterno</li>
+      <li>Enfisema subcutâneo e mediastinal</li>
+      <li>Pneumotórax, hemotórax, hemopneumotórax, quilotórax</li>
+      <li>Contusão e ferida cardíaca (com risco de tamponamento)</li>
+      <li>Pulmão úmido traumático / contusão pulmonar</li>
+      <li>Asfixia traumática</li>
+      <li>Ruptura de traqueia ou brônquios</li>
+      <li>Lesão de grandes vasos torácicos</li>
+      <li>Lesão traumática do esôfago</li>
+      <li>Ferida e ruptura do diafragma</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================= AVALIAÇÃO ================= -->
+<div class="tabpanel" id="tab-avaliacao">
+  <div class="section">
+    <h2>Avaliação clínica sistemática</h2>
+    <p>O exame do tórax segue classicamente: <strong>observação → palpação → percussão → ausculta</strong> — e pode ser feito em menos de 30 segundos. Quase 2/3 dos traumas torácicos têm lesões associadas (sobretudo cranioencefálicas, ortopédicas e abdominais), o que aumenta a complexidade e a prioridade diagnóstica.</p>
+    <div class="two-col">
+      <div class="card">
+        <h4 style="margin-top:0">Observação</h4>
+        <p style="margin-bottom:0;font-size:.9rem">Cianose, lacerações, distensão das veias do pescoço, enfisema subcutâneo, ferida aberta no tórax, movimento paradoxal da parede</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-top:0">Palpação</h4>
+        <p style="margin-bottom:0;font-size:.9rem">Dor, crepitação, enfisema subcutâneo, segmentos instáveis da parede</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-top:0">Percussão</h4>
+        <p style="margin-bottom:0;font-size:.9rem">Hiperressonância (pneumotórax) × macicez (hemotórax) — difícil em ambiente de emergência, mas valiosa</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-top:0">Ausculta</h4>
+        <p style="margin-bottom:0;font-size:.9rem">Murmúrio diminuído/abolido de um lado sugere ar ou sangue no espaço pleural; bulhas abafadas sugerem tamponamento</p>
+      </div>
+    </div>
+    <h3>Sinais e sintomas que indicam lesão torácica</h3>
+    <ul class="plain">
+      <li>Taquipneia, dificuldade respiratória, hipóxia</li>
+      <li>Crepitação e dor na grade costal</li>
+      <li>Desvio de traqueia</li>
+      <li>Sons respiratórios anormais à ausculta</li>
+      <li>Deformidade da parede torácica</li>
+    </ul>
+    <h3>Sequência de atendimento</h3>
+    <ol class="step-list">
+      <li>Expor o tórax para avaliar a mecânica respiratória.</li>
+      <li>Garantir via aérea pérvia e troca gasosa adequada.</li>
+      <li>Suporte ventilatório (bolsa-válvula-máscara ou tubo orotraqueal) até estabilização.</li>
+      <li>Oxigênio em alta concentração (FiO₂ de 0,85 a 100%).</li>
+      <li>Buscar ativamente as 6 emergências e 4 urgências grau I da "dúzia mortal".</li>
+      <li>Radiografia de tórax, ECG, hematócrito/hemoglobina para a maioria dos lesionados; exames adicionais conforme a lesão suspeita.</li>
+    </ol>
+    <div class="box alert">
+      <div class="box-label">NÃO ATRASE O TRATAMENTO PELO DIAGNÓSTICO POR IMAGEM</div>
+      <p>Obstrução de via aérea, pneumotórax hipertensivo, tamponamento cardíaco e pneumotórax aberto são diagnósticos <strong>clínicos</strong>. Esperar a radiografia para começar o tratamento nessas quatro situações pode custar a vida do paciente.</p>
+    </div>
+    <h3>Um coordenador, um protocolo, flexibilidade</h3>
+    <p>É fundamental que exista um coordenador da reanimação, que dirija todo o procedimento para evitar confusão e ações desorganizadas — mantendo equilíbrio entre o cumprimento estrito de um protocolo estruturado e a flexibilidade necessária conforme a evolução clínica.</p>
+  </div>
+</div>
+
+<!-- ================= PAREDE/COSTELAS ================= -->
+<div class="tabpanel" id="tab-parede">
+  <div class="section">
+    <h2>Parede torácica: fraturas costais e drenagem pleural</h2>
+    <h3>Fratura costal simples</h3>
+    <p>É a lesão mais frequente no trauma fechado (36-40%). Os segmentos anterolaterais da 3ª à 9ª costela são os mais fraturados — longos, finos e pouco protegidos. Causa dor pleurítica aguda que piora com respiração e movimento; o lesionado tende a imobilizar o lado afetado.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Localização</th><th>Significado clínico</th></tr>
+      <tr><td>1ª e 2ª costelas</td><td>Exige força considerável — suspeitar lesão associada de coração, aorta, troncos supra-aórticos e brônquios principais; mortalidade associada de 15-35%</td></tr>
+      <tr><td>3ª à 9ª costelas</td><td>Mais comumente fraturadas; podem lacerar pleura, pulmão e vasos intercostais</td></tr>
+      <tr><td>9ª à 12ª costelas</td><td>Suspeitar lesão de baço, rins e fígado — indicar ultrassonografia abdominal</td></tr>
+    </table></div>
+    <div class="box alert">
+      <div class="box-label">NUNCA ENFAIXE O TÓRAX</div>
+      <p>O vendaje circular ou com esparadrapo está formalmente contraindicado — limita a expansão torácica e a ventilação. O tratamento é analgesia (bloqueio intercostal ou peridural nas fraturas múltiplas) e fisioterapia respiratória ativa para evitar atelectasia e pneumonia.</p>
+    </div>
+    <h3>Crianças e idosos: duas armadilhas opostas</h3>
+    <p>Na criança, a elasticidade da caixa torácica permite grande lesão visceral interna <strong>sem</strong> fratura costal — uma ou mais fraturas em criança já indicam trauma intenso, mesmo sem outros sinais. No idoso ou pneumopata, fraturas costais simples facilmente evoluem para atelectasia e pneumonia, exigindo internação mais liberal.</p>
+    <h3>Manejo da drenagem pleural (toracostomia)</h3>
+    <p>A quarta parte das mortes por trauma se deve à lesão torácica; cerca de 10% dos lesionados com trauma torácico que chegam ao hospital morrem. Porém a maioria só precisa de reanimação e drenagem — menos de 10% dos traumas fechados e 15-30% dos penetrantes necessitam de toracotomia.</p>
+    <div class="proc-card"><div class="proc-num">1</div><div><strong>Preparo</strong> — Assepsia completa, anestesia local da pele e pleura parietal (bem inervadas), braço elevado para alargar os espaços intercostais.</div></div>
+    <div class="proc-card"><div class="proc-num">2</div><div><strong>Local</strong> — 5º ou 6º espaço intercostal, linha axilar média/anterior, sempre rente à borda superior da costela inferior (evita o feixe vasculonervoso).</div></div>
+    <div class="proc-card"><div class="proc-num">3</div><div><strong>Inserção</strong> — Túnel digital antes do tubo para reduzir risco de lesão pulmonar/visceral; tubo calibre 28-32 para hemotórax.</div></div>
+    <div class="proc-card"><div class="proc-num">4</div><div><strong>Conexão</strong> — Selo de água ou aspiração contínua, frasco sempre ≥50 cm abaixo do nível do tórax do lesionado.</div></div>
+    <div class="proc-card"><div class="proc-num">5</div><div><strong>Vigilância</strong> — Checar borbulhamento (persiste enquanto houver fístula), oscilação da coluna líquida, débito, fixação; manter 2 pinças à beira do leito para clampar em emergência.</div></div>
+    <h3>Complicações da drenagem pleural</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Complicação</th><th>Causa/observação</th></tr>
+      <tr><td>Enfisema subcutâneo</td><td>Orifícios do sistema posicionados em partes moles</td></tr>
+      <tr><td>Laceração de pulmão, vísceras abdominais, coração, grandes vasos</td><td>Inserção sem técnica digital prévia, sobretudo com aderências pleuropulmonares</td></tr>
+      <tr><td>Hemorragia</td><td>Lesão de vasos intercostais; saída de sangue vivo e pulsátil → pinçar o dreno imediatamente</td></tr>
+      <tr><td>Infecção / empiema</td><td>Pouco frequentes, mas motivam remoção/revisão</td></tr>
+      <tr><td>Posição incorreta, neuralgia intercostal, fuga de ar persistente</td><td>Má técnica ou neumotórax hipertensivo associado não resolvido</td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ================= TORAX INSTAVEL ================= -->
+<div class="tabpanel" id="tab-instavel">
+  <div class="section">
+    <h2>Tórax instável, contusão pulmonar e fratura do esterno</h2>
+    <h3>O que define o tórax instável</h3>
+    <p>Ocorre quando três ou mais costelas contíguas (ou cartilagens costais) se fraturam em dois ou mais pontos cada, criando um segmento sem suporte ósseo que se move <strong>paradoxalmente</strong>: afunda na inspiração, abaúla na expiração — fora de sincronia com o resto da parede. Incidência de 8-12% dos traumas torácicos, com mortalidade de 20-25%.</p>
+    <div class="box key">
+      <div class="box-label">O QUE REALMENTE MATA NO TÓRAX INSTÁVEL</div>
+      <p>Não é o movimento paradoxal isoladamente — é a <strong>contusão pulmonar subjacente</strong>, presente em praticamente todos os casos. Por isso o tratamento não pode se limitar a fixar a parede: precisa tratar o pulmão contundido.</p>
+    </div>
+    <h3>Classificação por extensão</h3>
+    <div class="sev-meter"><span class="sev-label" style="color:var(--green)">Leve</span><div class="sev-track"><div class="sev-fill" style="width:30%;background:var(--green)"></div></div><span class="small-note" style="margin:0">&lt;10 cm — pouco sintomático</span></div>
+    <div class="sev-meter"><span class="sev-label" style="color:var(--amber)">Moderado</span><div class="sev-track"><div class="sev-fill" style="width:60%;background:var(--amber)"></div></div><span class="small-note" style="margin:0">10–20 cm — tolerável por tempo variável</span></div>
+    <div class="sev-meter"><span class="sev-label" style="color:var(--red)">Grave</span><div class="sev-track"><div class="sev-fill" style="width:95%;background:var(--red)"></div></div><span class="small-note" style="margin:0">&gt;20 cm — incompatível com a vida sem suporte</span></div>
+    <h3>As 4 consequências do tórax instável</h3>
+    <ul class="plain">
+      <li>Redução da capacidade vital às dimensões do segmento instável.</li>
+      <li>Aumento do esforço respiratório.</li>
+      <li>Dor pelas fraturas, limitando a expansão da caixa torácica.</li>
+      <li>Contusão pulmonar subjacente clinicamente significativa.</li>
+    </ul>
+    <h3>Tratamento: da compressão externa à fixação cirúrgica</h3>
+    <p>Métodos históricos (compressão externa, tração com pesos e polias) foram amplamente abandonados por ineficácia e lesão de pele. A fixação cirúrgica (grampos/placas de titânio, osteossíntese, cerclagem com fios de Kirschner) ganhou popularidade por reduzir tempo de internação, dor e necessidade de ventilação mecânica — especialmente recomendada acima de 50-60 anos.</p>
+    <div class="box tip">
+      <div class="box-label">PRINCÍPIOS GERAIS DE MANEJO</div>
+      <p>Oxigênio umidificado · fisioterapia respiratória vigorosa (estimular tosse) · restrição criteriosa de líquidos (evitar sobrecarga que piore a contusão) · analgesia eficaz (bloqueio intercostal/peridural) · monitorização contínua (gasometria, oximetria, radiografias seriadas) · ventilação mecânica se critérios de insuficiência respiratória (FR &lt;8 ou &gt;30, PaO₂ &lt;60 mmHg em ar ambiente, PaCO₂ &gt;50 mmHg).</p>
+    </div>
+    <h3>Contusão pulmonar</h3>
+    <p>É a lesão potencialmente fatal mais comum do trauma fechado de tórax — pode ocorrer mesmo sem fratura costal, sobretudo em jovens com costelas ainda não totalmente ossificadas. Causa hemorragia intersticial e alveolar, aumenta secreções e reduz a complacência pulmonar. A insuficiência respiratória pode estar mascarada e se desenvolver ao longo de 8-24h — não necessariamente de forma aguda e imediata.</p>
+    <div class="box alert">
+      <div class="box-label">CUIDADO COM O VOLUME</div>
+      <p>Pacientes com contusão pulmonar toleram mal sobrecarga de líquidos — o excesso vai para o interstício e piora ainda mais a troca gasosa. Restringir ao necessário para manutenção, exceto se houver hipotensão ou taquicardia por hipovolemia associada.</p>
+    </div>
+    <h3>Fratura do esterno</h3>
+    <p>Infrequente, ao contrário das fraturas costais. Geralmente transversal, na junção manúbrio-corpo ou terço médio. Mortalidade de 25-45% — não pela fratura em si, mas pelas lesões associadas, sobretudo <strong>contusão miocárdica</strong> (o coração fica comprimido entre esterno e coluna). Diagnóstico: dor espontânea e à palpação, hematoma pré-esternal, ressalto, crepitação; radiografia lateral confirma. Toda fratura esternal exige ECG e dosagem de CPK-MB/troponina para descartar contusão cardíaca.</p>
+  </div>
+</div>
+
+<!-- ================= PNEUMOTORAX ================= -->
+<div class="tabpanel" id="tab-pneumotorax">
+  <div class="section">
+    <h2>Pneumotórax: fechado, aberto e hipertensivo</h2>
+    <h3>Pneumotórax fechado</h3>
+    <p>Ar no espaço pleural sem comunicação com o exterior — por trauma fechado, ferida penetrante selada, ou laceração pulmonar por fragmento costal. Classificação por magnitude:</p>
+    <div class="sev-meter"><span class="sev-label">Pequeno</span><div class="sev-track"><div class="sev-fill" style="width:18%;background:var(--green)"></div></div><span class="small-note" style="margin:0">até 15-20% de colapso</span></div>
+    <div class="sev-meter"><span class="sev-label">Médio</span><div class="sev-track"><div class="sev-fill" style="width:40%;background:var(--amber)"></div></div><span class="small-note" style="margin:0">30-40% de colapso</span></div>
+    <div class="sev-meter"><span class="sev-label">Grande</span><div class="sev-track"><div class="sev-fill" style="width:90%;background:var(--red)"></div></div><span class="small-note" style="margin:0">70-100% de colapso</span></div>
+    <p>Tratamento: drenagem pleural no 5º-6º espaço intercostal, linha axilar média, conectada a selo de água. Todo lesionado com pneumotórax simples deve ser drenado antes de transporte aéreo, pela possibilidade de expansão do ar com a altitude.</p>
+    <h3>Pneumotórax aberto</h3>
+    <p>Defeito grande na parede torácica (cerca de 2/3 do diâmetro da traqueia já basta) faz o ar seguir o caminho de menor resistência — entrando e saindo pelo defeito em vez de pela via aérea. Ventilação ineficaz, hipóxia e hipercapnia resultam.</p>
+    <div class="proc-card"><div class="proc-num">1</div><div><strong>Curativo de 3 pontas</strong> — Gaze vaselinada ou curativo oclusivo fixado em 3 lados, deixando uma "válvula" para escape de ar e prevenção de pneumotórax hipertensivo iatrogênico.</div></div>
+    <div class="proc-card"><div class="proc-num">2</div><div><strong>Monitorização</strong> — Vigiar sinais de hipertensão do pneumotórax; pode ser necessário reabrir periodicamente o curativo para descomprimir.</div></div>
+    <div class="proc-card"><div class="proc-num">3</div><div><strong>Definitivo</strong> — Drenagem pleural formal antes do fechamento hermético da ferida (para não criar um pneumotórax hipertensivo); exploração cirúrgica se fuga de ar persistente.</div></div>
+    <h3>Pneumotórax hipertensivo (a tensão)</h3>
+    <div class="box alert">
+      <div class="box-label">EMERGÊNCIA MÁXIMA — DIAGNÓSTICO CLÍNICO, NUNCA ESPERE A RADIOGRAFIA</div>
+      <p>Mecanismo valvular unidirecional: ar entra no espaço pleural mas não sai. O pulmão colapsa, o mediastino se desvia para o lado oposto, o retorno venoso cai e o débito cardíaco despenca — <strong>choque obstrutivo</strong>.</p>
+    </div>
+    <p>Sinais: ansiedade, cianose, taquipneia, murmúrio vesicular ausente/diminuído no lado afetado, hipertimpanismo à percussão, abaulamento intercostal, turgência jugular, taquicardia, estreitamento da pressão de pulso, hipotensão, enfisema subcutâneo, desvio traqueal (sinal tardio). Pneumotórax hipertensivo e tamponamento cardíaco são as <strong>únicas</strong> condições em que coexistem turgência jugular e choque hipovolêmico aparente.</p>
+    <h3>Descompressão de emergência</h3>
+    <div class="proc-card"><div class="proc-num">1</div><div><strong>Agulha calibrosa (14-16G)</strong> — 2º ou 3º espaço intercostal, linha hemiclavicular, rente à borda superior da costela. Sopro de ar confirma o diagnóstico.</div></div>
+    <div class="proc-card"><div class="proc-num">2</div><div><strong>Válvula unidirecional</strong> — Dedo de luva perfurado na ponta, fixado ao cone da agulha (ou válvula comercial) — deixa o ar sair, impede que entre.</div></div>
+    <div class="proc-card"><div class="proc-num">3</div><div><strong>Drenagem definitiva</strong> — Tubo de toracostomia assim que possível; a descompressão por agulha é temporizadora, não substitui o dreno.</div></div>
+  </div>
+</div>
+
+<!-- ================= HEMOTORAX ================= -->
+<div class="tabpanel" id="tab-hemotorax">
+  <div class="section">
+    <h2>Hemotórax e hemoneumotórax</h2>
+    <p>Presença de sangue no espaço pleural — em 20-40% dos traumas fechados e 50-80% dos penetrantes. Um hemitórax adulto pode acumular 2500-3000 mL de sangue, vindos de vasos intercostais, vasos pulmonares, pulmão, coração, pericárdio ou diafragma. Na maioria dos casos a origem é o parênquima pulmonar; hemotórax maciço sugere lesão de vasos intercostais/mamária interna (70-85%) ou de grandes vasos.</p>
+    <h3>Graduação radiológica (lesionado em pé)</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Grau</th><th>Achado radiográfico</th><th>Volume estimado</th><th>Conduta inicial</th></tr>
+      <tr><td class="hl-green">I — pequeno</td><td>Sangue abaixo do 6º-7º arco costal anterior, apaga o seio costofrênico</td><td>&lt;200 mL — pode ser assintomático</td><td>Pleurostomia com selo de água</td></tr>
+      <tr><td class="hl-amber">II — médio</td><td>Opacidade até o 4º-6º arco costal anterior</td><td>Variável</td><td>Drenagem + reavaliação</td></tr>
+      <tr><td class="hl-red">III — maciço</td><td>Opacidade acima do 2º arco costal ou todo o hemitórax</td><td>≥1500 mL</td><td>Reposição agressiva + avaliação cirúrgica</td></tr>
+    </table></div>
+    <div class="box alert">
+      <div class="box-label">CRITÉRIOS DE TORACOTOMIA NO HEMOTÓRAX</div>
+      <p>Drenagem inicial &gt;1500 mL em 1 hora = hemotórax maciço, indicação de toracotomia. 1 L no mesmo período já justifica avaliação cirúrgica. Sangramento contínuo &gt;200-300 mL por 3-4h, com agravamento do ritmo, também indica toracotomia.</p>
+    </div>
+    <h3>Hemotórax × pneumotórax hipertensivo: a diferença na percussão</h3>
+    <p>Ambos reduzem o murmúrio vesicular à ausculta — mas a percussão separa os dois: <strong>hiperressonância</strong> sugere pneumotórax a tensão; <strong>macicez</strong> sugere hemotórax maciço. A traqueia se desvia no pneumotórax a tensão; no hemotórax maciço, raramente.</p>
+    <h3>Manejo cirúrgico quando indicado</h3>
+    <p>Menos de 20% dos lesionados que precisam de toracotomia necessitam ressecção pulmonar. Preferem-se técnicas simples: tractotomia pulmonar (abrir o trajeto e ligar os vasos sangrantes) em vez de lobectomia/pneumectomia regradas, usando grampeadores mecânicos sempre que possível. Hemotórax coagulado (mal drenado) pode evoluir para empiema e exigir toracoscopia ou toracotomia — drenar dentro dos primeiros 7 dias reduz essa complicação de forma importante.</p>
+  </div>
+</div>
+
+<!-- ================= TRAQUEOBRONQUICA ================= -->
+<div class="tabpanel" id="tab-traqueobronquica">
+  <div class="section">
+    <h2>Ruptura traqueobrônquica e enfisemas</h2>
+    <p>Rara, mas potencialmente fatal — a maioria dos lesionados morre no local do acidente; dos que chegam vivos, a mortalidade é de 30%, principalmente por lesões associadas. No trauma fechado, a ruptura ocorre por compressão torácica grave contra a glote fechada, ou por desaceleração — frequentemente associada a fratura das 3 primeiras costelas.</p>
+    <div class="box key">
+      <div class="box-label">LOCALIZAÇÃO TÍPICA</div>
+      <p>70-80% dos casos de trauma fechado rompem a porção membranosa da traqueia, 1-2 cm acima da carina, ou os brônquios a até 2 cm dela. Em revisão recente: 76% das lesões estavam a até 2 cm da carina, 58% a até 1 cm, e 43% no brônquio principal direito.</p>
+    </div>
+    <h3>Quando suspeitar</h3>
+    <p>Enfisema mediastinal e pneumotórax maciço que <strong>não se resolve</strong> facilmente com descompressão e drenagem — 68% dos desgarros brônquicos só são diagnosticados quando surgem atelectasia e infecção. Ventilação pode se tornar extremamente difícil, exigindo FiO₂ de 0,85-100%.</p>
+    <h3>Enfisema subcutâneo e mediastinal</h3>
+    <p>Resulta de lesão de via aérea, pulmão ou — raramente — de explosão. O ar dissecado pelos planos pode ascender ao pescoço, face e tórax superior. O enfisema mediastinal (pneumomediastino) ocorre por sobredistensão alveolar e ruptura, geralmente ligado a lesão de traqueia, brônquio ou esôfago; pode comprimir veias pulmonares e cava superior, levando a isquemia cardíaca e acidose — o <strong>sinal de Hamman</strong> (crepitação sincrônica com a sístole, à ausculta sobre a área cardíaca) está presente em cerca de 20% dos casos.</p>
+    <div class="box alert">
+      <div class="box-label">TRATAMENTO</div>
+      <p>Reparo cirúrgico precoce por toracotomia é a conduta geral preconizada — tanto para reparar a lesão traqueobrônquica quanto para tratar lesões concomitantes. Se houver necessidade urgente de ventilação com pressão positiva e risco de pneumotórax hipertensivo, colocar tubo de pleurostomia antes.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TRAUMA CARDIACO ================= -->
+<div class="tabpanel" id="tab-cardiaco">
+  <div class="section">
+    <h2>Trauma cardíaco</h2>
+    <h3>Contusão miocárdica</h3>
+    <p>Ocorre em 10-16% dos traumas torácicos fechados — mais comumente por compressão do coração entre esterno e coluna em colisões frontais. O ventrículo direito, por sua posição retroesternal, é o mais vulnerável; já as lesões valvulares mais frequentes acometem a aórtica e a mitral, pelas altas pressões do ventrículo esquerdo.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Marcador</th><th>Padrão na contusão cardíaca</th></tr>
+      <tr><td>CPK-MB</td><td>Eleva-se em 6-8h, pico em 24h, normaliza em 3-4 dias; fração MB &gt;6% do total sugere lesão miocárdica</td></tr>
+      <tr><td>Troponina I</td><td>O marcador mais específico; eleva-se a partir de 3-4h do início do dano; anormal em mais da metade dos traumas fechados de tórax</td></tr>
+      <tr><td>ECG</td><td>Melhor preditor isolado; achados mais comuns: taquicardia sinusal e alterações inespecíficas de ST-T, geralmente após 24h</td></tr>
+      <tr><td>Ecocardiograma</td><td>Detecta arritmias, discinesia, derrame pericárdico, trombos intramurais — útil sobretudo após trauma fechado</td></tr>
+    </table></div>
+    <p>Tratamento inespecífico, semelhante ao do infarto: oxigenoterapia, analgesia, correção da volemia e da hipóxia, tratamento das arritmias, monitorização cardíaca contínua e repouso até estabilização do traçado.</p>
+    <h3>Concussão cardíaca (commotio cordis)</h3>
+    <p>Síndrome de morte súbita após trauma precordial de <strong>baixa</strong> energia, sem lesão estrutural do coração — a energia do golpe, se cair no momento vulnerável do ciclo cardíaco (pico da onda T), desencadeia fibrilação ventricular. Ocorre principalmente em crianças e jovens atletas (bola, disco de hóquei). Diferente da contusão: na concussão não há dano celular, o segmento ST-T é normal e a queda de pressão é imediata; na contusão há dano tecidual real, alterações de ST tardias e ausência de perda de consciência.</p>
+    <h3>Tamponamento cardíaco</h3>
+    <div class="box alert">
+      <div class="box-label">URGÊNCIA VITAL — COMPRESSÃO AGUDA DO CORAÇÃO</div>
+      <p>Acúmulo de sangue no saco pericárdico impede o enchimento diastólico adequado e derruba o débito cardíaco. Basta um incremento de 60-80 mL de líquido pericárdico, de instalação rápida, para produzir o quadro — enquanto derrames de instalação lenta podem acumular até 2 L sem sintomas, pela capacidade de distensão gradual do pericárdio.</p>
+    </div>
+    <h3>Tríade de Beck e sinal de Kussmaul</h3>
+    <p>Descrita por Claude Beck em 1935: <strong>queda da pressão arterial sistêmica + aumento da pressão venosa + bulhas abafadas/coração "pequeno e tranquilo"</strong>. Presente em apenas 10% dos casos — não espere vê-la completa. O sinal de Kussmaul (turgência jugular que aumenta na inspiração) também pode estar ausente se houver hipovolemia associada.</p>
+    <ul class="plain">
+      <li>Taquicardia e taquipneia</li>
+      <li>Pulso paradoxal (queda da PAS &gt;10-15 mmHg na inspiração)</li>
+      <li>Bulhas cardíacas abafadas e distantes</li>
+      <li>Turgência jugular (pode faltar se houver choque hipovolêmico concomitante)</li>
+      <li>Pulsos periféricos fracos ou ausentes</li>
+    </ul>
+    <h3>Diagnóstico e conduta</h3>
+    <p>A janela pericárdica subxifoidea é considerada o "padrão-ouro" para confirmar ou excluir ferida cardíaca em lesionado estável. O ecocardiograma à beira do leito tem alta sensibilidade em pacientes hemodinamicamente estáveis. A pericardiocentese tem valor diagnóstico e terapêutico transitório, mas não é inócua — risco de laceração coronariana, fibrilação ventricular ou pneumotórax; nunca deve ser tentada durante o transporte.</p>
+    <div class="box key">
+      <div class="box-label">REGRA PRÁTICA</div>
+      <p>Toda ferida penetrante na região precordial (losango entre as duas mamilas, a fúrcula esternal e o epigástrio) deve ser considerada ferida cardíaca até prova em contrário. Mais de 50% das feridas cardíacas por arma de fogo não entram pela região precordial clássica — suspeite também em qualquer lesionado em choque sem causa óbvia.</p>
+    </div>
+    <h3>Prognóstico</h3>
+    <p>55-82% dos feridos cardíacos morrem antes do atendimento. Entre os que chegam vivos com sinais vitais, a sobrevida é de 80-90% nas feridas por arma branca e cerca de 60% nas por arma de fogo — o taponamento, paradoxalmente, tem efeito protetor por limitar a exsanguinação, até certo ponto.</p>
+  </div>
+</div>
+
+<!-- ================= GRANDES VASOS ================= -->
+<div class="tabpanel" id="tab-vasos">
+  <div class="section">
+    <h2>Lesão traumática dos grandes vasos: a ruptura aórtica</h2>
+    <p>Dos grandes vasos torácicos, a aorta é a mais lesada. Menos de 20% de quem sofre ruptura aórtica chega vivo ao hospital — 80-90% morrem no próprio local do trauma. O trauma fechado de aorta responde por apenas 1% dos acidentes automobilísticos, mas por até 16% das mortes nesses acidentes.</p>
+    <h3>Mecanismo</h3>
+    <p>Na desaceleração brusca, coração e arco aórtico (relativamente móveis) se deslocam em sentido oposto à aorta descendente (fixa às vértebras torácicas) — gerando forças de cisalhamento máximas no <strong>istmo aórtico</strong>, o local mais comum de ruptura. A adventícia pode permanecer temporariamente íntegra, contendo um falso aneurisma que pode crescer e romper a qualquer momento — é essa contenção parcial que explica os raros sobreviventes.</p>
+    <h3>Sinais de alerta (Mattox, 1991)</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Sinal clínico</th><th>Significado</th></tr>
+      <tr><td>Marca do volante no tórax</td><td>Evidência de impacto direto de alta energia</td></tr>
+      <tr><td>Fratura palpável do esterno</td><td>Mecanismo compatível com lesão de grandes vasos</td></tr>
+      <tr><td>Hematoma expansivo no tórax superior</td><td>Sangramento ativo de grande vaso</td></tr>
+      <tr><td>Sopro interescapular</td><td>Fluxo turbulento por lesão vascular</td></tr>
+      <tr><td>Hipertensão em membro superior + pulsos diminuídos/assimétricos</td><td>Pseudocoartação — presente em apenas 5% das rupturas do istmo, mas muito específica</td></tr>
+      <tr><td>Tórax instável à esquerda, PVC elevada, hipotensão</td><td>Lesão grave associada</td></tr>
+    </table></div>
+    <h3>Radiografia de tórax: sinais indiretos</h3>
+    <ul class="plain">
+      <li>Alargamento do mediastino &gt;8-10 cm (sinal mais sensível, 85%)</li>
+      <li>Apagamento do botão aórtico (24%)</li>
+      <li>Derrame pleural esquerdo maciço (19%)</li>
+      <li>Fratura de 1ª/2ª costela, clavícula, escápula ou esterno (13%)</li>
+      <li>Desvio de tubo nasogástrico/traqueal para a direita (11-12%)</li>
+      <li>Elevação do brônquio principal direito, depressão do esquerdo (5%)</li>
+    </ul>
+    <div class="box tip">
+      <div class="box-label">VALOR PREDITIVO</div>
+      <p>Uma radiografia de tórax <strong>normal</strong> tem valor preditivo negativo de 98% — praticamente afasta ruptura aórtica. Mas se normal, lembre-se: em 7% das lesões aórticas confirmadas a radiografia inicial também era normal.</p>
+    </div>
+    <h3>Confirmação diagnóstica</h3>
+    <p>Angiotomografia helicoidal é hoje o método de escolha em paciente estável — rápida, sensível, detecta até pequenas lesões. Aortografia convencional permanece como referência de maior precisão anatômica quando a dúvida persiste, especialmente para planejamento cirúrgico. Ecocardiograma transesofágico tem sensibilidade de 93% e especificidade de 98%, mas exige operador treinado disponível.</p>
+  </div>
+</div>
+
+<!-- ================= ASFIXIA/OUTRAS ================= -->
+<div class="tabpanel" id="tab-asfixia">
+  <div class="section">
+    <h2>Asfixia traumática e outras lesões associadas</h2>
+    <h3>Asfixia traumática</h3>
+    <p>Trauma de magnitude considerável sobre a parede anterior do tórax, mesmo sem fratura costal ou esternal, comprime subitamente o coração contra a coluna — esvaziando sangue das câmaras direitas (paredes finas) em direção retrógrada às veias do pescoço e cabeça. O quadro resultante impressiona, mas costuma ser benigno se não houver hemorragia cerebral/retiniana associada.</p>
+    <div class="box key">
+      <div class="box-label">A "MÁSCARA EQUIMÓTICA"</div>
+      <p>Coloração azul-arroxeada de face e pescoço, hemorragias petequiais, edema palpebral, protrusão ocular, hemorragia subconjuntival — um conjunto de sinais dramático, mas que tipicamente se resolve em dias a semanas. A pele <strong>abaixo</strong> dessa área tende a permanecer rosada. Conduta: via aérea pérvia, oxigenoterapia e busca ativa de lesões associadas.</p>
+    </div>
+    <h3>Ruptura diafragmática</h3>
+    <p>Causada por aumento súbito da pressão intratorácica ou intra-abdominal. O lado esquerdo é mais comumente afetado (o fígado protege parcialmente o direito). Suspeitar em todo trauma penetrante abaixo do 5º espaço intercostal anterior — exige descartar ativamente lesão diafragmática e de vísceras abdominais, idealmente com ultrassonografia ou tomografia.</p>
+    <h3>Trauma toracoabdominal</h3>
+    <p>Incidência de 5-20% na prática civil, mortalidade de 2-18%. O grande desafio é que a lesão torácica, mais dramática clinicamente, pode mascarar sinais e sintomas abdominais igualmente graves — exige exame físico minucioso e repetido, não apenas tratamento do que é mais óbvio no primeiro momento.</p>
+    <h3>Lesão traumática do esôfago</h3>
+    <p>Rara, mas quase sempre grave quando ocorre. Em ferimentos transfixiantes por arma de fogo no mediastino, deve-se sempre suspeitar de lesão esofágica associada — o diagnóstico tardio é um dos fatores que mais pioram o prognóstico, pela mediastinite secundária.</p>
+  </div>
+</div>
+
+<!-- ================= PROCEDIMENTOS: TORACOTOMIA ================= -->
+<div class="tabpanel" id="tab-procedimentos">
+  <div class="section">
+    <h2>Toracotomia de emergência</h2>
+    <p>Objetivo: reanimar lesionados em estado crítico por lesões cardiotorácicas penetrantes — tratar tamponamento, reparar feridas cardíacas, controlar hemorragia, prevenir embolia aérea maciça, tratar fístula broncopleural, realizar massagem cardíaca interna e pinçar a aorta descendente.</p>
+    <h3>Indicações formais</h3>
+    <ul class="plain">
+      <li>Ferida penetrante em região precordial com possível lesão cardiopericárdica ou de grandes vasos</li>
+      <li>Hemotórax maciço por lesão vascular ou cardíaca</li>
+      <li>Fuga de ar não resolvida pelo dreno, sugerindo pneumotórax hipertensivo/sufocante</li>
+      <li>Evidência de lesão traqueobrônquica ou esofágica traumática</li>
+      <li>Perda de parte da estrutura da parede torácica</li>
+      <li>Ferida torácica penetrante com atividade elétrica sem pulso (não indicada no trauma fechado com AESP)</li>
+    </ul>
+    <h3>Técnica resumida</h3>
+    <div class="proc-card"><div class="proc-num">1</div><div><strong>Acesso</strong> — Toracotomia anterolateral esquerda ou direita conforme o lado da lesão, abaixo do mamilo, no 5º espaço intercostal; pode ampliar-se com esternotomia transversa para bilateral.</div></div>
+    <div class="proc-card"><div class="proc-num">2</div><div><strong>Exposição</strong> — Mão esquerda do operador posicionada lateral e posterior ao pulmão, palma contra o parênquima; se intubado, desconectar momentaneamente o tubo para melhor visualização.</div></div>
+    <div class="proc-card"><div class="proc-num">3</div><div><strong>Controle</strong> — Abrir a pleura mediastinal, mobilizar a aorta digitalmente e aplicar pinça vascular se necessário; massagem cardíaca interna em vez de compressões externas, ineficazes no hipovolêmico com trauma torácico penetrante.</div></div>
+    <div class="box alert">
+      <div class="box-label">O DOLOROSO PREÇO DA TORACOTOMIA</div>
+      <p>A dor pós-toracotomia (fraturas costais do afastador de Finochetto, neurites intercostais) pode causar grave transtorno ventilatório pós-operatório por respiração superficial. Infiltrar as costelas fraturadas e uma ou duas acima/abaixo com álcool-etanol (efeito de vários dias) ou anestésico local reduz muito essa complicação.</p>
+    </div>
+    <h3>Síndrome compartimental torácico</h3>
+    <p>Pode complicar o fechamento da cavidade após cirurgia de controle de danos: a elevação da pressão intratorácica reduz o retorno venoso e a pré-carga, aumenta a pós-carga, compromete a perfusão coronariana e cerebral, e pode gerar falência de ventrículo direito. A descompressão por pleurostomia é princípio obrigatório, qualquer que seja a técnica de fechamento usada.</p>
+  </div>
+</div>
+
+<!-- ================= ALGORITMO ================= -->
+<div class="tabpanel" id="tab-algoritmo">
+  <div class="section">
+    <h2>Fluxograma de decisão</h2>
+    <div class="anatomy-wrap"><svg viewBox="0 0 700 460" class="flow-svg" id="fl"></svg></div>
+    <h3>Sequência resumida</h3>
+    <ol class="step-list">
+      <li>Expor o tórax; avaliar via aérea, ventilação e oxigenação (A-B do ABCDE do trauma).</li>
+      <li>Procurar ativamente as 6 emergências: via aérea obstruída, pneumotórax hipertensivo, pneumotórax aberto, hemotórax maciço, tamponamento cardíaco, tórax instável — tratar cada uma assim que identificada, sem esperar radiografia.</li>
+      <li>Ausculta e percussão: murmúrio diminuído + hiperressonância → pensar pneumotórax a tensão → descomprimir com agulha, depois dreno. Murmúrio diminuído + macicez → pensar hemotórax → dreno calibroso + reposição volêmica.</li>
+      <li>Turgência jugular + choque → pneumotórax a tensão ou tamponamento cardíaco (as duas únicas causas desta combinação) → diferenciar pela percussão/ausculta torácica e, se disponível, ecocardiograma à beira do leito.</li>
+      <li>Avaliar critérios de toracotomia: &gt;1500 mL imediatos ou &gt;200-300 mL/h sustentados pelo dreno, instabilidade hemodinâmica refratária, ferida precordial com suspeita cardíaca.</li>
+      <li>Buscar as urgências grau I antes de declarar o paciente estável: contusão pulmonar, contusão miocárdica (ECG + enzimas), ruptura aórtica (radiografia + angio-TC), lesão traqueobrônquica, ruptura diafragmática.</li>
+      <li>Reavaliar continuamente — muitas dessas lesões evoluem ao longo de horas, não apenas no primeiro exame.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ================= CASOS ================= -->
+<div class="tabpanel" id="tab-casos">
+  <div class="section">
+    <h2>Caso clínico simulado</h2>
+    <p>Acompanhe o raciocínio diante de um politraumatizado com lesão torácica predominante, respondendo às perguntas em cada etapa.</p>
+    <div id="ca"></div>
+  </div>
+</div>
+
+<!-- ================= FONTES ================= -->
+<div class="tabpanel" id="tab-fontes">
+  <div class="section">
+    <h2>Fontes</h2>
+    <div class="box source">
+      <div class="box-label">LIVRO-BASE</div>
+      <p><strong>Cirugía</strong>, Tomo VI — Lesiones graves por traumatismo (Soler Vaillant R, Mederos Curbelo ON, La Habana: Ecimed, 2017), Parte 27 "Lesiones traumáticas del tórax y los grandes vasos":</p>
+      <ul class="plain" style="margin-top:8px">
+        <li>Cap. 239 — Trauma torácico: generalidades (pp. 233–247)</li>
+        <li>Cap. 240 — Tórax inestable, contusión pulmonar y fractura del esternón (pp. 248–261)</li>
+        <li>Cap. 241 — Hemoneumotórax traumático y ruptura traqueobronquial (pp. 262–275)</li>
+        <li>Cap. 242 — Traumas cardiacos (pp. 276–295)</li>
+        <li>Cap. 243 — Lesión traumática de los grandes vasos del tórax (pp. 296–303)</li>
+      </ul>
+    </div>
+    <p>Este módulo cobre um único "bloco" temático (Parte 27) de um único volume — por isso não há divergência de conteúdo entre fontes a sinalizar aqui, como ocorreu em módulos anteriores que cruzaram vários tomos. Vale registrar, porém, dois pontos de contexto histórico que o próprio texto-fonte já assinala:</p>
+    <div class="accordion open" onclick="toggleAcc(this.querySelector('.accordion-head'))"><div class="accordion-head">1. Métodos históricos de fixação do tórax instável, hoje abandonados<span class="chev">▾</span></div>
+      <div class="accordion-body"><p>O capítulo descreve, com valor histórico, a compressão externa e a tração subcutânea/esquelética com pesos e polias como métodos tradicionais de tratamento do tórax batiente — e já assinala que ambos foram amplamente superados pela fixação cirúrgica (osteossíntese, grampos e placas de titânio) e pela ventilação mecânica, que controlam melhor tanto a instabilidade da parede quanto a contusão pulmonar associada.</p></div>
+    </div>
+    <div class="accordion" onclick="toggleAcc(this.querySelector('.accordion-head'))"><div class="accordion-head">2. Uso de pericardiocentese "às cegas" × janela pericárdica<span class="chev">▾</span></div>
+      <div class="accordion-body"><p>O texto observa que alguns autores preferem a pericardiocentese por agulha como primeira manobra diagnóstica/terapêutica, mas destaca que a <strong>janela pericárdica subxifoidea</strong> se popularizou como o procedimento de escolha ("padrão-ouro") para confirmar ou excluir uma ferida cardíaca — por ser mais segura e definitiva. Este módulo segue essa recomendação mais recente do próprio texto-fonte.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= GLOSSÁRIO ================= -->
+<div class="tabpanel" id="tab-glos">
+  <div class="section">
+    <h2>Glossário</h2>
+    <div class="gq-wrap"><input id="gq" type="text" placeholder="Filtrar termos" aria-label="Filtrar glossário"></div>
+    <dl id="gl"></dl>
+  </div>
+</div>
+
+<!-- ================= MAPA ================= -->
+<div class="tabpanel" id="tab-mapa">
+  <div class="section">
+    <h2>Mapa mental</h2>
+    <div class="mmap" id="mmap"></div>
+  </div>
+</div>
+
+<!-- ================= FLASHCARDS ================= -->
+<div class="tabpanel" id="tab-flash">
+  <div class="section">
+    <h2>Flashcards</h2>
+    <div class="flash-controls">
+      <div class="chips" id="fchips"></div>
+      <button class="btn" onclick="fshuf()">🔀 Embaralhar</button>
+    </div>
+    <div class="flashcard-scene"><div class="flashcard" id="fcard" tabindex="0" onclick="fflip()">
+      <div class="flash-face flash-front"><span class="flash-kicker" id="fk"></span><div class="flash-text" id="fq"></div><span class="flash-hint">toque para virar</span></div>
+      <div class="flash-face flash-back"><span class="flash-kicker">RESPOSTA</span><div class="flash-text" id="fa"></div></div>
+    </div></div>
+    <div class="flash-nav">
+      <button class="btn" onclick="fmov(-1)">◂ Anterior</button>
+      <button class="btn" onclick="fmark(false)">✗ Errei</button>
+      <button class="btn primary" onclick="fmark(true)">✓ Acertei</button>
+      <button class="btn" onclick="fmov(1)">Próxima ▸</button>
+    </div>
+    <p class="small-note" id="fp" style="text-align:center;"></p>
+  </div>
+</div>
+
+<!-- ================= QUIZ ================= -->
+<div class="tabpanel" id="tab-quiz">
+  <div class="section">
+    <h2>Questões</h2>
+    <div id="qc"></div>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="btn primary" id="qs" onclick="qsub()">Corrigir</button>
+      <button class="btn" id="qr" onclick="qredo()" style="display:none;">Refazer só as erradas</button>
+    </div>
+    <div id="quiz-result"><div class="score" id="qsc"></div><p id="qfb"></p></div>
+  </div>
+</div>
+
+<!-- ================= REVISÃO ================= -->
+<div class="tabpanel" id="tab-revisao">
+  <div class="section">
+    <h2>Painel de revisão</h2>
+    <div id="pn"></div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer-note">BK-CIRURGIA · Módulo elaborado a partir de Cirugía, Tomo VI (Lesiones graves por traumatismo), Parte 27 · Uso educacional</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
+const tabs=[["ini","Início",3,"fund"],["anatomia","Anatomia e fisiopatologia",7,"fund"],["classificacao","Classificação",5,"fund"],["avaliacao","Avaliação clínica",6,"fund"],["parede","Parede e drenagem",7,"clin"],["instavel","Tórax instável",7,"clin"],["pneumotorax","Pneumotórax",7,"clin"],["hemotorax","Hemotórax",6,"clin"],["traqueobronquica","Traqueobrônquica",5,"clin"],["cardiaco","Trauma cardíaco",8,"clin"],["vasos","Grandes vasos",6,"clin"],["asfixia","Asfixia e outras",5,"clin"],["procedimentos","Toracotomia",5,"trat"],["algoritmo","Fluxograma",4,"trat"],["casos","Caso clínico",8,"app"],["fontes","Fontes",4,"ref"],["glos","Glossário",5,"ref"],["mapa","Mapa",4,"ref"],["flash","Flashcards",11,"study"],["quiz","Questões",13,"study"],["revisao","Revisão",3,"study"]];
+const GROUP_LABEL={fund:"Fundamentos",clin:"Lesões específicas",trat:"Procedimentos",app:"Aplicação",ref:"Referência",study:"Estudo ativo"};
+const seen=new Set(['ini']);
+const nav=$('#tabnav');let __prevGrp=null;
+tabs.forEach((t,i)=>{
+  if(t[3]!==__prevGrp){const d=document.createElement('span');d.className='nav-divider';d.textContent=GROUP_LABEL[t[3]];nav.appendChild(d);__prevGrp=t[3];}
+  const b=document.createElement('button');b.textContent=t[1];b.title='~'+t[2]+' min';b.dataset.target='tab-'+t[0];b.classList.add('grp-'+t[3]);if(!i)b.classList.add('active');b.onclick=()=>selectTab('tab-'+t[0]);nav.appendChild(b);
+});
+function selectTab(id){$$('.tabpanel').forEach(p=>p.classList.remove('active'));$('#'+id).classList.add('active');seen.add(id.slice(4));$$('.tabnav-scroll button').forEach(b=>{const a=b.dataset.target===id;b.classList.toggle('active',a);b.classList.toggle('seen',!a&&seen.has(b.dataset.target.slice(4)));if(a)b.scrollIntoView({inline:'center',block:'nearest'})});$('#pg').style.width=seen.size/tabs.length*100+'%';scrollTo({top:0,behavior:'instant'});fixCase();if(id==='tab-revisao')panel()}
+$('#tab-ini').classList.add('active');
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName))return;const i=tabs.findIndex(t=>'tab-'+t[0]===$('.tabpanel.active').id);if(e.key==='ArrowRight'&&i<tabs.length-1)selectTab('tab-'+tabs[i+1][0]);if(e.key==='ArrowLeft'&&i>0)selectTab('tab-'+tabs[i-1][0]);if((e.key==='Enter'||e.key===' ')&&e.target.id==='fcard'){e.preventDefault();fflip()}});
+function toggleAcc(head){const acc=head.parentElement,body=acc.querySelector('.accordion-body'),open=acc.classList.contains('open');acc.parentElement.querySelectorAll('.accordion').forEach(a=>{a.classList.remove('open');a.querySelector('.accordion-body').style.maxHeight=null});if(!open){acc.classList.add('open');body.style.maxHeight=body.scrollHeight+'px'}}
+$('#th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'};
+
+// ---- anatomy schematic (simple labeled thorax cross-section) ----
+(function(){
+const svg=document.getElementById('anat');if(!svg)return;
+let s='';
+s+='<rect x="40" y="20" width="620" height="220" rx="14" fill="none" stroke="var(--border)" stroke-dasharray="3 4"/>';
+for(let i=0;i<7;i++){const y=35+i*14;s+=`<path d="M70,${y} Q130,${y-14} 190,${y}" stroke="var(--teal)" stroke-width="3" fill="none" opacity="${0.45+i*0.07}"/>`;s+=`<path d="M630,${y} Q570,${y-14} 510,${y}" stroke="var(--teal)" stroke-width="3" fill="none" opacity="${0.45+i*0.07}"/>`;}
+s+='<rect x="330" y="30" width="20" height="130" rx="6" fill="var(--surface-2)" stroke="var(--teal)"/>';
+s+='<text x="302" y="24" font-weight="600">Esterno</text>';
+s+='<ellipse cx="220" cy="120" rx="95" ry="85" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"/>';
+s+='<ellipse cx="460" cy="120" rx="95" ry="85" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"/>';
+s+='<text x="170" y="60" fill="var(--blue)" font-weight="600">Pulmão D.</text>';
+s+='<text x="410" y="60" fill="var(--blue)" font-weight="600">Pulmão E.</text>';
+s+='<ellipse cx="340" cy="150" rx="55" ry="45" fill="var(--red-bg)" stroke="var(--red)" stroke-width="2"/>';
+s+='<text x="300" y="215" fill="var(--red)" font-weight="600">Coração</text>';
+s+='<ellipse cx="220" cy="120" rx="100" ry="90" fill="none" stroke="var(--teal-deep)" stroke-dasharray="2 3"/>';
+s+='<text x="60" y="200" font-size="10" fill="var(--ink-muted)">Pleura parietal/visceral —</text>';
+s+='<text x="60" y="212" font-size="10" fill="var(--ink-muted)">espaço virtual, até 2000 mL</text>';
+s+='<path d="M60,235 Q340,205 640,235" stroke="var(--amber)" stroke-width="3" fill="none"/>';
+s+='<text x="300" y="255" fill="var(--amber)" font-weight="600">Diafragma</text>';
+s+='<rect x="332" y="0" width="16" height="30" fill="var(--surface-2)" stroke="var(--ink-muted)"/>';
+s+='<text x="358" y="14" font-size="10" fill="var(--ink-muted)">Traqueia</text>';
+svg.innerHTML=s;
+})();
+
+// ---- mapa mental ----
+const MM=[
+["Anatomia e fisiologia","blue",["Funil: 12 pares de costelas, diafragma na base","Ventilação = diferença de pressão atmosfera/tórax","3 vias de hipóxia: hipoxemia, hipovolemia, falha de bomba"]],
+["Classificação","teal",["Aberto × fechado; puro, toracoabdominal, cervicotorácico","Emergências (6) × Urgência I (4) × Urgência II"]],
+["Avaliação","amber",["Observação → palpação → percussão → ausculta, <30s","4 diagnósticos clínicos: não espere radiografia"]],
+["Parede torácica","green",["Fratura costal simples: lesão mais comum (36-40%)","Nunca enfaixar o tórax","Drenagem: 5º-6º EIC, linha axilar média, borda superior da costela"]],
+["Tórax instável","red",["≥3 costelas, ≥2 focos cada → movimento paradoxal","O que mata é a contusão pulmonar subjacente","Leve <10cm / Moderado 10-20cm / Grave >20cm"]],
+["Pneumotórax","blue",["Fechado: drenagem simples","Aberto: curativo de 3 pontas","Hipertensivo: descompressão por agulha imediata, 2º-3º EIC"]],
+["Hemotórax","purple",["Grau I/II/III por achado radiográfico","Toracotomia: >1500mL imediato ou >200mL/h sustentado","Hiperressonância = pneumotórax; macicez = hemotórax"]],
+["Trauma cardíaco","red",["Contusão: CPK-MB, troponina, ECG, eco","Tamponamento: tríade de Beck (só 10% completa)","Janela pericárdica subxifoidea = padrão-ouro"]],
+["Grandes vasos","amber",["Ruptura aórtica no istmo (cisalhamento)","Mediastino alargado >8-10cm = sinal mais sensível","Angio-TC: método de escolha no estável"]],
+["Procedimentos","teal",["Toracotomia de emergência: indicações precisas","Infiltrar costelas fraturadas reduz dor pós-operatória","Síndrome compartimental torácico: descomprimir sempre"]]
+];
+function renderMindMap(){const el=$('#mmap');if(!el)return;let h='<div class="mmap-root">Traumatismo torácico</div><div class="mmap-connector"></div><div class="mmap-branches">';
+MM.forEach(br=>{h+=`<div class="mmap-branch c-${br[1]}"><h4>${br[0]}</h4><ul>`+br[2].map(it=>`<li>${it}</li>`).join('')+'</ul></div>'});
+h+='</div>';el.innerHTML=h}
+renderMindMap();
+
+// ---- glossário ----
+const GL=[
+["Tórax batiente (volet costal)","Fratura de 3 ou mais costelas contíguas em 2 ou mais pontos cada, criando um segmento sem suporte ósseo com movimento paradoxal."],
+["Respiração paradoxal","Depressão do segmento fraturado na inspiração e abaulamento na expiração — o oposto do movimento normal da parede."],
+["Pneumotórax hipertensivo","Ar que entra no espaço pleural por mecanismo valvular unidirecional sem via de saída, colapsando o pulmão e desviando o mediastino — choque obstrutivo."],
+["Pneumotórax aberto","Comunicação entre o espaço pleural e o exterior através de um defeito na parede torácica, impedindo a ventilação eficaz."],
+["Hemotórax maciço","Acúmulo de sangue no espaço pleural, classicamente ≥1500 mL de drenagem imediata ou >200 mL/h sustentado — indicação de toracotomia."],
+["Tamponamento cardíaco","Compressão aguda do coração por sangue no saco pericárdico, que impede o enchimento diastólico adequado."],
+["Tríade de Beck","Queda da pressão arterial sistêmica, aumento da pressão venosa e bulhas cardíacas abafadas — sinais clássicos de tamponamento, presentes em apenas 10% dos casos."],
+["Sinal de Kussmaul","Turgência das veias do pescoço que aumenta durante a inspiração, indicando elevação da pressão venosa central."],
+["Pulso paradoxal","Queda da pressão arterial sistólica maior que 10-15 mmHg durante a inspiração."],
+["Janela pericárdica subxifoidea","Procedimento cirúrgico considerado padrão-ouro para confirmar ou excluir ferida cardíaca em lesionado hemodinamicamente estável."],
+["Contusão miocárdica","Hemorragia e necrose celular no miocárdio por trauma fechado, sem solução de continuidade — diagnosticada por ECG, enzimas cardíacas e ecocardiograma."],
+["Concussão cardíaca (commotio cordis)","Fibrilação ventricular desencadeada por golpe precordial de baixa energia no momento vulnerável do ciclo cardíaco, sem lesão estrutural do coração."],
+["Istmo aórtico","Região de transição entre o arco aórtico móvel e a aorta descendente fixa — local mais comum de ruptura traumática por cisalhamento."],
+["Sinal de Hamman","Crepitação sincrônica com a sístole cardíaca, audível sobre a área precordial no pneumomediastino — presente em cerca de 20% dos casos."],
+["Asfixia traumática","Compressão brusca do tórax que esvazia sangue das câmaras cardíacas direitas para as veias do pescoço e cabeça, causando a 'máscara equimótica'."],
+["Tractotomia pulmonar","Técnica cirúrgica que expõe o trajeto de uma lesão penetrante no pulmão para hemostasia direta, evitando ressecções maiores."],
+["Pseudocoartação","Hipertensão nos membros superiores com pulsos diminuídos nos membros inferiores, sinal sugestivo (mas pouco sensível) de ruptura do istmo aórtico."],
+["Síndrome compartimental torácico","Colapso cardiopulmonar agudo por elevação da pressão intratorácica, frequentemente após fechamento de cirurgia de controle de danos."]
+];
+function renderGlossary(){const el=$('#gl');if(!el)return;el.innerHTML=GL.map(g=>`<dt>${g[0]}</dt><dd>${g[1]}</dd>`).join('')}
+renderGlossary();
+$('#gq').oninput=e=>{const v=e.target.value.toLowerCase();$$('#gl dt').forEach(d=>{const s=(d.textContent+d.nextElementSibling.textContent).toLowerCase().includes(v);d.style.display=d.nextElementSibling.style.display=s?'':'none'})};
+
+// ---- fluxograma SVG ----
+(function(){const N=[
+[260,4,180,50,'Trauma torácico: expor, avaliar A-B (via aérea/ventilação)','#f0b429'],
+[260,74,180,58,'Buscar as 6 emergências ativamente (sem esperar RX)','#ff9a90'],
+[30,160,220,64,'Murmúrio ↓ + hiperressonância: pneumotórax a tensão','#8cc0ff'],
+[260,160,220,64,'Murmúrio ↓ + macicez: hemotórax','#8cc0ff'],
+[490,160,180,64,'Turgência jugular + choque: tamponamento?','#8cc0ff'],
+[30,248,220,50,'Agulha 2º-3º EIC → dreno definitivo','#86dca0'],
+[260,248,220,50,'Dreno calibroso + reposição volêmica','#86dca0'],
+[490,248,180,50,'Janela pericárdica / eco à beira do leito','#86dca0'],
+[150,320,400,50,'Critérios de toracotomia? (>1500mL ou >200mL/h, choque refratário)','#f0b429'],
+[150,392,400,58,'Buscar urgências grau I: contusão pulmonar, cardíaca, aorta, traqueobrônquica','#d6c2f5']];
+let s='<defs><marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0L6,3L0,6z" fill="#b9ad94"/></marker></defs>';
+[[350,54,350,74],[300,132,140,160],[350,132,370,160],[400,132,580,160],[140,224,140,248],[370,224,370,248],[580,224,580,248],[140,298,310,320],[370,298,400,320],[350,370,350,392]].forEach(l=>s+=`<line x1="${l[0]}" y1="${l[1]}" x2="${l[2]}" y2="${l[3]}" stroke="#b9ad94" stroke-width="2" marker-end="url(#m)"/>`);
+N.forEach(n=>{s+=`<rect x="${n[0]}" y="${n[1]}" width="${n[2]}" height="${n[3]}" rx="8" fill="${n[5]}"/>`;const w=[];let l='';n[4].split(' ').forEach(x=>{if((l+' '+x).length>28){w.push(l);l=x}else l=(l+' '+x).trim()});w.push(l);w.forEach((t,i)=>s+=`<text x="${n[0]+8}" y="${n[1]+18+i*14}">${t}</text>`)});
+const fl=document.getElementById('fl');if(fl)fl.innerHTML=s;
+})();
+
+// ---- flashcards ----
+const FC=[
+[0,'Anatomia','Quais são as 3 vias que levam à hipóxia no trauma torácico?','Hipoxemia (via aérea/pneumotórax/contusão), hipovolemia (hemotórax) e falha de bomba miocárdica (tamponamento e outras).'],
+[0,'Classificação','Cite as 6 emergências "rapidamente mortais" do trauma torácico.','Obstrução de via aérea, pneumotórax hipertensivo, pneumotórax aberto, hemotórax maciço, tamponamento cardíaco e tórax instável/batiente.'],
+[0,'Avaliação','Por que 4 das lesões torácicas graves não devem esperar confirmação radiológica?','Porque obstrução de via aérea, pneumotórax hipertensivo, pneumotórax aberto e tamponamento cardíaco são diagnósticos clínicos — esperar a radiografia pode custar a vida.'],
+[0,'Parede torácica','Qual é o tratamento inicial padrão da fratura costal simples?','Analgesia eficaz (bloqueio intercostal/peridural se múltiplas) e fisioterapia respiratória — nunca enfaixar o tórax.'],
+[1,'Tórax instável','O que realmente determina a gravidade do tórax instável, além do movimento paradoxal?','A contusão pulmonar subjacente, presente na quase totalidade dos casos — é ela, não o movimento da parede isoladamente, o principal problema a tratar.'],
+[1,'Pneumotórax','Como diferenciar clinicamente pneumotórax hipertensivo de hemotórax maciço quando ambos reduzem o murmúrio vesicular?','Pela percussão: hiperressonância sugere pneumotórax a tensão; macicez sugere hemotórax maciço.'],
+[1,'Pneumotórax','Qual a conduta imediata diante de um pneumotórax aberto no atendimento pré-hospitalar?','Curativo oclusivo selado em 3 lados ("válvula"), permitindo a saída de ar e evitando a conversão em pneumotórax hipertensivo.'],
+[1,'Hemotórax','Quais critérios de drenagem definem indicação de toracotomia no hemotórax?','Drenagem imediata ≥1500 mL, ou perda sustentada >200-300 mL/h por 3-4h com agravamento do ritmo.'],
+[1,'Trauma cardíaco','Qual é a tríade de Beck e em que proporção de casos ela aparece completa?','Queda da pressão arterial, aumento da pressão venosa e bulhas abafadas — completa em apenas cerca de 10% dos casos de tamponamento.'],
+[1,'Trauma cardíaco','Qual exame é considerado o "padrão-ouro" para confirmar ferida cardíaca em paciente estável?','A janela pericárdica subxifoidea.'],
+[1,'Grandes vasos','Onde ocorre mais comumente a ruptura aórtica traumática, e por quê?','No istmo aórtico, pela diferença de mobilidade entre o arco aórtico (móvel) e a aorta descendente (fixa à coluna), gerando cisalhamento na desaceleração.'],
+[2,'Grandes vasos','Qual o valor preditivo negativo de uma radiografia de tórax normal para ruptura aórtica, e qual sua limitação?','98% — mas em 7% das rupturas aórticas confirmadas a radiografia inicial também era normal.'],
+[2,'Trauma cardíaco','Diferencie contusão cardíaca de concussão cardíaca (commotio cordis).','Na contusão há dano tecidual real (hemorragia, necrose), alterações tardias de ST-T e ausência de perda de consciência; na concussão não há dano estrutural, o ST-T é normal, e a queda de pressão/perda de consciência é imediata, por fibrilação ventricular desencadeada no pico da onda T.'],
+[2,'Traqueobrônquica','Por que a lesão traqueobrônquica costuma ser diagnosticada tardiamente?','Porque 68% dos desgarros brônquicos só se manifestam quando surgem atelectasia e infecção — o enfisema mediastinal e o pneumotórax que não respondem à descompressão são a pista inicial.'],
+[2,'Procedimentos','Quais são os principais objetivos da toracotomia de emergência?','Reanimar lesionados críticos por trauma cardiotorácico penetrante: tratar tamponamento, reparar feridas cardíacas, controlar hemorragia, prevenir embolia aérea, tratar fístula broncopleural, massagem cardíaca interna e pinçamento da aorta descendente.'],
+[2,'Procedimentos','O que é a síndrome compartimental torácico e como se previne?','Colapso cardiopulmonar agudo por elevação da pressão intratorácica após fechamento da cavidade; previne-se mantendo a descompressão por pleurostomia como princípio obrigatório.'],
+[0,'Asfixia traumática','O que caracteriza a "máscara equimótica" da asfixia traumática?','Coloração azul-arroxeada de face e pescoço, petéquias, edema palpebral e hemorragia subconjuntival, por compressão aguda do tórax que esvazia sangue das câmaras cardíacas direitas.'],
+[1,'Drenagem pleural','Em qual ponto exato do espaço intercostal o dreno deve ser inserido, e por quê?','Rente à borda superior da costela inferior, para evitar o feixe vasculonervoso que corre na borda inferior de cada costela.'],
+[0,'Hemotórax','Quanto sangue pode se acumular em um único hemitórax de um adulto?','Até 2500-3000 mL — até 30% da volemia total.'],
+[2,'Fontes','Cite um procedimento diagnóstico que o próprio texto-fonte considera superado pela janela pericárdica subxifoidea.','A pericardiocentese "às cegas" por agulha como método diagnóstico isolado — hoje reservada como manobra temporizadora, não substituindo a janela pericárdica.']
+];
+let fl=-1,fi=0,fs={};const LV=['Básico','Intermediário','Avançado'];
+function flist(){return fl===-2?FC.filter((c,i)=>fs[i]===0):FC.filter(c=>fl<0||c[0]===fl)}
+function frender(){$('#fchips').innerHTML=[[-1,'Todas'],[0,'Básico'],[1,'Intermediário'],[2,'Avançado'],[-2,'Só o que errei ('+FC.filter((c,i)=>fs[i]===0).length+')']].map(x=>`<button class="chip chipbtn${fl===x[0]?' on':''}" style="cursor:pointer;min-height:36px" onclick="fl=${x[0]};fi=0;frender()">${x[1]}</button>`).join('');const L=flist();$('#fcard').classList.remove('flipped');if(!L.length){$('#fq').textContent='Nada por aqui ainda.';$('#fa').textContent='';$('#fp').textContent='';$('#fk').textContent='';return}fi=(fi+L.length)%L.length;const c=L[fi];$('#fq').textContent=c[2];$('#fa').textContent=c[3];$('#fk').textContent=LV[c[0]].toUpperCase()+' · '+c[1].toUpperCase();$('#fp').textContent=`Carta ${fi+1} de ${L.length}`}
+function fflip(){$('#fcard').classList.toggle('flipped')}
+function fmov(d){fi+=d;frender()}
+function fshuf(){for(let i=FC.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[FC[i],FC[j]]=[FC[j],FC[i]]}fs={};fi=0;frender()}
+function fmark(ok){const L=flist();if(!L.length)return;const c=L[fi],id=FC.indexOf(c);if(fs[id]===undefined)addS(c[1],ok);fs[id]=ok?1:0;fi+=1;frender()}
+frender();
+
+// ---- quiz ----
+const Q=[
+['mc','Avaliação','Qual destas lesões torácicas NÃO deve esperar confirmação radiológica para iniciar o tratamento?',['Contusão pulmonar','Pneumotórax hipertensivo','Fratura esternal isolada','Ruptura aórtica'],1,['Errada: pode evoluir ao longo de horas, não é emergência clínica imediata.','Certa: é diagnóstico clínico — tratar imediatamente.','Errada: geralmente estável, aguarda avaliação completa.','Errada: requer confirmação por imagem (RX/angio-TC) antes de conduta definitiva.']],
+['vf','Classificação','V ou F: a maioria dos pacientes com trauma torácico necessita de toracotomia.',['V','F'],1,['Errada.','Certa: menos de 10% dos traumas fechados e 15-30% dos penetrantes exigem toracotomia — a maioria é tratada com reanimação e drenagem pleural.']],
+['mc','Parede torácica','Onde exatamente o dreno torácico deve ser inserido em relação à costela?',['Rente à borda inferior da costela superior','Rente à borda superior da costela inferior','No centro do espaço intercostal','Não importa, desde que esteja no espaço correto'],1,['Errada: risco de lesionar o feixe vasculonervoso.','Certa: evita o feixe vasculonervoso, que corre na borda inferior de cada costela.','Errada: risco de lesão vascular.','Errada: a posição exata evita complicações hemorrágicas.']],
+['vig','Tórax instável','Paciente com 4 costelas fraturadas em 2 pontos cada, movimento paradoxal visível e hipoxemia progressiva. Qual é a causa mais provável da hipoxemia, além da instabilidade mecânica?',['Pneumonia bacteriana já estabelecida','Contusão pulmonar subjacente','Embolia pulmonar','Fadiga muscular isolada, sem lesão pulmonar'],1,['Errada: é complicação tardia, não a causa imediata.','Certa: a contusão pulmonar subjacente é a lesão potencialmente fatal mais comum, presente na quase totalidade dos tórax instáveis.','Errada: sem dados que sugiram essa causa no caso.','Errada: a fadiga contribui, mas a contusão pulmonar é a causa dominante.']],
+['mc','Pneumotórax','O pneumotórax hipertensivo deve ser descomprimido inicialmente:',['Com tubo de toracostomia calibre 32, diretamente','Com agulha calibrosa no 2º-3º espaço intercostal, linha hemiclavicular','Apenas com oxigênio suplementar, sem procedimento invasivo','Com toracotomia de emergência obrigatória'],1,['Errada: a descompressão por agulha é mais rápida como medida inicial.','Certa.','Errada: o paciente está em choque obstrutivo — requer ação imediata.','Errada: toracotomia não é a primeira conduta para pneumotórax a tensão isolado.']],
+['mc','Pneumotórax/Hemotórax','Turgência jugular associada a sinais de choque é característica de quais duas condições, segundo o texto-fonte?',['Hemotórax maciço e fratura costal simples','Pneumotórax hipertensivo e tamponamento cardíaco','Contusão pulmonar e asfixia traumática','Ruptura diafragmática e fratura esternal'],1,['Errada.','Certa: são as duas únicas condições em que coexistem turgência jugular e choque hipovolêmico aparente.','Errada.','Errada.']],
+['mc','Hemotórax','Um dreno torácico produz 1600 mL de sangue imediatamente após a inserção. Qual a conduta?',['Observação, sem necessidade de intervenção adicional','Avaliação cirúrgica (toracotomia) por hemotórax maciço','Apenas reposição volêmica, sem considerar cirurgia','Retirar o dreno imediatamente'],1,['Errada: esse volume já define hemotórax maciço.','Certa: ≥1500 mL imediatos é critério de toracotomia.','Errada: a reposição isolada não resolve a causa do sangramento ativo.','Errada: retirar o dreno pioraria o quadro.']],
+['vf','Trauma cardíaco','V ou F: a ausência da tríade de Beck descarta o diagnóstico de tamponamento cardíaco.',['V','F'],1,['Errada.','Certa: a tríade completa aparece em apenas cerca de 10% dos casos — sua ausência não descarta o tamponamento.']],
+['mc','Trauma cardíaco','Qual é o marcador bioquímico mais específico para contusão miocárdica?',['CPK total','Troponina I','LDH','Amilase'],1,['Errada: pouco específica, elevada em qualquer lesão muscular.','Certa: é o elemento diagnóstico mais relevante de contusão cardíaca.','Errada: inespecífica.','Errada: não relacionada a lesão cardíaca.']],
+['mc','Trauma cardíaco','Qual procedimento é considerado o "padrão-ouro" para confirmar ou excluir ferida cardíaca em paciente estável?',['Pericardiocentese por agulha às cegas','Janela pericárdica subxifoidea','Radiografia de tórax simples','Eletrocardiograma isolado'],1,['Errada: tem valor transitório e riscos próprios.','Certa.','Errada: pouco sensível para derrame pericárdico pequeno.','Errada: útil, mas não confirma isoladamente lesão cardíaca estrutural.']],
+['vig','Trauma cardíaco','Adolescente é atingido por uma bola de beisebol no precórdio durante o jogo e entra em colapso cardiovascular imediato, sem lesão óssea ou cutânea visível. O quadro mais provável é:',['Contusão miocárdica grave','Concussão cardíaca (commotio cordis)','Tamponamento cardíaco por ferida penetrante','Infarto agudo do miocárdio aterosclerótico'],1,['Errada: contusão exige impacto de maior energia e deixa dano tecidual.','Certa: golpe precordial de baixa energia, sem lesão estrutural, desencadeando fibrilação ventricular — típico de atletas jovens.','Errada: não há ferida penetrante descrita.','Errada: improvável nessa faixa etária sem fatores de risco.']],
+['mc','Grandes vasos','Qual é o local mais comum de ruptura traumática da aorta torácica?',['Valva aórtica','Istmo aórtico','Aorta abdominal','Artéria pulmonar'],1,['Errada.','Certa: ponto de maior cisalhamento entre o arco móvel e a aorta descendente fixa.','Errada: fora do escopo torácico superior mais afetado.','Errada: não é um ramo da aorta.']],
+['mc','Grandes vasos','Qual achado radiográfico de tórax é o mais sensível para sugerir ruptura aórtica?',['Fratura de costela isolada','Alargamento do mediastino','Pneumotórax pequeno','Derrame pericárdico'],1,['Errada: pouco específico isoladamente.','Certa: presente em cerca de 85% dos casos com sinais radiológicos indiretos.','Errada: não é o achado mais associado.','Errada: mais associado a tamponamento, não a ruptura aórtica.']],
+['mc','Procedimentos','Entre as indicações formais de toracotomia de emergência, encontra-se:',['Fratura costal simples isolada','Ferida penetrante em região precordial com suspeita de lesão cardíaca','Pneumotórax pequeno assintomático','Contusão pulmonar leve sem instabilidade'],1,['Errada: tratada clinicamente.','Certa.','Errada: tratado com observação ou drenagem simples.','Errada: tratada com suporte clínico.']],
+['vf','Traqueobrônquica','V ou F: a maioria das lesões traqueobrônquicas é diagnosticada imediatamente na avaliação inicial do trauma.',['V','F'],1,['Errada.','Certa: 68% dos desgarros brônquicos só são diagnosticados quando surgem atelectasia e infecção — o diagnóstico inicial é frequentemente tardio.']]
+];
+let qa=[],qi=Q.map((q,i)=>i);
+function qrender(){const el=$('#qc');el.innerHTML='';qa=[];$('#qs').style.display='inline-block';$('#qr').style.display='none';$('#quiz-result').classList.remove('show');
+qi.forEach((i,n)=>{const q=Q[i],type=q[0],cat=q[1],text=q[2],options=q[3],correct=q[4],explains=q[5];
+const d=document.createElement('div');d.className='quiz-q';d.innerHTML=`<div class="qn">QUESTÃO ${n+1} DE ${qi.length} · ${({mc:'MÚLTIPLA ESCOLHA',vf:'V OU F COM JUSTIFICATIVA',vig:'VINHETA CLÍNICA'})[type]} · ${cat.toUpperCase()}</div><div class="qtext">${text}</div>`+(type==='vf'?`<textarea id="j${i}" rows="2" aria-label="Justificativa" placeholder="Justifique sua resposta (obrigatório)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-family:inherit;margin-bottom:10px;"></textarea>`:'');
+options.forEach((o,j)=>{const b=document.createElement('button');b.className='quiz-opt';b.textContent=o;b.id=`q${i}-${j}`;b.onclick=()=>{if(d.dataset.done)return;qa[i]=j;options.forEach((_,y)=>$(`#q${i}-${y}`).classList.toggle('selected',y===j))};d.appendChild(b)});
+const ex=document.createElement('div');ex.className='quiz-explain';ex.id='x'+i;d.appendChild(ex);el.appendChild(d)})}
+function qsub(){for(const i of qi){if(Q[i][0]==='vf'&&qa[i]!==undefined&&$('#j'+i).value.trim().length<5){$('#j'+i).focus();$('#j'+i).placeholder='Escreva a justificativa antes de corrigir';return}}
+let sc=0,n=0;qi.forEach(i=>{const q=Q[i];q[3].forEach((o,j)=>{const b=$(`#q${i}-${j}`);b.disabled=1;if(j===q[4])b.classList.add('correct');else if(j===qa[i])b.classList.add('incorrect')});const ok=qa[i]===q[4];addS(q[1],ok);if(ok)sc++;n++;const x=$('#x'+i);x.innerHTML=q[3].map((o,j)=>`<div>${j===q[4]?'✔':'✖'} <strong>${o}:</strong> ${q[5][j]}</div>`).join('');x.classList.add('show')});
+const pct=Math.round(sc/n*100);$('#qsc').textContent=`${sc} / ${n} (${pct}%)`;$('#qfb').textContent=pct>=85?'Excelente domínio do módulo.':pct>=60?'Bom resultado: revise as abas ligadas às questões erradas.':'Vale reler as abas de Pneumotórax, Hemotórax e Trauma Cardíaco antes de refazer.';$('#quiz-result').classList.add('show');$('#qs').style.display='none';if(sc<n)$('#qr').style.display='inline-block';$('#quiz-result').scrollIntoView({behavior:'smooth',block:'center'})}
+function qredo(){qi=qi.filter(i=>qa[i]!==Q[i][4]);qrender();$('#tab-quiz').scrollIntoView({behavior:'smooth'})}
+qrender();
+
+// ---- caso clínico ----
+const CASES={ca:[
+{t:'Motivo da consulta',x:'Homem, 27 anos, vítima de colisão de motocicleta, trazido pelo SAMU com dor torácica intensa à direita e dispneia progressiva.'},
+{t:'Exame inicial',x:'FR 32 irpm, saturação 88% em ar ambiente, murmúrio vesicular abolido à direita, hipertimpanismo à percussão desse lado, turgência jugular, PAS 78 mmHg, desvio da traqueia para a esquerda.',q:'Qual é o diagnóstico mais provável e a conduta imediata?',o:['Hemotórax maciço — iniciar reposição volêmica e aguardar radiografia','Pneumotórax hipertensivo — descompressão imediata por agulha, sem esperar radiografia','Contusão pulmonar — oxigênio e observação','Tamponamento cardíaco — solicitar ecocardiograma antes de qualquer conduta'],c:1,e:'Hipertimpanismo (não macicez), desvio traqueal e turgência jugular com choque são o quadro clássico de pneumotórax hipertensivo — diagnóstico clínico que exige descompressão imediata por agulha no 2º-3º espaço intercostal, sem esperar exames.'},
+{t:'Conduta imediata',x:'Realizada descompressão com agulha no 2º espaço intercostal direito, linha hemiclavicular — saída de ar sob pressão, com melhora transitória da saturação e da pressão arterial.',q:'Qual o próximo passo?',o:['Remover a agulha e observar, já que o paciente melhorou','Colocar tubo de toracostomia definitivo (drenagem pleural)','Alta hospitalar, pois o quadro já foi resolvido','Aguardar 24h antes de qualquer outro procedimento'],c:1,e:'A descompressão por agulha é temporizadora, não substitui o dreno — é preciso colocar um tubo de toracostomia definitivo conectado a selo de água ou sistema de aspiração.'},
+{t:'Reavaliação após a drenagem',x:'Drenagem pleural no 5º espaço intercostal, linha axilar média, confirma saída imediata de 1800 mL de sangue, com sangramento contínuo.',q:'Diante desse débito, qual a conduta correta?',o:['Observação clínica, sem outra intervenção','Avaliação cirúrgica para toracotomia — critério de hemotórax maciço','Reduzir a aspiração do dreno para diminuir o sangramento aparente','Clampar o dreno para "conter" a hemorragia'],c:1,e:'Drenagem imediata ≥1500 mL caracteriza hemotórax maciço e é critério formal de toracotomia — a origem mais provável é lesão de vaso intercostal, mamária interna ou de um grande vaso.'},
+{t:'Durante a toracotomia',x:'Identificada lesão em trajeto no parênquima pulmonar, sem acometimento cardíaco. Optou-se por exposição do trajeto e hemostasia direta, em vez de ressecção pulmonar formal.',q:'Esse procedimento é conhecido como:',o:['Lobectomia regrada','Tractotomia pulmonar','Pneumectomia','Decorticação pulmonar'],c:1,e:'A tractotomia pulmonar (abertura do trajeto da lesão com hemostasia e sutura dos vasos sangrantes) é a técnica preferida — menos de 20% dos lesionados que precisam de toracotomia necessitam de ressecção pulmonar regrada.'},
+{t:'Evolução final',x:'Paciente estabiliza no pós-operatório, dreno torácico retirado no 4º dia após confirmação radiográfica de reexpansão pulmonar completa, recebe alta no 6º dia.',x2:'Ponto para levar: o diagnóstico de pneumotórax hipertensivo é clínico e não espera radiografia; a descompressão por agulha é temporizadora; os critérios de drenagem orientam a decisão cirúrgica; e técnicas conservadoras como a tractotomia evitam ressecções pulmonares desnecessárias.'}
+]};
+let stats={};const addS=(s,ok)=>{stats[s]=stats[s]||[0,0];stats[s][ok?0:1]++};
+Object.keys(CASES).forEach(k=>{const el=$('#'+k);CASES[k].forEach((st,i)=>{const id=k+i;let h=`<div class="case-wrap${i===0?' open':''}" id="${id}"><button class="case-toggle" onclick="toggleCase('${id}')"><span><span class="tag">${String(i+1).padStart(2,'0')}</span>${st.t}</span><span class="chev">▾</span></button><div class="case-content"><div class="case-content-inner">`;if(st.x)h+=`<p>${st.x}</p>`;if(st.x2)h+=`<p>${st.x2}</p>`;if(st.q){h+=`<p><strong>${st.q}</strong></p>`;st.o.forEach((o,j)=>h+=`<button class="quiz-opt" data-c="${id}" onclick="cans('${k}',${i},${j})">${o}</button>`);h+=`<div class="quiz-explain" id="e${id}">${st.e}</div>`}h+='</div></div></div>';el.insertAdjacentHTML('beforeend',h)});fixCase()});
+function fixCase(){$$('.case-wrap').forEach(w=>{const c=w.querySelector('.case-content');c.style.maxHeight=w.classList.contains('open')?c.scrollHeight+'px':null})}
+function toggleCase(id){$('#'+id).classList.toggle('open');fixCase()}
+function cans(k,i,j){const st=CASES[k][i],id=k+i;$$(`[data-c="${id}"]`).forEach((b,y)=>{if(b.disabled)return;b.disabled=1;if(y===st.c)b.classList.add('correct');else if(y===j)b.classList.add('incorrect')});$('#e'+id).classList.add('show');addS('Raciocínio (caso clínico)',j===st.c);fixCase()}
+
+// ---- painel de revisão ----
+function panel(){const k=Object.keys(stats);$('#pn').innerHTML=k.length?k.map(s=>{const t=stats[s][0]+stats[s][1],p=Math.round(stats[s][0]/t*100);return `<div><strong>${s}</strong> · ${p}% (${stats[s][0]}/${t}) ${p<60?'· <span style="color:var(--red)">rever</span>':''}<div class="bar2"><i style="width:${p}%"></i></div></div>`}).join('')+'<p class="small-note">Orientação qualitativa da sessão; não é avaliação formal.</p>':'<p class="small-note">Responda o caso clínico, os flashcards e as questões para preencher este painel.</p>'}
+</script>
+</body>
+</html>
