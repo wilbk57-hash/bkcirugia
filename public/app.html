@@ -5340,7 +5340,7 @@ const STR_TABLE = [
  ['item.chatadmin.label','Falar com o admin','Chat with admin','Hablar con el admin'],
  ['admin.mgmt.payments','Pagamentos','Payments','Pagos'],
  ['item.payments.label','Plano Premium','Premium plan','Plan Premium'],
- ['item.payments.desc','Pagar por MTN Mobile Money','Pay via MTN Mobile Money','Pagar por MTN Mobile Money'],
+ ['item.payments.desc','Pagar por Orange Money','Pay via Orange Money','Pagar por Orange Money'],
  ['admin.mgmt.library','Biblioteca Oficial','Official Library','Biblioteca Oficial'],
  ['stub.ia.title','Tutor de IA','AI tutor','Tutor de IA'],
  ['stub.ia.sub','Tire dúvidas, gere resumos e pratique perguntas com o Tutor de IA, que também consulta a Biblioteca Oficial.','Ask questions, generate summaries and practice with the AI Tutor, which also searches the Official Library.','Resuelve dudas, genera resúmenes y practica preguntas con el Tutor de IA, que también consulta la Biblioteca Oficial.'],
@@ -8233,6 +8233,57 @@ function onAuthGranted(isAdmin) {
   if (isAdmin) { openAdmin(); } else { switchTab('dashboardView'); }
   resetAuthForms();
   dmFabStart();
+  bkAccessCheck();
+}
+
+/* ---------- Experiência grátis (1 dia) + bloqueio sem pagamento ---------- */
+let bkAccessTimer = null;
+async function bkAccessCheck() {
+  const L = bkL;
+  const { data: u } = await supabaseClient.auth.getUser();
+  const old = document.getElementById('bkPayGate'); const bar = document.getElementById('bkPayBar');
+  if (!u?.user) { old?.remove(); bar?.remove(); return; }
+  const { data: adm } = await supabaseClient.rpc('is_platform_admin');
+  if (adm === true) { old?.remove(); bar?.remove(); return; }
+  const { data: sub } = await supabaseClient.from('subscriptions').select('plan,paid_until').eq('user_id', u.user.id).maybeSingle();
+  const until = sub ? new Date(sub.paid_until) : new Date(0);
+  const left = until - Date.now();
+  const trial = sub?.plan === 'trial';
+  if (left <= 0) {
+    bar?.remove();
+    if (!old) {
+      const g = document.createElement('div'); g.id = 'bkPayGate';
+      g.style.cssText = 'position:fixed;inset:0;z-index:9500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;';
+      g.innerHTML = `<div style="max-width:420px;color:var(--text);">
+        <div style="font-size:48px;">🔒</div>
+        <h2 style="margin:8px 0;">${trial ? L('A tua experiência grátis terminou','Your free trial has ended','Tu prueba gratis terminó') : L('O teu acesso expirou','Your access has expired','Tu acceso expiró')}</h2>
+        <p style="color:var(--text2);font-size:14px;">${L('Para continuar a usar o BK-CIRURGIA, efetua o pagamento por Orange Money e envia o comprovativo. O acesso volta assim que for aprovado.','To keep using BK-CIRURGIA, pay via Orange Money and upload the receipt. Access returns once approved.','Para seguir usando BK-CIRURGIA, paga por Orange Money y envía el comprobante.')}</p>
+        <button class="btn" style="width:100%;margin-top:12px;" onclick="bkPayments()">💳 ${L('Efetuar pagamento','Make payment','Realizar pago')}</button>
+        <button class="btn" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--text);" onclick="bkAccessCheck()">🔄 ${L('Já paguei — verificar','I paid — check again','Ya pagué — verificar')}</button>
+        <button style="margin-top:14px;background:none;border:0;color:var(--text2);text-decoration:underline;" onclick="doLogout()">${L('Sair da conta','Sign out','Cerrar sesión')}</button></div>`;
+      document.body.appendChild(g);
+    }
+  } else {
+    old?.remove();
+    const days = left / 86400000;
+    if (trial || days <= 3) {
+      const hrs = Math.max(1, Math.ceil(left / 3600000));
+      const txt = trial
+        ? L(`Experiência grátis: faltam ${hrs}h. Paga para continuar.`, `Free trial: ${hrs}h left. Pay to continue.`, `Prueba gratis: quedan ${hrs}h.`)
+        : L(`O teu acesso termina em ${Math.ceil(days)} dia(s). Renova já.`, `Your access ends in ${Math.ceil(days)} day(s).`, `Tu acceso termina en ${Math.ceil(days)} día(s).`);
+      let b = bar;
+      if (!b) { b = document.createElement('div'); b.id = 'bkPayBar'; b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9400;background:#f5b301;color:#111;font-size:13px;font-weight:600;padding:8px 12px;display:flex;gap:8px;align-items:center;justify-content:center;cursor:pointer;'; b.onclick = () => bkPayments(); document.body.appendChild(b); }
+      b.innerHTML = `⏳ ${txt} <u>💳 ${L('Pagar','Pay','Pagar')}</u>`;
+      const key = 'bk_paynotif_' + new Date().toDateString();
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, '1');
+        if (typeof showToast === 'function') showToast(txt);
+        try { if ('Notification' in window && Notification.permission === 'granted') new Notification('BK-CIRURGIA', { body: txt, icon: '/icons/icon-192.png' }); } catch (e) {}
+      }
+    } else bar?.remove();
+  }
+  if (bkAccessTimer) clearInterval(bkAccessTimer);
+  bkAccessTimer = setInterval(bkAccessCheck, 5 * 60000);
 }
 
 /* Mirrors openSettings()/closeSettings() so the admin panel behaves like
@@ -9152,6 +9203,7 @@ function showLoginMethodInfo() {
 }
 
 async function doLogout() {
+  document.getElementById('bkPayGate')?.remove(); document.getElementById('bkPayBar')?.remove();
   await supabaseClient.auth.signOut();
   clearSession();
   showToast(t('auth.toast.loggedout'));
@@ -9465,7 +9517,7 @@ async function bkMyMessages() {
   if (unread.length) supabaseClient.from('feedback_replies').update({ read_at: new Date().toISOString() }).in('id', unread).then(() => {});
 }
 
-/* ---------- Plano Premium (MTN Mobile Money) ---------- */
+/* ---------- Plano Premium (Orange Money) ---------- */
 const PAY_PLAN_LABEL = (T) => ({ monthly: T('Mensal','Monthly','Mensual'), quarterly: T('Trimestral','Quarterly','Trimestral'), yearly: T('Anual','Yearly','Anual') });
 function bkPayStatus(s, T) {
   return s === 'approved' ? `<span style="color:var(--ok,#22c55e);">✓ ${T('Aprovado','Approved','Aprobado')}</span>`
@@ -9479,7 +9531,7 @@ async function bkPayments() {
   if (!u?.user) { body.innerHTML = L('Entre na sua conta.','Sign in first.','Inicia sesión.'); return; }
   const uid = u.user.id;
   const [{ data: setts }, { data: sub }, { data: subs }] = await Promise.all([
-    supabaseClient.from('payment_settings').select('key,value'),
+    supabaseClient.rpc('get_payment_info'),
     supabaseClient.from('subscriptions').select('plan,paid_until').eq('user_id', uid).maybeSingle(),
     supabaseClient.from('payment_submissions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(20),
   ]);
@@ -9492,7 +9544,7 @@ async function bkPayments() {
   const active = sub && new Date(sub.paid_until) > new Date();
   let html = '';
   if (active) html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(34,197,94,.12);margin-bottom:12px;"><b style="color:var(--ok,#22c55e);">✓ ${L('Acesso Premium ativo','Premium access active','Acceso Premium activo')}</b> — ${PAY_PLAN_LABEL(L)[sub.plan] || ''} · ${L('até','until','hasta')} ${new Date(sub.paid_until).toLocaleDateString()}</div>`;
-  html += `<p style="margin:0 0 12px;font-size:13px;">${L('Paga por MTN Mobile Money e envia aqui a fotografia do comprovativo. A equipa confirma e o teu acesso ativa-se.','Pay via MTN Mobile Money and upload a photo of the receipt here. The team confirms and your access is activated.','Paga por MTN Mobile Money y envía aquí la foto del comprobante.')}</p>`;
+  html += `<p style="margin:0 0 12px;font-size:13px;">${L('Paga por Orange Money e envia aqui a fotografia do comprovativo. A equipa confirma e o teu acesso ativa-se.','Pay via Orange Money and upload a photo of the receipt here. The team confirms and your access is activated.','Paga por Orange Money y envía aquí la foto del comprobante.')}</p>`;
   if (!sv.mtn_number) html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(245,179,1,.12);margin-bottom:12px;">${L('Os pagamentos ainda estão a ser configurados. Fala com a equipa.','Payments are still being set up. Contact the team.','Los pagos aún se están configurando.')}</div>`;
   html += PLANS.map(([k, price, name, dur]) => `<button class="btn" data-plan="${k}" data-price="${price || ''}" style="width:100%;justify-content:space-between;display:flex;margin-bottom:8px;"><span>${name} · ${dur}</span><b>${price ? Number(price).toLocaleString() + ' CFA' : '—'}</b></button>`).join('');
   html += `<div id="bkPayForm" style="display:none;"></div>`;
@@ -10831,7 +10883,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
 });
 if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
-refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); });
+refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); });
 </script>
 <script>
 // ── Web Push: lembretes de eventos de estudo ──
