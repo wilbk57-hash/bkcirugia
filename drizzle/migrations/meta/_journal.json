@@ -71,6 +71,13 @@
       "when": 1792136579988,
       "tag": "0009_library_contents_and_complete_index",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792226984932,
+      "tag": "0010_optimize_library_search",
+      "breakpoints": true
     }
   ]
 }

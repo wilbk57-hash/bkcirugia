@@ -10,6 +10,8 @@
 - [x] Verificar conversa, limpeza e recuperação após recarregar.
 
 # Biblioteca e Tutor
+- [ ] Otimizar pesquisa intermitente e verificar resposta real do Tutor.
+- [x] Confirmar número de contas de administrador e duplicação do e-mail.
 - [x] Preparar automaticamente livros e mostrar progresso e erros.
 - [x] Pesquisar toda a biblioteca nas perguntas do Tutor com fontes e explicações estruturadas.
 - [x] Acrescentar índice interativo e ampliação no leitor.
