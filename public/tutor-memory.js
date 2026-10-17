@@ -3,7 +3,9 @@ let tutorMemoryUser = null;
 let tutorMemoryState = { preferred_name: '', profile: {}, cleared_at: null };
 let tutorMemoryReady = Promise.resolve();
 let tutorMemoryQueue = Promise.resolve();
+let tutorMemoryGeneration = 0;
 function tutorMemoryReset() {
+  tutorMemoryGeneration++;
   tutorMemoryUser = null;
   tutorMemoryState = { preferred_name: '', profile: {}, cleared_at: null };
   IA_MESSAGES = [];
@@ -18,6 +20,24 @@ function tutorMemoryEnqueue(work) {
   tutorMemoryQueue = next;
   return next;
 }
+async function tutorMemoryQuery(table, userId, generation) {
+  if (generation !== tutorMemoryGeneration || tutorMemoryUser !== userId) return null;
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (generation !== tutorMemoryGeneration || tutorMemoryUser !== userId) return null;
+  const session = data?.session;
+  if (error || !session?.access_token || session.user?.id !== userId) {
+    const failure = new Error(bkL('A sessão mudou ou expirou. Entra novamente para continuar a conversa.', 'Your session changed or expired. Sign in again to continue.', 'Tu sesión cambió o caducó. Inicia sesión de nuevo para continuar.'));
+    failure.needsAuth = true;
+    throw failure;
+  }
+  // Bind each request to its verified owner, never to a stale client default.
+  const ownerQuery = supabaseClient.from(table);
+  const authorize = query => query.setHeader('Authorization', 'Bearer ' + session.access_token);
+  return {
+    select: (...args) => authorize(ownerQuery.select(...args)),
+    upsert: (...args) => authorize(ownerQuery.upsert(...args)),
+  };
+}
 function tutorMemoryCache() {
   if (!tutorMemoryUser) return;
   try { localStorage.setItem('bk_tutor_' + tutorMemoryUser, JSON.stringify({ state: tutorMemoryState, messages: IA_MESSAGES })); } catch (_) {}
@@ -25,22 +45,28 @@ function tutorMemoryCache() {
 function tutorMemorySave() {
   if (!tutorMemoryUser) return Promise.resolve();
   const userId = tutorMemoryUser;
+  const generation = tutorMemoryGeneration;
   IA_MESSAGES.forEach(m => { if (!m.memoryId) m.memoryId = crypto.randomUUID(); });
   const rows = IA_MESSAGES.filter(m => !m.error && !m.limitNotice && !m.localOnly).map(m => ({ user_id: userId, client_id: m.memoryId, role: m.role, content: m.content, message: { ...m } }));
   tutorMemoryCache();
   return tutorMemoryEnqueue(async () => {
     if (!rows.length) return;
-    const { error } = await supabaseClient.from('tutor_messages').upsert(rows, { onConflict: 'user_id,client_id', ignoreDuplicates: true });
+    const query = await tutorMemoryQuery('tutor_messages', userId, generation);
+    if (!query) return;
+    const { error } = await query.upsert(rows, { onConflict: 'user_id,client_id', ignoreDuplicates: true });
     if (error) { tutorMemoryError(error); throw error; }
   });
 }
 function tutorMemorySaveProfile(profile) {
   if (!tutorMemoryUser) return Promise.resolve();
   tutorMemoryState.profile = profile;
+  const generation = tutorMemoryGeneration;
   const row = { ...tutorMemoryState, profile: { ...profile }, user_id: tutorMemoryUser, updated_at: new Date().toISOString() };
   tutorMemoryCache();
   return tutorMemoryEnqueue(async () => {
-    const { error } = await supabaseClient.from('tutor_state').upsert(row);
+    const query = await tutorMemoryQuery('tutor_state', row.user_id, generation);
+    if (!query) return;
+    const { error } = await query.upsert(row);
     if (error) { tutorMemoryError(error); throw error; }
   });
 }
@@ -76,24 +102,31 @@ function tutorAskName() {
   });
   document.getElementById('bkTutorNameInput')?.focus();
 }
-function tutorMemoryInit() {
-  const userId = getSession()?.id;
+async function tutorMemoryInit() {
+  const { data, error: sessionError } = await supabaseClient.auth.getSession();
+  if (sessionError) throw sessionError;
+  const userId = data?.session?.user?.id;
   if (!userId) { tutorMemoryReset(); return Promise.resolve(); }
   if (tutorMemoryUser === userId) return tutorMemoryReady;
   tutorMemoryReset();
   tutorMemoryUser = userId;
+  const generation = tutorMemoryGeneration;
   tutorMemoryReady = (async () => {
     try {
       const cached = JSON.parse(localStorage.getItem('bk_tutor_' + userId) || 'null');
       if (cached) { tutorMemoryState = cached.state; IA_MESSAGES = cached.messages || []; }
     } catch (_) {}
     try {
-      const { data: state, error } = await supabaseClient.from('tutor_state').select('*').eq('user_id', userId).maybeSingle();
+      const stateQuery = await tutorMemoryQuery('tutor_state', userId, generation);
+      if (!stateQuery) return;
+      const { data: state, error } = await stateQuery.select('*').eq('user_id', userId).maybeSingle();
       if (error) throw error;
       if (tutorMemoryUser !== userId) return;
       if (state) tutorMemoryState = { preferred_name: state.preferred_name, profile: state.profile || {}, cleared_at: state.cleared_at };
       else await tutorMemorySaveProfile({ nivel: 'auto', ultimaSessao: null, dificuldades: {} });
-      let query = supabaseClient.from('tutor_messages').select('client_id,role,content,message,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(100);
+      const historyQuery = await tutorMemoryQuery('tutor_messages', userId, generation);
+      if (!historyQuery) return;
+      let query = historyQuery.select('client_id,role,content,message,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(100);
       if (tutorMemoryState.cleared_at) query = query.gt('created_at', tutorMemoryState.cleared_at);
       const { data: messages, error: readError } = await query;
       if (readError) throw readError;
@@ -114,10 +147,15 @@ async function tutorMemoryContext(question) {
   await tutorMemoryReady;
   if (!tutorMemoryUser) return '';
   const userId = tutorMemoryUser;
+  const generation = tutorMemoryGeneration;
   const terms = question.match(/[\p{L}\p{N}]{3,}/gu)?.slice(0, 16).join(' ') || '';
-  const recentQuery = supabaseClient.from('tutor_messages').select('role,content').eq('user_id', userId).order('created_at', { ascending: false }).limit(16);
-  const relevantQuery = terms ? supabaseClient.from('tutor_messages').select('role,content').eq('user_id', userId).textSearch('content', terms, { type: 'websearch', config: 'simple' }).order('created_at', { ascending: false }).limit(12) : Promise.resolve({ data: [], error: null });
+  const recentBase = await tutorMemoryQuery('tutor_messages', userId, generation);
+  const relevantBase = terms ? await tutorMemoryQuery('tutor_messages', userId, generation) : null;
+  if (!recentBase || (terms && !relevantBase)) return '';
+  const recentQuery = recentBase.select('role,content').eq('user_id', userId).order('created_at', { ascending: false }).limit(16);
+  const relevantQuery = relevantBase ? relevantBase.select('role,content').eq('user_id', userId).textSearch('content', terms, { type: 'websearch', config: 'simple' }).order('created_at', { ascending: false }).limit(12) : Promise.resolve({ data: [], error: null });
   const [recent, relevant] = await Promise.all([recentQuery, relevantQuery]);
+  if (generation !== tutorMemoryGeneration || tutorMemoryUser !== userId) return '';
   if (recent.error || relevant.error) tutorMemoryError(recent.error || relevant.error);
   const saved = [...(relevant.data || []), ...(recent.data || []).reverse()];
   const seen = new Set();

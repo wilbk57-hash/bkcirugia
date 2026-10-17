@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { clientForRequest } from '@/lib/rag-auth.server'
 import { embedQuery } from '@/lib/rag.server'
+import { readLibraryWithRetry } from '@/lib/library-search-retry'
 
 const BodySchema = z.object({
   query: z.string().min(3).max(2000),
@@ -36,11 +37,14 @@ export const Route = createFileRoute('/api/books/search')({
         try {
           const vector = await embedQuery(parsed.query, apiKey)
           // Search the complete shared library, keeping several books represented.
-          const { data, error } = await caller.supabase.rpc('match_library_chunks', {
+          const { data, error } = await readLibraryWithRetry(() => caller.supabase.rpc('match_library_chunks', {
             query_embedding: JSON.stringify(vector) as unknown as string,
             match_count: parsed.matchCount ?? 12,
-          })
-          if (error) return json({ error: 'failed', message: error.message }, 502)
+          }))
+          if (error) {
+            console.error('[library-search]', error.code)
+            return json({ error: 'unavailable', message: 'A pesquisa dos livros está temporariamente indisponível.' }, 503)
+          }
 
           const rows = (data ?? []).filter((r) => (r.similarity ?? 0) >= 0.25)
           const bookIds = [...new Set(rows.map((r) => r.book_id))]
@@ -69,7 +73,8 @@ export const Route = createFileRoute('/api/books/search')({
           const e = err as { status?: number; message?: string }
           if (e?.status === 429) return json({ error: 'limit' }, 429)
           if (e?.status === 402 || e?.status === 403 || e?.status === 404) return json({ error: 'unavailable', message: e.message || 'Pesquisa indisponível' }, e.status)
-          return json({ error: 'failed', message: e?.message || 'search failed' }, 502)
+          console.error('[library-search] request failed', e?.status ?? 'network')
+          return json({ error: 'unavailable', message: 'A pesquisa dos livros está temporariamente indisponível.' }, 503)
         }
       },
     },
