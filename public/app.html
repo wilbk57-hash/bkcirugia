@@ -7894,12 +7894,14 @@ function getCurrentAdmin() { return _authCache.admin; }
 /* Chamada no arranque e sempre que o estado de auth do Supabase muda
    (login/logout/token refresh). Preenche _authCache a partir do
    servidor — profiles para o perfil, admin_roles para saber se é admin. */
-async function refreshAuthCache() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
+async function refreshAuthCache(authenticatedSession) {
+  const session = authenticatedSession || (await supabaseClient.auth.getSession()).data.session;
   if (!session) { _authCache.user = null; _authCache.admin = null; _authCache.ready = true; return; }
 
-  const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-  const { data: adminRow } = await supabaseClient.from('admin_roles').select('*').eq('user_id', session.user.id).maybeSingle();
+  const { data: adminRow, error: adminError } = await supabaseClient.from('admin_roles').select('*').eq('user_id', session.user.id).maybeSingle().setHeader('Authorization', 'Bearer ' + session.access_token);
+  // A failed permission lookup is not evidence that the account is a student.
+  if (adminError) { clearSession(); _authCache.ready = true; throw adminError; }
+  const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single().setHeader('Authorization', 'Bearer ' + session.access_token);
 
   if (adminRow) {
     _authCache.admin = { user_id: session.user.id, username: session.user.email, level: adminRow.level };
@@ -8179,32 +8181,40 @@ async function doAdminSetup() {
    a diferença é só existir uma linha correspondente em admin_roles. */
 async function doAdminLogin() {
   clearFieldErrors(['adminUser']);
-  document.getElementById('adminErr').classList.remove('show');
+  const err = document.getElementById('adminErr');
+  err.classList.remove('show');
   const uname = document.getElementById('adminUser').value.trim(); // e-mail
   const pw = document.getElementById('adminPw').value;
+  if (!isValidEmail(uname)) { fieldError('adminUser', t('auth.err.email')); return; }
+  if (!pw) { err.textContent = t('auth.err.required'); err.classList.add('show'); return; }
   const btn = document.getElementById('adminBtn');
   btn.classList.add('loading'); btn.disabled = true;
 
-  const { error } = await supabaseClient.auth.signInWithPassword({ email: uname, password: pw });
-  if (error) {
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: uname, password: pw });
+    if (error) {
+      err.textContent = error.code === 'invalid_credentials' ? t('auth.err.admin') : adminT3('Não foi possível entrar. Verifica a ligação e tenta novamente.', 'Unable to sign in. Check your connection and retry.', 'No se pudo entrar. Comprueba la conexión e inténtalo de nuevo.');
+      err.classList.add('show');
+      auditLog('admin_login_failed');
+      return;
+    }
+    await refreshAuthCache(data.session);
+    if (!_authCache.admin) {
+      await supabaseClient.auth.signOut();
+      clearSession();
+      err.textContent = adminT3('Esta conta não tem acesso de administrador. Entra com o e-mail da conta administrativa.', 'This account does not have administrator access. Use your administrator account email.', 'Esta cuenta no tiene acceso de administrador. Usa el correo de tu cuenta administrativa.');
+      err.classList.add('show');
+      auditLog('admin_login_denied_not_admin');
+      return;
+    }
+    auditLog('admin_login');
+    completeAuth(_authCache.admin.username, true);
+  } catch (_) {
+    err.textContent = adminT3('Não foi possível verificar o acesso de administrador. Verifica a ligação e tenta novamente; não precisas de alterar a senha.', 'Unable to verify administrator access. Check your connection and retry; you do not need to change your password.', 'No se pudo verificar el acceso de administrador. Comprueba la conexión y vuelve a intentarlo; no necesitas cambiar la contraseña.');
+    err.classList.add('show');
+  } finally {
     btn.classList.remove('loading'); btn.disabled = false;
-    document.getElementById('adminErr').textContent = t('auth.err.admin');
-    document.getElementById('adminErr').classList.add('show');
-    auditLog('admin_login_failed');
-    return;
   }
-  await refreshAuthCache();
-  btn.classList.remove('loading'); btn.disabled = false;
-  if (!_authCache.admin) {
-    await supabaseClient.auth.signOut();
-    clearSession();
-    document.getElementById('adminErr').textContent = t('auth.err.admin');
-    document.getElementById('adminErr').classList.add('show');
-    auditLog('admin_login_denied_not_admin');
-    return;
-  }
-  auditLog('admin_login');
-  completeAuth(_authCache.admin.username, true);
 }
 
 /* ---- completion / gate ---- */
@@ -11029,7 +11039,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
 });
 if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
-refreshAuthCache().then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); void tutorMemoryInit(); void refreshMyBooks(); });
+refreshAuthCache().catch(() => { clearSession(); _authCache.ready = true; }).then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); void tutorMemoryInit(); void refreshMyBooks(); });
 </script>
 <script>
 // ── Web Push: lembretes de eventos de estudo ──

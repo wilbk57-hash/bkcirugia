@@ -16,3 +16,4 @@
 - Library preparation runs sequentially in the signed-in administrator browser, resumes saved offsets and pauses on terminal AI errors; never mark truncated or interrupted books ready, because students must search complete sources.
 - Shared-library retrieval uses match_library_chunks under caller RLS with per-book diversity; cite retrieved page references and never claim current guideline verification without a current source.
 - The standalone library reader lives in public/library-reader.js and public/library-reader.css, using PDF.js lazy pages and EPUB navigation; persist extracted contents on user_books through admin RLS to reuse chapter indexes.
+- Administrator sign-in verifies the role under the just-authenticated bearer token; a failed role request must never be treated as absent permissions or invalid credentials, to avoid false login denials.
