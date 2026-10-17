@@ -15,8 +15,8 @@ function setup() {
     supabaseClient: {
       auth: { getSession: async () => ({ data: { session } }) },
       from(table) {
-        return { setHeader(key, value) {
-          return { upsert: async rows => { writes.push({ table, key, value, rows }); return { error: null }; } };
+        return { upsert(rows) {
+          return { setHeader: async (key, value) => { writes.push({ table, key, value, rows }); return { error: null }; } };
         } };
       },
     },

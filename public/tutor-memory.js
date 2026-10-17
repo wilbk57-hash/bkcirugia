@@ -31,7 +31,12 @@ async function tutorMemoryQuery(table, userId, generation) {
     throw failure;
   }
   // Bind each request to its verified owner, never to a stale client default.
-  return supabaseClient.from(table).setHeader('Authorization', 'Bearer ' + session.access_token);
+  const ownerQuery = supabaseClient.from(table);
+  const authorize = query => query.setHeader('Authorization', 'Bearer ' + session.access_token);
+  return {
+    select: (...args) => authorize(ownerQuery.select(...args)),
+    upsert: (...args) => authorize(ownerQuery.upsert(...args)),
+  };
 }
 function tutorMemoryCache() {
   if (!tutorMemoryUser) return;
