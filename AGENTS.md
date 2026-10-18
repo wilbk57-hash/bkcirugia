@@ -21,3 +21,6 @@
 - Administrator sign-in verifies the role under the just-authenticated bearer token; a failed role request must never be treated as absent permissions or invalid credentials, to avoid false login denials.
 - Clinical-case reads, inserts and completion updates bind to the current session owner's bearer token; recheck ownership after AI generation to prevent stale-session saves.
 - Profile client writes use column-level grants; status changes go through the admin-verified RPC, signup fields are validated by the profile trigger, and Tutor/search check caller status before work to prevent self-reactivation and suspended use.
+
+- Library reads (user_books, book_chunks, user-books storage) and /api/tutor, /api/books/search require public.has_access() (admin, or active profile with unexpired subscription); access-check failures return 503, never 402, so technical errors never lock students out.
+- /api routes use src/lib/cors.server.ts with a fixed origin allowlist (never *) so the Capacitor app can call the published server.

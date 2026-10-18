@@ -22,3 +22,5 @@
 - [x] Pesquisar toda a biblioteca nas perguntas do Tutor com fontes e explicações estruturadas.
 - [x] Acrescentar índice interativo e ampliação no leitor.
 - [x] Verificar preparação, resposta com fontes e navegação/ampliação.
+# Assinatura no servidor
+- [x] has_access nas regras de livros, trechos e ficheiros; 402 no Tutor e na pesquisa; bloqueio no app; CORS Android.
