@@ -19,3 +19,4 @@
 - Retry transient shared-library read failures once under the same caller RLS and return a safe unavailable response on persistent failures; permissions must never be bypassed.
 - The standalone library reader lives in public/library-reader.js and public/library-reader.css, using PDF.js lazy pages and EPUB navigation; persist extracted contents on user_books through admin RLS to reuse chapter indexes.
 - Administrator sign-in verifies the role under the just-authenticated bearer token; a failed role request must never be treated as absent permissions or invalid credentials, to avoid false login denials.
+- Clinical-case reads, inserts and completion updates bind to the current session owner's bearer token; recheck ownership after AI generation to prevent stale-session saves.
