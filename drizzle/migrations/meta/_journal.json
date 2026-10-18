@@ -85,6 +85,13 @@
       "when": 1792342871950,
       "tag": "0011_secure_profile_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792342995439,
+      "tag": "0012_restrict_status_function_execution",
+      "breakpoints": true
     }
   ]
 }
