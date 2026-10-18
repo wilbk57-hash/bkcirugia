@@ -739,6 +739,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_user_status: {
+        Args: { _status: string; _user_id: string }
+        Returns: undefined
+      }
       chat_directory: {
         Args: never
         Returns: {
