@@ -1,0 +1,51 @@
+name: Android debug APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: Endereço publicado do app (sem barra no final)
+        required: false
+        default: https://project--b951eaff-f66b-4dd3-896d-302004fcc7f8.lovable.app
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependências
+        working-directory: mobile
+        run: npm install --no-audit --no-fund
+
+      - name: Montar www (embutir bibliotecas e fontes)
+        working-directory: mobile
+        env:
+          BK_API_BASE: ${{ inputs.api_base }}
+        run: node scripts/build-www.mjs
+
+      - name: Criar projeto Android e sincronizar
+        working-directory: mobile
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+          npx cap sync android
+
+      - name: Compilar APK de teste
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bk-cirurgia-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
