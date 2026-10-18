@@ -92,6 +92,13 @@
       "when": 1792342995439,
       "tag": "0012_restrict_status_function_execution",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792346168278,
+      "tag": "0013_restrict_official_books_read",
+      "breakpoints": true
     }
   ]
 }
