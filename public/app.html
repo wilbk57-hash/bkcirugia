@@ -13022,6 +13022,23 @@ async function mmExportPng() {
    ============================================================ */
 const CC_STATE = { cases: [], active: null, step: 0, loading: false, loaded: false };
 
+async function ccQuery(userId) {
+  const { data, error } = await supabaseClient.auth.getSession();
+  const session = data && data.session;
+  if (error || !session || !session.access_token || session.user.id !== userId) {
+    const failure = new Error(t('cc.needauth'));
+    failure.needsAuth = true;
+    throw failure;
+  }
+  const table = supabaseClient.from('clinical_cases');
+  const authorize = query => query.setHeader('Authorization', 'Bearer ' + session.access_token);
+  return {
+    select: (...args) => authorize(table.select(...args)),
+    insert: (...args) => authorize(table.insert(...args)),
+    update: (...args) => authorize(table.update(...args)),
+  };
+}
+
 const CC_STEP_PLAN = [
   { id: 'motivo',     kind: 'consulta', pt: 'Motivo da consulta',      en: 'Chief complaint',        es: 'Motivo de consulta' },
   { id: 'historia',   kind: 'consulta', pt: 'História da doença',      en: 'History of illness',     es: 'Historia de la enfermedad' },
@@ -13091,10 +13108,17 @@ function ccNormalize(raw) {
 async function ccLoadCases() {
   const user = await seAwaitUser();
   if (!user) { CC_STATE.cases = []; CC_STATE.loaded = true; return; }
-  const { data, error } = await supabaseClient
-    .from('clinical_cases').select('*').order('created_at', { ascending: false }).limit(30);
-  if (!error) CC_STATE.cases = data || [];
-  CC_STATE.loaded = true;
+  try {
+    const query = await ccQuery(user.id);
+    const { data, error } = await query.select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
+    if (error) throw error;
+    CC_STATE.cases = data || [];
+    CC_STATE.loaded = true;
+  } catch (err) {
+    CC_STATE.cases = [];
+    CC_STATE.loaded = false;
+    showToast(t('cc.error') + (err && err.message ? ' (' + err.message + ')' : ''));
+  }
 }
 
 async function renderCasos() {
@@ -13161,13 +13185,15 @@ async function ccGenerate() {
   const host = document.getElementById('ccHost');
   host.innerHTML = `<div class="cc-loading"><span class="cc-spin">🩺</span><div>${t('cc.loading')}</div></div>`;
   try {
+    await ccQuery(user.id);
     const out = await runTutorRequest({
       system: ccBuildSystemPrompt(),
       messages: [{ role: 'user', content: `Tema/módulo do caso clínico: "${topic.title}". Gera o caso completo em JSON.` }],
       maxTokens: 3000,
     });
     const caseData = ccNormalize(ccExtractJson(out.text));
-    const { data, error } = await supabaseClient.from('clinical_cases').insert({
+    const query = await ccQuery(user.id);
+    const { data, error } = await query.insert({
       user_id: user.id, topic_id: topicId, title: caseData.title, data_json: caseData,
     }).select().single();
     if (error) throw error;
@@ -13277,15 +13303,19 @@ async function ccFinishCase() {
   const row = CC_STATE.active; if (!row || row.completed_at) return;
   const btn = document.getElementById('ccFinishBtn');
   if (btn) btn.disabled = true;
-  const { data, error } = await supabaseClient
-    .from('clinical_cases')
-    .update({ completed_at: new Date().toISOString() })
-    .eq('id', row.id).select().single();
-  if (error) { showToast(t('cc.error')); if (btn) btn.disabled = false; return; }
-  CC_STATE.active = data;
-  CC_STATE.cases = CC_STATE.cases.map(c => (c.id === data.id ? data : c));
-  showToast(t('cc.saved'));
-  ccRenderCase();
+  try {
+    const query = await ccQuery(row.user_id);
+    const { data, error } = await query.update({ completed_at: new Date().toISOString() })
+      .eq('id', row.id).eq('user_id', row.user_id).select().single();
+    if (error) throw error;
+    CC_STATE.active = data;
+    CC_STATE.cases = CC_STATE.cases.map(c => (c.id === data.id ? data : c));
+    showToast(t('cc.saved'));
+    ccRenderCase();
+  } catch (err) {
+    showToast(t('cc.error') + (err && err.message ? ' (' + err.message + ')' : ''));
+    if (btn) btn.disabled = false;
+  }
 }
 </script>
 

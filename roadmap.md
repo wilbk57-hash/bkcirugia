@@ -4,6 +4,7 @@
 - [ ] Validar instalação nativa e abertura offline após publicação em dispositivos reais — depende da publicação e de teste num dispositivo.
 
 # Tutor
+- [ ] Corrigir e verificar geração e gravação de casos clínicos na conta autenticada.
 - [x] Retirar a quota de utilização do Tutor sem alterar os outros limites ou o acesso pago.
 - [x] Guardar memória e conversas por aluno; limpar apenas a conversa visível.
 - [x] Perguntar e guardar o nome preferido ao iniciar o app.
