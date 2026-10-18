@@ -41,6 +41,11 @@ export const Route = createFileRoute('/api/tutor')({
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
 
+        const { data: profile, error: profileError } = await caller.supabase
+          .from('profiles').select('status').eq('id', caller.userId).single()
+        if (profileError || !profile) return json({ error: 'unavailable' }, 503)
+        if (profile.status === 'suspended') return json({ error: 'account_suspended' }, 403)
+
         let parsed
         try {
           parsed = BodySchema.parse(await request.json())
