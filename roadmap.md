@@ -1,8 +1,7 @@
-# Instalação PWA
 # Segurança dos perfis
-- [ ] Aplicar privilégios por coluna, função administrativa e metadados seguros no registo.
-- [ ] Ajustar registo, suspensão e aviso de exclusão no app.
-- [ ] Bloquear contas suspensas no Tutor e pesquisa; verificar regressões.
+- [x] Aplicar privilégios por coluna, função administrativa e metadados seguros no registo.
+- [x] Ajustar registo, suspensão e aviso de exclusão no app.
+- [x] Bloquear contas suspensas no Tutor e pesquisa; verificar regressões.
 
 # Instalação PWA
 - [x] Configurar cache offline controlada preservando lembretes push.
