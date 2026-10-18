@@ -1,0 +1,28 @@
+{
+  "name": "bk-cirurgia-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build:www": "node scripts/build-www.mjs",
+    "sync": "node scripts/build-www.mjs && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/network": "^8.0.0",
+    "@fontsource/ibm-plex-mono": "^5.0.0",
+    "@fontsource/inter": "^5.0.0",
+    "@fontsource/space-grotesk": "^5.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "epubjs": "0.3.93",
+    "jszip": "3.10.1",
+    "pdfjs-dist": "3.11.174"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}
