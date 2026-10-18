@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
+import { preflight, withCors } from '@/lib/cors.server'
 import { callerIsAdmin, clientForRequest } from '@/lib/rag-auth.server'
 import { chunkPages, embedTexts } from '@/lib/rag.server'
 
@@ -70,7 +71,8 @@ async function ocrPage(dataUrl: string, apiKey: string): Promise<string> {
 export const Route = createFileRoute('/api/books/ocr')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      OPTIONS: async ({ request }) => preflight(request),
+      POST: withCors(async ({ request }) => {
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
         const { supabase, userId } = caller
@@ -174,7 +176,7 @@ export const Route = createFileRoute('/api/books/ocr')({
             .eq('id', book.id)
           return json({ error: 'failed', message: e?.message || 'OCR failed' }, 502)
         }
-      },
+      }),
     },
   },
 })

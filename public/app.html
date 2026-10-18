@@ -4900,6 +4900,7 @@ async function callGatewayTutor(provider, opts) {
   let data = null;
   try { data = await resp.json(); } catch (e) {}
   if (!resp.ok) {
+    if (resp.status === 402 && data && data.error === 'subscription_required') { const se = new Error('subscription_required'); se.subscriptionRequired = true; throw se; }
     const err = new Error((data && data.message) || 'HTTP ' + resp.status);
     err.limitReached = resp.status === 429 || resp.status === 402;
     err.overloaded = resp.status === 503 || resp.status >= 500;
@@ -4947,7 +4948,8 @@ async function fetchMyBooksContext(question) {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify({ query: question.slice(0,2000), matchCount: 12 }),
   });
-  const data = await resp.json();
+  const data = await resp.json().catch(() => ({}));
+  if (resp.status === 402 && data && data.error === 'subscription_required') { const se = new Error('subscription_required'); se.subscriptionRequired = true; throw se; }
   if (!resp.ok) throw new Error(myLibT('A pesquisa na biblioteca está indisponível. Tenta novamente mais tarde.','Library search is unavailable. Try again later.','La búsqueda en la biblioteca no está disponible. Inténtalo más tarde.'));
   const chunks = data.chunks || [];
   _iaBookSources = chunks.map(c => ({ bookId: c.bookId, title: c.title, page: c.page }));
@@ -5003,6 +5005,7 @@ async function sendIaMessage() {
     try {
       booksContext = await fetchMyBooksContext(text);
     } catch (booksErr) {
+      if (booksErr && booksErr.subscriptionRequired) throw booksErr;
       console.warn('[tutor] pesquisa na biblioteca falhou; a responder sem fontes', booksErr);
       _iaBookSources = [];
     }
@@ -5028,7 +5031,9 @@ async function sendIaMessage() {
     });
     newAssistantIdx = IA_MESSAGES.length - 1;
   } catch (err) {
-    if (err && err.needsAuth) {
+    if (err && err.subscriptionRequired) {
+      bkShowPayGate();
+    } else if (err && err.needsAuth) {
       IA_MESSAGES.push({ role: 'assistant', limitNotice: true, title: t('ia.error.auth.title'), content: t('ia.error.auth.body') });
     } else if (err && err.limitReached) {
       IA_MESSAGES.push({ role: 'assistant', limitNotice: true, title: t('ia.error.limit.title'), content: t('ia.error.limit.body') });
@@ -8260,6 +8265,8 @@ function onAuthGranted(isAdmin) {
 
 /* ---------- Experiência grátis (1 dia) + bloqueio sem pagamento ---------- */
 let bkAccessTimer = null;
+/* Servidor recusou por falta de assinatura: reabre o mesmo ecrã de bloqueio. */
+function bkShowPayGate() { try { bkAccessCheck(); } catch (e) {} }
 async function bkAccessCheck() {
   const L = bkL;
   const { data: u } = await supabaseClient.auth.getUser();
@@ -9025,7 +9032,14 @@ function renderMyLibList() {
 
 async function myLibSignedUrl(book) {
   const { data, error } = await supabaseClient.storage.from(MYLIB_BUCKET).createSignedUrl(book.file_path, 120); // 2 min
-  if (error) { showToast(error.message); return null; }
+  if (error) {
+    const { data: adm } = await supabaseClient.rpc('is_platform_admin');
+    if (adm !== true) {
+      const { data: ok } = await supabaseClient.rpc('has_access');
+      if (ok === false) { bkShowPayGate(); return null; }
+    }
+    showToast(error.message); return null;
+  }
   return data.signedUrl;
 }
 async function myLibReadBook(id) {

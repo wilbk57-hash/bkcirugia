@@ -761,6 +761,7 @@ export type Database = {
           value: string
         }[]
       }
+      has_access: { Args: { _uid?: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       log_event: {
