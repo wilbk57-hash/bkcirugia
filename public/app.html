@@ -4996,7 +4996,16 @@ async function sendIaMessage() {
     const profile = getTutorProfile();
     profile.atividadesRecentes = buildStudentFootprint();
     await tutorMemorySaveProfile(profile);
-    const booksContext = await fetchMyBooksContext(text);
+    /* A pesquisa na biblioteca é opcional: se falhar (serviço ocupado,
+       livro em preparação, erro temporário), o Tutor responde na mesma,
+       sem excertos dos livros. */
+    let booksContext = '';
+    try {
+      booksContext = await fetchMyBooksContext(text);
+    } catch (booksErr) {
+      console.warn('[tutor] pesquisa na biblioteca falhou; a responder sem fontes', booksErr);
+      _iaBookSources = [];
+    }
     const out = await runTutorRequest({
       system: buildIaSystemPrompt() + memoryContext + (booksContext || ''),
       messages: IA_MESSAGES.filter(m => !m.limitNotice && !m.error).slice(-40).map(m => ({ role: m.role, content: m.content.slice(0, 20000) })),
