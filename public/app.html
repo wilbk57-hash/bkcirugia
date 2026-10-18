@@ -13022,6 +13022,11 @@ async function mmExportPng() {
    ============================================================ */
 const CC_STATE = { cases: [], active: null, step: 0, loading: false, loaded: false };
 
+async function ccCurrentUser() {
+  const { data, error } = await supabaseClient.auth.getSession();
+  return !error && data && data.session && data.session.access_token ? data.session.user : null;
+}
+
 async function ccQuery(userId) {
   const { data, error } = await supabaseClient.auth.getSession();
   const session = data && data.session;
@@ -13106,7 +13111,7 @@ function ccNormalize(raw) {
 }
 
 async function ccLoadCases() {
-  const user = await seAwaitUser();
+  const user = await ccCurrentUser();
   if (!user) { CC_STATE.cases = []; CC_STATE.loaded = true; return; }
   try {
     const query = await ccQuery(user.id);
@@ -13172,7 +13177,7 @@ function ccRenderList() {
 
 async function ccGenerate() {
   if (CC_STATE.loading) return;
-  const user = await seAwaitUser();
+  const user = await ccCurrentUser();
   if (!user) { showToast(t('cc.needauth')); return; }
   const sel = document.getElementById('ccTopicSel');
   let topicId = sel ? sel.value : '';

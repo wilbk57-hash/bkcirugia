@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 const html = readFileSync(new URL('../public/app.html', import.meta.url), 'utf8');
-const source = html.slice(html.indexOf('async function ccQuery('), html.indexOf('const CC_STEP_PLAN'));
+const source = html.slice(html.indexOf('async function ccCurrentUser('), html.indexOf('const CC_STEP_PLAN'));
 function setup(session) {
   const headers = [];
   let calls = 0;
@@ -32,4 +32,10 @@ test('expired sessions cannot access clinical-case history or saves', async () =
   const { context, calls } = setup(null);
   await assert.rejects(context.ccQuery('student-1'), error => error.needsAuth === true);
   assert.equal(calls(), 0);
+});
+test('an administrator session can generate cases even without a student profile cache', async () => {
+  const { context } = setup({ user: { id: 'administrator-1' }, access_token: 'admin-token' });
+  context.getCurrentUser = () => null;
+  const user = await context.ccCurrentUser();
+  assert.equal(user.id, 'administrator-1');
 });
