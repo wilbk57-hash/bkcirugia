@@ -1,4 +1,10 @@
 # Instalação PWA
+# Segurança dos perfis
+- [ ] Aplicar privilégios por coluna, função administrativa e metadados seguros no registo.
+- [ ] Ajustar registo, suspensão e aviso de exclusão no app.
+- [ ] Bloquear contas suspensas no Tutor e pesquisa; verificar regressões.
+
+# Instalação PWA
 - [x] Configurar cache offline controlada preservando lembretes push.
 - [x] Verificar manifesto, ícones, pedido de instalação e instruções iOS no navegador.
 - [ ] Validar instalação nativa e abertura offline após publicação em dispositivos reais — depende da publicação e de teste num dispositivo.
