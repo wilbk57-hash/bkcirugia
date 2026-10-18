@@ -1,0 +1,7 @@
+{
+  "appId": "app.bkcirurgia",
+  "appName": "BK-CIRURGIA",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}
