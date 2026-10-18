@@ -5032,7 +5032,6 @@ async function sendIaMessage() {
     newAssistantIdx = IA_MESSAGES.length - 1;
   } catch (err) {
     if (err && err.subscriptionRequired) {
-      IA_MESSAGES.pop();
       bkShowPayGate();
     } else if (err && err.needsAuth) {
       IA_MESSAGES.push({ role: 'assistant', limitNotice: true, title: t('ia.error.auth.title'), content: t('ia.error.auth.body') });
@@ -8266,6 +8265,8 @@ function onAuthGranted(isAdmin) {
 
 /* ---------- Experiência grátis (1 dia) + bloqueio sem pagamento ---------- */
 let bkAccessTimer = null;
+/* Servidor recusou por falta de assinatura: reabre o mesmo ecrã de bloqueio. */
+function bkShowPayGate() { try { bkAccessCheck(); } catch (e) {} }
 async function bkAccessCheck() {
   const L = bkL;
   const { data: u } = await supabaseClient.auth.getUser();
@@ -9031,7 +9032,14 @@ function renderMyLibList() {
 
 async function myLibSignedUrl(book) {
   const { data, error } = await supabaseClient.storage.from(MYLIB_BUCKET).createSignedUrl(book.file_path, 120); // 2 min
-  if (error) { showToast(error.message); return null; }
+  if (error) {
+    const { data: adm } = await supabaseClient.rpc('is_platform_admin');
+    if (adm !== true) {
+      const { data: ok } = await supabaseClient.rpc('has_access');
+      if (ok === false) { bkShowPayGate(); return null; }
+    }
+    showToast(error.message); return null;
+  }
   return data.signedUrl;
 }
 async function myLibReadBook(id) {
