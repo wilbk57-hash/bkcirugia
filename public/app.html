@@ -5665,6 +5665,7 @@ const STR_TABLE = [
  ['auth.toast.oauthsoon','Login social em breve — integração preparada para produção.','Social login coming soon — production integration is prepared.','Inicio de sesión social próximamente — integración lista para producción.'],
  ['auth.toast.allloggedout','Sessão encerrada em todos os dispositivos.','Signed out on all devices.','Sesión cerrada en todos los dispositivos.'],
  ['auth.toast.accountdeleted','Conta excluída. Sentiremos sua falta.','Account deleted. We’ll miss you.','Cuenta eliminada. Te extrañaremos.'],
+ ['auth.toast.accountdeletionsoon','Exclusão definitiva de conta em breve. Fale com o suporte.','Permanent account deletion coming soon. Contact support.','Eliminación definitiva de cuenta próximamente. Contacta con soporte.'],
  ['settings.account.title','Conta','Account','Cuenta'],
  ['settings.account.logout','Sair da conta','Sign out','Cerrar sesión'],
  ['settings.account.logout.desc','Encerrar sua sessão neste dispositivo.','End your session on this device.','Cerrar tu sesión en este dispositivo.'],
@@ -8077,16 +8078,15 @@ async function finishRegister() {
   const course = document.getElementById('regCourse').value.trim() || 'Medicina';
   const year = document.getElementById('regYear').value.trim();
 
-  const { data, error } = await supabaseClient.auth.signUp({ email, password: pw, options: { data: { name } } });
+  const { data, error } = await supabaseClient.auth.signUp({ email, password: pw, options: { data: { name, phone, country, role, institution, course, year } } });
   if (error) {
     btn.classList.remove('loading'); btn.disabled = false;
     fieldError('regEmail', error.message.toLowerCase().includes('already') ? t('auth.err.emailinuse') : error.message);
     regGoStep(1);
     return;
   }
-  /* O trigger handle_new_user() já criou a linha em profiles com
-     name+email. Aqui completamos os restantes campos do perfil. */
-  await supabaseClient.from('profiles').update({ phone, country, role, institution, course, year }).eq('id', data.user.id);
+  /* O trigger handle_new_user() cria o perfil com os metadados validados,
+     mesmo quando a confirmação de e-mail ainda não permite uma sessão. */
   btn.classList.remove('loading'); btn.disabled = false;
 
   if (!data.session) {
@@ -9284,27 +9284,7 @@ async function logoutAllDevices() {
   document.getElementById('bottomNav').classList.remove('hide');
 }
 async function deleteAccount() {
-  const user = getCurrentUser();
-  if (!user) return;
-  if (!confirm(currentLang==='en' ? 'Delete your account permanently? This cannot be undone.' : currentLang==='es' ? '¿Eliminar tu cuenta permanentemente? Esto no se puede deshacer.' : 'Excluir sua conta permanentemente? Isso não pode ser desfeito.')) return;
-  /* Apagar a conta de Auth propriamente dita exige a service_role key
-     (nunca disponível no browser) — isso fica para uma Edge Function
-     "delete-account". Por agora, marcamos o perfil como suspenso e
-     terminamos a sessão; o apagamento definitivo fica pendente dessa
-     função server-side. */
-  await supabaseClient.from('profiles').update({ status: 'suspended' }).eq('id', user.id);
-  auditLog('account_deletion_requested');
-  await supabaseClient.auth.signOut();
-  clearSession();
-  showToast(t('auth.toast.accountdeleted'));
-  document.body.classList.add('pre-auth');
-  dmFabStop();
-  showAuthScreen('welcome');
-  hideEl(document.getElementById('adminView'));
-  hideEl(document.getElementById('myLibraryView'));
-  hideEl(document.getElementById('settingsView'));
-  hideEl(document.getElementById('topicView'));
-  document.getElementById('bottomNav').classList.remove('hide');
+  showToast(t('auth.toast.accountdeletionsoon'));
 }
 
 /* ---- REGISTO DE INSTALAÇÕES (PWA) ---- */
@@ -10351,7 +10331,7 @@ async function adminToggleBlock(userId) {
   const u = _adminUsersCache.find(x => x.id === userId);
   if (!u) return;
   const newStatus = u.status === 'suspended' ? 'active' : 'suspended';
-  const { error } = await supabaseClient.from('profiles').update({ status: newStatus }).eq('id', userId);
+  const { error } = await supabaseClient.rpc('admin_set_user_status', { _user_id: userId, _status: newStatus });
   if (error) { showToast(error.message); return; }
   u.status = newStatus;
   auditLog('admin_toggle_block', { userId, newStatus });

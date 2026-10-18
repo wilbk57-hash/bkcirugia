@@ -1,3 +1,8 @@
+# Segurança dos perfis
+- [x] Aplicar privilégios por coluna, função administrativa e metadados seguros no registo.
+- [x] Ajustar registo, suspensão e aviso de exclusão no app.
+- [x] Bloquear contas suspensas no Tutor e pesquisa; verificar regressões.
+
 # Instalação PWA
 - [x] Configurar cache offline controlada preservando lembretes push.
 - [x] Verificar manifesto, ícones, pedido de instalação e instruções iOS no navegador.
