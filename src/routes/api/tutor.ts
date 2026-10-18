@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { streamText } from 'ai'
 import { z } from 'zod'
+import { preflight, withCors, subscriptionGate } from '@/lib/cors.server'
 import {
   createLovableChatProvider,
   createLovableResponsesProvider,
@@ -37,7 +38,8 @@ function json(data: unknown, status = 200) {
 export const Route = createFileRoute('/api/tutor')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      OPTIONS: async ({ request }) => preflight(request),
+      POST: withCors(async ({ request }) => {
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
 
@@ -45,6 +47,10 @@ export const Route = createFileRoute('/api/tutor')({
           .from('profiles').select('status').eq('id', caller.userId).single()
         if (profileError || !profile) return json({ error: 'unavailable' }, 503)
         if (profile.status === 'suspended') return json({ error: 'account_suspended' }, 403)
+
+        const gate = await subscriptionGate(caller.supabase as never)
+        if (gate === 'error') return json({ error: 'unavailable' }, 503)
+        if (gate === 'denied') return json({ error: 'subscription_required' }, 402)
 
         let parsed
         try {
@@ -90,7 +96,7 @@ export const Route = createFileRoute('/api/tutor')({
           if (status >= 500) return json({ error: 'overloaded', message }, 503)
           return json({ error: 'failed', message }, 502)
         }
-      },
+      }),
     },
   },
 })

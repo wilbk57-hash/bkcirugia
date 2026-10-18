@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
+import { preflight, withCors, subscriptionGate } from '@/lib/cors.server'
 import { clientForRequest } from '@/lib/rag-auth.server'
 import { embedQuery } from '@/lib/rag.server'
 import { readLibraryWithRetry } from '@/lib/library-search-retry'
@@ -20,7 +21,8 @@ function json(data: unknown, status = 200) {
 export const Route = createFileRoute('/api/books/search')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      OPTIONS: async ({ request }) => preflight(request),
+      POST: withCors(async ({ request }) => {
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
 
@@ -28,6 +30,10 @@ export const Route = createFileRoute('/api/books/search')({
           .from('profiles').select('status').eq('id', caller.userId).single()
         if (profileError || !profile) return json({ error: 'unavailable' }, 503)
         if (profile.status === 'suspended') return json({ error: 'account_suspended' }, 403)
+
+        const gate = await subscriptionGate(caller.supabase as never)
+        if (gate === 'error') return json({ error: 'unavailable' }, 503)
+        if (gate === 'denied') return json({ error: 'subscription_required' }, 402)
 
         let parsed
         try {
@@ -81,7 +87,7 @@ export const Route = createFileRoute('/api/books/search')({
           console.error('[library-search] request failed', e?.status ?? 'network')
           return json({ error: 'unavailable', message: 'A pesquisa dos livros está temporariamente indisponível.' }, 503)
         }
-      },
+      }),
     },
   },
 })

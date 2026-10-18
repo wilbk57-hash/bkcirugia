@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
+import { preflight, withCors } from '@/lib/cors.server'
 import { callerIsAdmin, clientForRequest } from '@/lib/rag-auth.server'
 import { MAX_PAGES, chunkPages, detectContents, embedTexts, extractEpubPages, extractPdfPages } from '@/lib/rag.server'
 
@@ -22,7 +23,8 @@ function json(data: unknown, status = 200) {
 export const Route = createFileRoute('/api/books/reindex')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      OPTIONS: async ({ request }) => preflight(request),
+      POST: withCors(async ({ request }) => {
         const caller = await clientForRequest(request)
         if (!caller) return json({ error: 'unauthorized' }, 401)
         const { supabase, userId } = caller
@@ -151,7 +153,7 @@ export const Route = createFileRoute('/api/books/reindex')({
           }
           return await fail(e?.message || 'indexing failed')
         }
-      },
+      }),
     },
   },
 })
