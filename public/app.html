@@ -530,6 +530,7 @@
     transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1), width .25s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none; z-index: 0;
   }
+  .bottom-nav-inner:not(:has(.bn-btn.active)) .bn-indicator { display: none; }
   .bn-btn {
     position: relative; z-index: 1;
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -8357,7 +8358,11 @@ function openAdmin(fromPop) {
   hideEl(document.getElementById('settingsView'));
   hideEl(document.getElementById('myLibraryView'));
   showEl(document.getElementById('adminView'));
-  document.getElementById('bottomNav').classList.add('hide');
+  document.getElementById('bottomNav').classList.remove('hide');
+  document.querySelectorAll('.bn-btn').forEach(button => {
+    button.classList.remove('active');
+    button.setAttribute('aria-selected', 'false');
+  });
   document.getElementById('homeBtn').classList.add('show');
   renderCrumb('admin');
   if (!fromPop) pushNav({ view: 'admin' }, 'adminView');
