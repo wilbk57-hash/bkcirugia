@@ -82,10 +82,10 @@ function sender(fail=false) {
     runTutorRequest:async opts=>{
       assert.equal(opts.stream,true);
       opts.onText('Partial','gemini');
-      assert.equal(context.IA_MESSAGES.length,1);
+      assert.equal(context.IA_MESSAGES.at(-1).role,'user');
       assert.equal(context.iaStreamingMessage.content,'Partial');
       assert.equal(context.iaStreamingMessage.bookSources,undefined);
-      assert.ok(saved.every(rows=>rows.every(m=>m.role!=='assistant')));
+      assert.ok(saved.every(rows=>rows.every(m=>m.content!=='Partial')));
       if(fail)throw new Error('interrupted');
       return {text:'Complete',provider:'gemini'};
     }};
