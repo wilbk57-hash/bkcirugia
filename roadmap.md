@@ -24,3 +24,7 @@
 - [x] Verificar preparação, resposta com fontes e navegação/ampliação.
 # Assinatura no servidor
 - [x] has_access nas regras de livros, trechos e ficheiros; 402 no Tutor e na pesquisa; bloqueio no app; CORS Android.
+
+# Respostas progressivas do Tutor
+- [ ] Implementar streaming opcional no servidor e apresentação progressiva no app, preservando fontes e memória.
+- [ ] Verificar falhas, CORS e compatibilidade JSON; testar perguntas com administrador autenticado.
