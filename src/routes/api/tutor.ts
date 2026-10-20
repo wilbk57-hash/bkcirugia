@@ -7,9 +7,12 @@ import {
   createLovableResponsesProvider,
 } from '@/lib/ai-gateway.server'
 import { clientForRequest } from '@/lib/rag-auth.server'
+import { tutorStreamResponse } from '@/lib/tutor-stream.server'
+import { withLovableAiGatewayRunIdHeader } from '@/lib/ai-run-id.server'
 
 const BodySchema = z.object({
   provider: z.enum(['gemini', 'openai']),
+  stream: z.boolean().optional(),
   system: z.string().max(60000).optional(),
   maxTokens: z.number().int().min(64).max(4000).optional(),
   messages: z
@@ -69,22 +72,27 @@ export const Route = createFileRoute('/api/tutor')({
         const modelId = MODELS[parsed.provider]
         const system = parsed.system ?? 'You are a helpful assistant.'
         try {
+          const openai = parsed.provider === 'openai' ? createLovableResponsesProvider(apiKey) : null
+          const gemini = parsed.provider === 'gemini' ? createLovableChatProvider(apiKey) : null
+          const gateway = openai || gemini
+          if (!gateway) return json({ error: 'unavailable' }, 503)
           const result =
-            parsed.provider === 'openai'
+            openai
               ? streamText({
-                  model: createLovableResponsesProvider(apiKey).responses(modelId),
+                  model: openai.responses(modelId),
                   system,
                   messages: parsed.messages,
                   maxOutputTokens: parsed.maxTokens ?? 1500,
                   providerOptions: { openai: { store: false } },
                 })
               : streamText({
-                  model: createLovableChatProvider(apiKey)(modelId),
+                  model: (gemini || createLovableChatProvider(apiKey))(modelId),
                   system,
                   messages: parsed.messages,
                   maxOutputTokens: parsed.maxTokens ?? 1500,
                 })
 
+          if (parsed.stream) return withLovableAiGatewayRunIdHeader(await tutorStreamResponse(result.stream), gateway)
           const text = await result.text
           return json({ text, provider: parsed.provider, model: modelId })
         } catch (err: unknown) {
