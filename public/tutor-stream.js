@@ -11,7 +11,7 @@
  *   <texto parcial>\u001e{"error":true,"message":"..."}
  */
 
-export const RECORD_SEPARATOR = '\u001e';
+const RECORD_SEPARATOR = '\u001e';
 
 /**
  * Valores por omissão. Centralizados para facilitar o endurecimento
@@ -44,7 +44,7 @@ const DEFAULTS = Object.freeze({
  *
  * O cancelamento é um DOMException com name 'AbortError'.
  */
-export class TutorStreamError extends Error {
+class TutorStreamError extends Error {
   constructor(code, message, { cause, ...details } = {}) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = 'TutorStreamError';
@@ -109,7 +109,7 @@ function validateOptions(options) {
  * @returns {Promise<string>} texto validado
  * @throws {TutorStreamError | TypeError | RangeError | DOMException}
  */
-export async function readTutorStream(response, onText, options = {}) {
+async function readTutorStream(response, onText, options = {}) {
   // 1. Validação inicial da resposta HTTP
   if (!response || typeof response.ok !== 'boolean') {
     throw new TypeError('A resposta HTTP é inválida.');

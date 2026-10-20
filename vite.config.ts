@@ -54,7 +54,7 @@ export default defineConfig({
           },
           {
             urlPattern: ({ url, sameOrigin }) => sameOrigin &&
-              /^(\/icons\/|\/manifest\.webmanifest$|\/(tutor-memory|library-reader|push-events)\.(js|css)$)/.test(url.pathname),
+              /^(\/icons\/|\/manifest\.webmanifest$|\/(tutor-memory|tutor-stream|library-reader|push-events)\.(js|css)$)/.test(url.pathname),
             handler: "NetworkFirst",
             options: {
               cacheName: "bk-cirurgia-resources",
