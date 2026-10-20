@@ -9,7 +9,7 @@ const load = p => readFileSync(new URL('../'+p, import.meta.url),'utf8');
 function moduleCode(p) {
   return ts.transpileModule(load(p).replace(/^import[\s\S]*?from\s+['"][^'"]+['"]\s*$/gm,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
 }
-const ctx = {exports:{},Response,ReadableStream,TextEncoder};
+const ctx = {exports:{},Response,ReadableStream,TextEncoder,Error};
 runInNewContext(moduleCode('src/lib/tutor-stream.server.ts'),ctx);
 const {tutorStreamResponse} = ctx.exports;
 const browser = {TextDecoder};
