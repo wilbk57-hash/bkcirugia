@@ -1999,6 +1999,7 @@
 <link rel="stylesheet" href="/library-reader.css">
 <script src="/library-reader.js"></script>
 <script src="/tutor-memory.js"></script>
+<script src="/tutor-stream.js"></script>
 <script>
 /* ============================================================
    ÍNDICE DE TEMAS
@@ -4313,6 +4314,7 @@ function saveIaChat() {
   return tutorMemorySave();
 }
 let iaSending = false;
+let iaStreamingMessage = null; // Display-only, excluded from saved history.
 
 /* ---- Memória do aluno entre sessões (localStorage, chave própria) ---- */
 const TUTOR_PROFILE_STORAGE = 'bkcirurgia_tutor_perfil_v1';
@@ -4696,11 +4698,11 @@ function renderIaMessages() {
       </div>`;
     return;
   }
-  const typingHtml = iaSending ? `<div class="ia-msg ia-msg-assistant"><div class="ia-msg-bubble"><div class="ia-typing"><span></span><span></span><span></span></div></div></div>` : '';
+  const typingHtml = iaSending && !iaStreamingMessage?.content ? `<div class="ia-msg ia-msg-assistant"><div class="ia-msg-bubble"><div class="ia-typing"><span></span><span></span><span></span></div></div></div>` : '';
   host.innerHTML =
     `<div class="ia-toolbar"><span class="ia-toolbar-title">${t('ia.intro.title')}</span><span class="ia-toolbar-spacer">${iaProviderSelectorHtml()}</span><button class="ia-clear-btn" onclick="clearIaChat()">${t('ia.clear')}</button></div>` +
     iaBooksSelectorHtml() +
-    IA_MESSAGES.map((m, i) => {
+    [...IA_MESSAGES, ...(iaStreamingMessage?.content ? [iaStreamingMessage] : [])].map((m, i) => {
       if (m.limitNotice) {
         /* Short, calm notice instead of a wall of raw API error text —
            this is what a "limite atingido" (or overloaded) response
@@ -4716,7 +4718,7 @@ function renderIaMessages() {
         </div>
       </div>`;
       }
-      const speakBtn = (m.role === 'assistant' && !m.error && speechSynthesisSupported)
+      const speakBtn = (m.role === 'assistant' && !m.error && !m.streaming && speechSynthesisSupported)
         ? `<div class="ia-msg-tools"><button class="ia-speak-btn" id="ia-speak-${i}" onclick="speakIaMessage(${i})" aria-label="${t('ia.speak.aria')}">🔊 ${t('ia.speak.label')}</button></div>`
         : '';
       const searchedBadge = m.searched ? `<div class="ia-search-badge">🌐 ${t('ia.searched.label')}</div>` : '';
@@ -4727,7 +4729,7 @@ function renderIaMessages() {
         : '';
       return `
       <div class="ia-msg ia-msg-${m.role}${m.error ? ' ia-msg-error' : ''}">
-        <div class="ia-msg-bubble">${searchedBadge}${formatMdLite(m.content)}${sourcesHtml}${m.bookSources?.length ? '<div class="bk-book-sources">' + m.bookSources.filter((source,idx,arr) => arr.findIndex(other => other.bookId===source.bookId && other.page===source.page)===idx).map(source => `<button class="bk-book-source" onclick="bkOpenBookSource('${source.bookId}',${Number(source.page)||1})">📖 ${escapeHtml(source.title)}${source.page ? ' · p. '+Number(source.page) : ''}</button>`).join('') + '</div>' : ''}${(typeof mmMessageActionHtml === 'function') ? mmMessageActionHtml(m, i) : ''}</div>
+        <div class="ia-msg-bubble">${searchedBadge}${formatMdLite(m.content)}${sourcesHtml}${m.bookSources?.length ? '<div class="bk-book-sources">' + m.bookSources.filter((source,idx,arr) => arr.findIndex(other => other.bookId===source.bookId && other.page===source.page)===idx).map(source => `<button class="bk-book-source" onclick="bkOpenBookSource('${source.bookId}',${Number(source.page)||1})">📖 ${escapeHtml(source.title)}${source.page ? ' · p. '+Number(source.page) : ''}</button>`).join('') + '</div>' : ''}${(!m.streaming && typeof mmMessageActionHtml === 'function') ? mmMessageActionHtml(m, i) : ''}</div>
         ${providerBadge}
         ${speakBtn}
       </div>`;
@@ -4897,10 +4899,13 @@ async function callGatewayTutor(provider, opts) {
       system: opts.system,
       messages: opts.messages,
       maxTokens: opts.maxTokens || 1500,
+      stream: opts.stream === true,
     }),
   });
   let data = null;
-  try { data = await resp.json(); } catch (e) {}
+  if (!resp.ok || !opts.stream || !resp.headers.get('Content-Type')?.includes('text/plain')) {
+    try { data = await resp.json(); } catch (e) {}
+  }
   if (!resp.ok) {
     if (resp.status === 402 && data && data.error === 'subscription_required') { const se = new Error('subscription_required'); se.subscriptionRequired = true; throw se; }
     const err = new Error((data && data.message) || 'HTTP ' + resp.status);
@@ -4909,7 +4914,10 @@ async function callGatewayTutor(provider, opts) {
     err.needsAuth = resp.status === 401;
     throw err;
   }
-  return { text: ((data && data.text) || '').trim(), searched: false, sources: [], provider };
+  const text = opts.stream && resp.headers.get('Content-Type')?.includes('text/plain')
+    ? await readTutorStream(resp, value => opts.onText?.(value, provider))
+    : ((data && data.text) || '').trim();
+  return { text, searched: false, sources: [], provider };
 }
 
 async function callTutorProvider(provider, opts) {
@@ -4929,7 +4937,7 @@ async function runTutorRequest(opts) {
     } catch (err) {
       lastErr = err;
       const recoverable = err && (err.limitReached || err.overloaded || err.needsKey);
-      if (!recoverable) break;
+      if (!recoverable || opts.stream) break;
     }
   }
   throw lastErr || new Error('erro');
@@ -4952,6 +4960,7 @@ async function fetchMyBooksContext(question) {
   });
   const data = await resp.json().catch(() => ({}));
   if (resp.status === 402 && data && data.error === 'subscription_required') { const se = new Error('subscription_required'); se.subscriptionRequired = true; throw se; }
+  if (resp.status === 401) { const error = new Error('no-session'); error.needsAuth = true; throw error; }
   if (!resp.ok) throw new Error(myLibT('A pesquisa na biblioteca está indisponível. Tenta novamente mais tarde.','Library search is unavailable. Try again later.','La búsqueda en la biblioteca no está disponible. Inténtalo más tarde.'));
   const chunks = data.chunks || [];
   _iaBookSources = chunks.map(c => ({ bookId: c.bookId, title: c.title, page: c.page }));
@@ -4993,6 +5002,14 @@ async function sendIaMessage() {
   iaSending = true;
   renderIaMessages();
 
+  const requestOwner = tutorMemoryUser;
+  const requestGeneration = tutorMemoryGeneration;
+  function verifyOwner() {
+    if (requestGeneration !== tutorMemoryGeneration || requestOwner !== tutorMemoryUser) {
+      const error = new Error('A sessão mudou. Entra novamente.'); error.needsAuth = true; throw error;
+    }
+  }
+  let paintFrame = null;
   let newAssistantIdx = null;
   try {
     await saveIaChat();
@@ -5007,7 +5024,7 @@ async function sendIaMessage() {
     try {
       booksContext = await fetchMyBooksContext(text);
     } catch (booksErr) {
-      if (booksErr && booksErr.subscriptionRequired) throw booksErr;
+      if (booksErr && (booksErr.subscriptionRequired || booksErr.needsAuth)) throw booksErr;
       console.warn('[tutor] pesquisa na biblioteca falhou; a responder sem fontes', booksErr);
       _iaBookSources = [];
     }
@@ -5016,7 +5033,17 @@ async function sendIaMessage() {
       messages: IA_MESSAGES.filter(m => !m.limitNotice && !m.error).slice(-40).map(m => ({ role: m.role, content: m.content.slice(0, 20000) })),
       maxTokens: 1500,
       webSearch: !!SETTINGS_STATE.webSearchEnabled,
+      stream: true,
+      onText: (content, provider) => {
+        verifyOwner();
+        iaStreamingMessage = { role: 'assistant', content, provider, streaming: true };
+        if (paintFrame === null) paintFrame = requestAnimationFrame(() => {
+          paintFrame = null;
+          if (requestGeneration === tutorMemoryGeneration) renderIaMessages();
+        });
+      },
     });
+    verifyOwner();
     IA_MESSAGES.push({
       role: 'assistant',
       content: out.text || t('ia.empty.response'),
@@ -5033,6 +5060,7 @@ async function sendIaMessage() {
     });
     newAssistantIdx = IA_MESSAGES.length - 1;
   } catch (err) {
+    if (requestGeneration !== tutorMemoryGeneration || requestOwner !== tutorMemoryUser) return;
     if (err && err.subscriptionRequired) {
       bkShowPayGate();
     } else if (err && err.needsAuth) {
@@ -5047,8 +5075,10 @@ async function sendIaMessage() {
       IA_MESSAGES.push({ role: 'assistant', content: t('ia.error.prefix') + ' (' + (err && err.message ? err.message : 'erro') + ')', error: true });
     }
   } finally {
+    if (paintFrame !== null) cancelAnimationFrame(paintFrame);
+    iaStreamingMessage = null;
     iaSending = false;
-    await saveIaChat().catch(() => {});
+    if (requestGeneration === tutorMemoryGeneration && requestOwner === tutorMemoryUser) await saveIaChat().catch(() => {});
     renderIaMessages();
     if (newAssistantIdx !== null && SETTINGS_STATE.autoSpeakTutor) speakIaMessage(newAssistantIdx);
   }
