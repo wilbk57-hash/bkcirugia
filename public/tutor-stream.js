@@ -11,7 +11,7 @@
  *   <texto parcial>\u001e{"error":true,"message":"..."}
  */
 
-export const RECORD_SEPARATOR = '\u001e';
+const RECORD_SEPARATOR = '\u001e';
 
 /**
  * Valores por omissão. Centralizados para facilitar o endurecimento
@@ -44,7 +44,7 @@ const DEFAULTS = Object.freeze({
  *
  * O cancelamento é um DOMException com name 'AbortError'.
  */
-export class TutorStreamError extends Error {
+class TutorStreamError extends Error {
   constructor(code, message, { cause, ...details } = {}) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = 'TutorStreamError';
@@ -109,7 +109,7 @@ function validateOptions(options) {
  * @returns {Promise<string>} texto validado
  * @throws {TutorStreamError | TypeError | RangeError | DOMException}
  */
-export async function readTutorStream(response, onText, options = {}) {
+async function readTutorStream(response, onText, options = {}) {
   // 1. Validação inicial da resposta HTTP
   if (!response || typeof response.ok !== 'boolean') {
     throw new TypeError('A resposta HTTP é inválida.');
@@ -247,7 +247,8 @@ export async function readTutorStream(response, onText, options = {}) {
 
       if (done) break;
 
-      if (!(value instanceof Uint8Array)) {
+      // Realm-safe check: chunks may come from another global (iframe, tests).
+      if (!ArrayBuffer.isView(value) || Object.prototype.toString.call(value) !== '[object Uint8Array]') {
         throw new TutorStreamError(
           'INVALID_CHUNK',
           'O fluxo devolveu um bloco que não é binário.'
@@ -263,7 +264,7 @@ export async function readTutorStream(response, onText, options = {}) {
     if (!ended) {
       throw new TutorStreamError(
         'NO_TERMINAL',
-        'A resposta terminou sem confirmação do servidor.'
+        'A resposta foi interrompida. Tenta novamente.'
       );
     }
 
@@ -289,7 +290,7 @@ export async function readTutorStream(response, onText, options = {}) {
       );
     }
 
-    if (record.error === true) {
+    if (record.error) { // server sends {error:'failed', message}
       throw new TutorStreamError(
         'SERVER_ERROR',
         sanitizeServerMessage(record.message, maxMessageLength)
