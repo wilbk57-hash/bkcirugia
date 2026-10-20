@@ -247,7 +247,8 @@ async function readTutorStream(response, onText, options = {}) {
 
       if (done) break;
 
-      if (!(value instanceof Uint8Array)) {
+      // Realm-safe check: chunks may come from another global (iframe, tests).
+      if (!ArrayBuffer.isView(value) || Object.prototype.toString.call(value) !== '[object Uint8Array]') {
         throw new TutorStreamError(
           'INVALID_CHUNK',
           'O fluxo devolveu um bloco que não é binário.'
