@@ -67,3 +67,40 @@ test('streaming keeps Android CORS and omits unlisted origins',async()=>{
     assert.equal(await browser.readTutorStream(res),'Olá aluno');
   }
 });
+
+const html=load('public/app.html');
+const start=html.indexOf('async function sendIaMessage(');
+const sendSource=html.slice(start,html.indexOf('\n}',start)+2);
+function sender(fail=false) {
+  const saved=[];
+  const context={IA_MESSAGES:[],iaSending:false,iaStreamingMessage:null,tutorMemoryUser:'admin',tutorMemoryGeneration:1,
+    tutorMemoryInit:async()=>{},document:{getElementById:()=>({value:'Question'})},SETTINGS_STATE:{tutorProvider:'gemini'},
+    stopVoiceInput(){},autoGrowIa(){},renderIaMessages(){},saveIaChat:async()=>saved.push(context.IA_MESSAGES.map(m=>({...m}))),
+    tutorMemoryContext:async()=>'',getTutorProfile:()=>({}),buildStudentFootprint:()=>({}),tutorMemorySaveProfile:async()=>{},
+    fetchMyBooksContext:async()=>'Library',buildIaSystemPrompt:()=>'',_iaBookSources:[{bookId:'book',page:7}],
+    requestAnimationFrame:()=>1,cancelAnimationFrame(){},t:x=>x,
+    runTutorRequest:async opts=>{
+      assert.equal(opts.stream,true);
+      opts.onText('Partial','gemini');
+      assert.equal(context.IA_MESSAGES.length,1);
+      assert.equal(context.iaStreamingMessage.content,'Partial');
+      assert.equal(context.iaStreamingMessage.bookSources,undefined);
+      assert.ok(saved.every(rows=>rows.every(m=>m.role!=='assistant')));
+      if(fail)throw new Error('interrupted');
+      return {text:'Complete',provider:'gemini'};
+    }};
+  runInNewContext(sendSource,context);
+  return {context,saved};
+}
+test('drafts are display-only; completed answer and book sources are saved together',async()=>{
+  const {context,saved}=sender();await context.sendIaMessage();
+  assert.equal(context.iaSending,false);assert.equal(context.iaStreamingMessage,null);
+  assert.equal(saved.at(-1)[1].content,'Complete');assert.equal(saved.at(-1)[1].bookSources[0].page,7);
+});
+test('interrupted answer clears loading, discards draft and permits another send',async()=>{
+  const {context,saved}=sender(true);await context.sendIaMessage();
+  assert.equal(context.iaSending,false);assert.equal(context.iaStreamingMessage,null);
+  assert.equal(context.IA_MESSAGES.at(-1).error,true);
+  assert.ok(saved.every(rows=>rows.every(m=>m.content!=='Partial')));
+  await context.sendIaMessage();assert.equal(context.IA_MESSAGES.length,4);
+});
