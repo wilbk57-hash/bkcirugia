@@ -50,6 +50,7 @@ for (const path of ['tutor.ts','books/search.ts']) {
     const reads=[];
     const context={Response,withCors:h=>h,preflight:()=>new Response(null,{status:204}),subscriptionGate:async()=>'ok',process:{env:{}},clientForRequest:async()=>({userId:'student-1',supabase:{from:table=>{reads.push(table);return {select:column=>{reads.push(column);return {eq:(key,id)=>{reads.push([key,id]);return {single:async()=>({data:profile,error})}}}}}}}}),createFileRoute:()=>options=>options,z:{object:()=>({}),enum:()=>({}),string:()=>({min(){return this},max(){return this},uuid(){return this},nullable(){return this},optional(){return this}}),number:()=>({int(){return this},min(){return this},max(){return this},optional(){return this}}),array:()=>({min(){return this},max(){return this}})}};
     // Schema methods needed at module initialization; parse isn't reached for denied requests.
+    context.z.boolean=()=>({optional(){return this}});
     context.z.object=()=>({parse:()=>({}),optional(){return this}});
     runInNewContext(ts.transpileModule(source+'\nglobalThis.post = Route.server.handlers.POST;', {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText,context);
     return {post:context.post,reads};
