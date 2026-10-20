@@ -264,7 +264,7 @@ async function readTutorStream(response, onText, options = {}) {
     if (!ended) {
       throw new TutorStreamError(
         'NO_TERMINAL',
-        'A resposta terminou sem confirmação do servidor.'
+        'A resposta foi interrompida. Tenta novamente.'
       );
     }
 
@@ -290,7 +290,7 @@ async function readTutorStream(response, onText, options = {}) {
       );
     }
 
-    if (record.error === true) {
+    if (record.error) { // server sends {error:'failed', message}
       throw new TutorStreamError(
         'SERVER_ERROR',
         sanitizeServerMessage(record.message, maxMessageLength)
