@@ -1,5 +1,5 @@
 # Segurança dos perfis
-- [ ] Verificar os ajustes de ecrã e fluidez pedidos, incluindo as barras superior e inferior em ecrãs pequenos.
+- [x] Verificar os ajustes de ecrã e fluidez pedidos: sessão autenticada em 1280, 360 e 320 px, ambas as barras visíveis após deslocação, pesquisa com atraso de 150 ms e sem erros no navegador.
 - [x] Aplicar privilégios por coluna, função administrativa e metadados seguros no registo.
 - [x] Ajustar registo, suspensão e aviso de exclusão no app.
 - [x] Bloquear contas suspensas no Tutor e pesquisa; verificar regressões.
