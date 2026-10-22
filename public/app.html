@@ -35,6 +35,8 @@
     --reader-fs: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overscroll-behavior-y: none; }
   body {
     font-family: 'Inter', sans-serif;
     background: var(--bg);
@@ -52,6 +54,8 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 20px;
     padding-top: calc(14px + env(safe-area-inset-top));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
     background: rgba(10,17,22,0.98);
     border-bottom: 1px solid var(--border);
   }
@@ -522,6 +526,7 @@
     background: rgba(10,17,22,0.98);
     border-top: 1px solid var(--border);
     padding: 8px max(10px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));
+    padding-right: max(10px, env(safe-area-inset-right));
   }
   body.theme-light .bottom-nav { background: rgba(243,246,248,0.98); }
   .bottom-nav.hide { display: none; }
@@ -929,7 +934,7 @@
   .search-input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--text); font-size: 14px; outline: none; font-family: 'Inter', sans-serif; }
   .search-input::placeholder { color: var(--text3); }
   .search-close { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; font-size: 13px; flex-shrink: 0; }
-  .search-results { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+  .search-results { overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .search-hint, .search-empty { text-align: center; padding: 44px 16px; color: var(--text3); font-size: 13px; }
   .search-result-row { display: flex; gap: 12px; align-items: flex-start; padding: 11px 4px; border-top: 1px solid var(--border); cursor: pointer; }
   .search-result-row:first-child { border-top: none; }
@@ -1010,8 +1015,18 @@
     max-width: 480px; margin: 0 auto;
     background: var(--bg); border-top: 1px solid var(--border);
     padding: 10px 14px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
   }
   .ia-input-bar.show { display: flex; }
+  body.kb-open .bottom-nav { display: none; }
+  body.kb-open .ia-input-bar { bottom: var(--kb, 0px); padding-bottom: 10px; }
+  body.kb-open .search-view {
+    bottom: var(--kb, 0px);
+    max-height: min(88dvh, calc(100dvh - var(--kb, 0px)));
+  }
+  body.kb-open #bkSheet:has([data-dm-text], [data-pm-text]),
+  body.kb-open #admPanelOverlay:has([data-dm-text]) { bottom: var(--kb, 0px) !important; }
   .ia-input {
     flex: 1; min-width: 0; resize: none; max-height: 120px;
     border: 1px solid var(--border); border-radius: 14px; background: var(--panel2);
@@ -1194,7 +1209,7 @@
       radial-gradient(900px 500px at 15% -10%, rgba(45,212,191,0.10), transparent 60%),
       radial-gradient(700px 500px at 100% 10%, rgba(185,139,224,0.08), transparent 60%),
       var(--bg);
-    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
   body.pre-auth #authOverlay { display: block; }
 
@@ -1499,8 +1514,8 @@
     .mm-overlay *, .mm-overlay { transition: none !important; animation: none !important; }
   }
 
-  @media (hover: none) and (pointer: coarse) {
-    input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: 16px !important; }
+  @media (pointer: coarse) {
+    input, textarea, select { font-size: 16px !important; }
   }
   img, video, canvas { max-width: 100%; height: auto; }
   svg { max-width: 100%; }
@@ -1509,7 +1524,7 @@
   @media (max-width: 360px) {
     main { padding-left: 14px; padding-right: 14px; }
     .card { padding: 14px; }
-    .topbar { padding-left: 12px; padding-right: 12px; }
+    .topbar { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
     .bn-btn { font-size: 9.5px; }
   }
 
@@ -11071,6 +11086,42 @@ supabaseClient.auth.onAuthStateChange((event) => {
   }
 });
 
+
+/* ---- Altura do teclado: shell /app ou documento standalone ---- */
+(() => {
+  let focusTimer;
+  const revealInput = (input) => {
+    if (!(input instanceof Element) || !input.matches('input, textarea')) return;
+    window.clearTimeout(focusTimer);
+    focusTimer = window.setTimeout(() => {
+      if (document.body.classList.contains('kb-open') && document.activeElement === input) {
+        input.scrollIntoView({ block: 'nearest' });
+      }
+    }, 150);
+  };
+  const applyKeyboard = (height) => {
+    if (typeof height !== 'number' || !Number.isFinite(height)) return;
+    const rounded = Math.round(Math.max(0, height));
+    const kb = rounded > 80 ? rounded : 0;
+    document.documentElement.style.setProperty('--kb', kb + 'px');
+    document.body.classList.toggle('kb-open', kb > 80);
+    if (kb > 80) revealInput(document.activeElement);
+  };
+  window.addEventListener('message', (ev) => {
+    if (ev.origin !== location.origin || ev.source !== window.parent) return;
+    if (ev.data?.type === 'bk-viewport') applyKeyboard(ev.data.keyboard);
+  });
+  document.addEventListener('focusin', (ev) => {
+    if (document.body.classList.contains('kb-open')) revealInput(ev.target);
+  });
+  if (window.parent === window) {
+    const vv = window.visualViewport;
+    const updateKeyboard = () => applyKeyboard(vv ? window.innerHeight - vv.height - vv.offsetTop : 0);
+    vv?.addEventListener('resize', updateKeyboard);
+    vv?.addEventListener('scroll', updateKeyboard);
+    updateKeyboard();
+  }
+})();
 
 /* ---- LOGIN SOCIAL (Google / Apple / Microsoft) ----
    O fluxo OAuth corre na página-mãe (/app); ela devolve a sessão por postMessage. */
