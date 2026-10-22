@@ -19,9 +19,9 @@ export default defineConfig({
       devOptions: { enabled: false },
       integration: { closeBundleOrder: "post" },
       workbox: {
-        cacheId: "bk-cirurgia",
+        cacheId: "bk-cirurgia-v2",
         importScripts: ["/push-events.js"],
-        globPatterns: ["assets/**/*.{js,css,woff,woff2}", "icons/*.png", "manifest.webmanifest"],
+        globPatterns: ["assets/**/*.{js,css,woff,woff2}", "icons/*.png", "manifest.webmanifest", "hero-banner.webp"],
         globIgnores: ["**/*.html", "**/sw.js", "**/workbox-*.js"],
         navigateFallback: null,
         cleanupOutdatedCaches: true,
