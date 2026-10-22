@@ -20,14 +20,14 @@ const DISMISS_DAYS = 14;
 export const Route = createFileRoute("/app")({
   head: () => ({
     meta: [
-      { title: "Entrar — BK-CIRURGIA" },
+      { title: "BK-CIRURGIA" },
       {
         name: "description",
         content:
           "Aceda à plataforma de estudo BK-CIRURGIA: módulos de estudo, tutor de IA, mapas mentais e biblioteca oficial.",
       },
       { name: "robots", content: "noindex" },
-      { property: "og:title", content: "Entrar — BK-CIRURGIA" },
+      { property: "og:title", content: "BK-CIRURGIA" },
       {
         property: "og:description",
         content: "Aceda à sua conta BK-CIRURGIA e continue os seus estudos em cirurgia.",
@@ -148,6 +148,32 @@ function AppShell() {
     };
   }, []);
 
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const sendViewport = () => {
+      const height = vv ? Math.round(Math.max(0, window.innerHeight - vv.height - vv.offsetTop)) : 0;
+      const frame = document.querySelector("iframe");
+      frame?.contentWindow?.postMessage(
+        { type: "bk-viewport", keyboard: height > 80 ? height : 0 },
+        window.location.origin,
+      );
+    };
+    const onFrameReady = (event: MessageEvent) => {
+      const frame = document.querySelector("iframe");
+      if (event.origin !== window.location.origin || event.source !== frame?.contentWindow) return;
+      if (event.data?.type === "bk-frame-ready") sendViewport();
+    };
+    vv?.addEventListener("resize", sendViewport);
+    vv?.addEventListener("scroll", sendViewport);
+    window.addEventListener("message", onFrameReady);
+    sendViewport();
+    return () => {
+      vv?.removeEventListener("resize", sendViewport);
+      vv?.removeEventListener("scroll", sendViewport);
+      window.removeEventListener("message", onFrameReady);
+    };
+  }, []);
+
   // Login social: o iframe pede, esta página corre o OAuth e devolve a sessão.
   useEffect(() => {
     const post = (msg: Record<string, unknown>) => {
@@ -234,14 +260,14 @@ function AppShell() {
       <iframe
         src="/app.html"
         title="BK-CIRURGIA"
-        className="fixed inset-0 h-full w-full border-0"
+        className="fixed inset-0 h-dvh w-full border-0"
       />
       {!isInstalled && !dismissed ? (
         <Button
           type="button"
           onClick={installApp}
           variant="outline"
-          className="fixed bottom-20 right-4 z-50 min-h-11 bg-background px-4 font-semibold shadow-lg"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-50 min-h-11 bg-background px-4 font-semibold shadow-lg"
             aria-label="Instalar Aplicação"
           title="Instalar BK-CIRURGIA"
         >
