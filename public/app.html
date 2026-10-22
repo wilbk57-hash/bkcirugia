@@ -9591,7 +9591,10 @@ function fbKindLabel(ev, T) {
 function fbBodyHtml(e) {
   const d = e.detail || {};
   let h = '';
-  if (e.event === 'app_rating') h += `<div style="font-size:18px;color:var(--warn,#f5b301);">${'★'.repeat(d.stars||0)}${'☆'.repeat(5-(d.stars||0))}</div>`;
+  if (e.event === 'app_rating') {
+    const stars = Math.max(0, Math.min(5, Math.floor(Number(d.stars)) || 0));
+    h += `<div style="font-size:18px;color:var(--warn,#f5b301);">${'★'.repeat(stars)}${'☆'.repeat(5-stars)}</div>`;
+  }
   if (d.text) h += `<div style="white-space:pre-wrap;color:var(--text);margin-top:6px;">${escapeHtml(d.text)}</div>`;
   return h;
 }
