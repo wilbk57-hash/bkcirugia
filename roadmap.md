@@ -29,3 +29,9 @@
 # Respostas progressivas do Tutor
 - [x] Implementar streaming opcional no servidor e apresentação progressiva no app, preservando fontes e memória.
 - [x] Verificar falhas, CORS e compatibilidade JSON; testar perguntas com administrador autenticado (30 atualizações com livros, 3 na pergunta simples; JSON 200 sem stream).
+
+# Scripts externos com SRI
+- [x] Fixar cliente externo na versão instalada e aplicar hashes SHA-384 reais aos quatro scripts.
+- [x] Acrescentar aviso de falha de carregamento e preservar cache da dependência com URL fixa.
+- [x] Verificar arranque sem erros, sessão administrativa após recarregar, PDF oficial de 299 páginas, EPUB local no leitor e aviso com CDN bloqueado; oito testes passaram. Pré-visualização sem worker nem cache; HTML publicado usa NetworkFirst, sem pré-cache.
+- [ ] Verificar EPUB oficial — a biblioteca contém apenas seis PDFs; EPUB local verificado sem gravação no backend.
