@@ -64,7 +64,7 @@ export default defineConfig({
           },
           {
             urlPattern: ({ url }) => url.origin === "https://cdn.jsdelivr.net" &&
-              url.pathname === "/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
+              url.pathname === "/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.js",
             handler: "NetworkFirst",
             options: {
               cacheName: "bk-cirurgia-public-dependency",

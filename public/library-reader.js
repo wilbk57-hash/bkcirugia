@@ -45,8 +45,8 @@ async function bkReaderOpen(book, initialPage) {
     const response = await fetch(url); if (!response.ok) throw new Error('download');
     const bytes = await response.arrayBuffer(); if (bkReader !== state) return;
     if ((book.mime_type || '').includes('epub') || /\.epub$/i.test(book.file_path)) {
-      await myLibLoadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
-      await myLibLoadScript('https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js');
+      await myLibLoadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js', 'sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG');
+      await myLibLoadScript('https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js', 'sha384-ZqmkDa/1AGF4SKdSmXgEG+3G+Gsb6yNqUSq2Mqp0jDf1GWk+UY5eNbEd7hgwiywI');
       if (bkReader !== state) return;
       state.body.innerHTML = '<div id="bkEpubHost" class="bk-epub-host"></div>';
       state.epub = ePub(bytes); state.rendition = state.epub.renderTo('bkEpubHost', { width: '100%', height: '100%', flow: 'scrolled-doc' });
@@ -57,7 +57,7 @@ async function bkReaderOpen(book, initialPage) {
       state.pageInput.hidden = true; state.pageTotal.textContent = 'EPUB';
       await state.rendition.display();
     } else {
-      await myLibLoadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+      await myLibLoadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js', 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e');
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
       if (bkReader !== state) return;
       state.pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
