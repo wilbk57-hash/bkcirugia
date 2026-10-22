@@ -5628,6 +5628,7 @@ const STR_TABLE = [
  ['ia.error.nokey.title','Chave do Claude em falta','Claude key missing','Falta la clave de Claude'],
  ['ia.error.nokey.body','Adicione a sua chave da Anthropic nas Definições, ou escolha Gemini/ChatGPT no seletor do tutor.','Add your Anthropic key in Settings, or pick Gemini/ChatGPT in the tutor selector.','Añade tu clave de Anthropic en Ajustes, o elige Gemini/ChatGPT en el selector del tutor.'],
  ['item.apikey.label','Chave de API da Anthropic','Anthropic API key','Clave de API de Anthropic'],
+ ['item.apikey.safety','A chave fica guardada apenas neste dispositivo e é enviada diretamente à Anthropic. Não a use em dispositivos partilhados e remova-a quando terminar.','The key is stored only on this device and sent directly to Anthropic. Do not use it on shared devices, and remove it when you finish.','La clave se guarda solo en este dispositivo y se envía directamente a Anthropic. No la uses en dispositivos compartidos y elimínala cuando termines.'],
  ['item.apikey.desc','Necessária para o Tutor de IA responder. Crie a sua em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--teal);">console.anthropic.com</a>. A chave fica salva apenas neste navegador — nunca é enviada para nenhum servidor além da própria Anthropic.','Needed for the AI Tutor to respond. Create yours at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--teal);">console.anthropic.com</a>. The key is stored only in this browser — never sent anywhere except Anthropic itself.','Necesaria para que el Tutor de IA responda. Créala en <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--teal);">console.anthropic.com</a>. La clave se guarda solo en este navegador — nunca se envía a nadie más que Anthropic.'],
  ['item.apikey.placeholder.set','•••••••••••• (colar para substituir)','•••••••••••• (paste to replace)','•••••••••••• (pegar para reemplazar)'],
  ['item.apikey.placeholder.empty','sk-ant-...','sk-ant-...','sk-ant-...'],
@@ -6442,7 +6443,7 @@ function bkFeedback(kind) {
     const text = body.querySelector('#bkFbText').value.trim();
     if (!text) return;
     const { error } = await supabaseClient.rpc('log_event', { p_event: 'feedback_' + kind, p_detail: { text: text.slice(0, 4000), page: location.hash, ua: navigator.userAgent } });
-    if (error) { showToast(error.message); return; }
+    if (error) { if (error.code === '23514' && error.message?.includes('audit_events_detail_size')) return; showToast(error.message); return; }
     bkCloseSheet(); showToast(L('Obrigado! Mensagem enviada.','Thanks! Message sent.','¡Gracias! Mensaje enviado.'));
   });
 }
@@ -6461,7 +6462,7 @@ function bkRate() {
   body.querySelector('#bkRateSend').addEventListener('click', async () => {
     if (!stars) { showToast(L('Escolha de 1 a 5 estrelas.','Pick 1 to 5 stars.','Elige de 1 a 5 estrellas.')); return; }
     const { error } = await supabaseClient.rpc('log_event', { p_event: 'app_rating', p_detail: { stars, text: body.querySelector('#bkRateText').value.trim().slice(0, 2000) } });
-    if (error) { showToast(error.message); return; }
+    if (error) { if (error.code === '23514' && error.message?.includes('audit_events_detail_size')) return; showToast(error.message); return; }
     bkCloseSheet(); showToast(L('Obrigado pela avaliação!','Thanks for rating!','¡Gracias por tu valoración!'));
   });
 }
@@ -6665,6 +6666,7 @@ function renderSettingsItem(item) {
           <input type="password" id="apiKeyInput" class="settings-select" style="flex:1;" placeholder="${has ? t('item.apikey.placeholder.set') : t('item.apikey.placeholder.empty')}" autocomplete="off" spellcheck="false" />
           <button class="btn" style="padding:0 16px;" onclick="saveApiKeyFromInput()">${t('item.apikey.save')}</button>
         </div>
+        <div class="settings-row-desc">${t('item.apikey.safety')}</div>
         <div class="apikey-status ${has ? 'set' : ''}">${has ? t('item.apikey.status.set') : t('item.apikey.status.notset')}</div>
         ${has ? `<button class="btn" style="width:100%;color:var(--red);border-color:var(--red);" onclick="clearApiKey()">${t('item.apikey.clear')}</button>` : ''}
       </div>`;
