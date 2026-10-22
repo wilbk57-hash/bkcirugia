@@ -4898,7 +4898,7 @@ async function callClaudeTutor(opts) {
   const apiKey = getApiKey();
   if (!apiKey) { const e = new Error('no-key'); e.needsKey = true; throw e; }
   const body = {
-    model: 'claude-sonnet-5',
+    model: 'claude-sonnet-5-5',
     max_tokens: opts.maxTokens || 1500,
     system: opts.system,
     messages: opts.messages,
