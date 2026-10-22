@@ -1,4 +1,5 @@
 # Segurança dos perfis
+- [ ] Verificar os ajustes de ecrã e fluidez pedidos, incluindo as barras superior e inferior em ecrãs pequenos.
 - [x] Aplicar privilégios por coluna, função administrativa e metadados seguros no registo.
 - [x] Ajustar registo, suspensão e aviso de exclusão no app.
 - [x] Bloquear contas suspensas no Tutor e pesquisa; verificar regressões.
