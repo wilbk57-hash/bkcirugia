@@ -1,6 +1,6 @@
-/* BK-CIRURGIA — lugar fixo para colar os temas completos de estudo.
+/* BK-CIRURGIA — ficheiro exclusivo do tema Asepsia.
    Consulte STUDY-CONTENT.md na raiz do projeto para o formato e exemplos.
-   Cole abaixo os blocos window.BK_CONTENT['id-do-subtema'] = { topic, terms }.
+   Mantenha apenas window.BK_CONTENT['asepsia'] = { topic, terms }.
    Não cole as tags <script> nem apague a inicialização seguinte. */
 window.BK_CONTENT = window.BK_CONTENT || {};
 
