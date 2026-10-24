@@ -20,3 +20,13 @@ test('resolver a imagem não altera o conteúdo curado nem as suas fontes', () =
 test('uma sugestão sem dados clínicos nem imagem existente não inventa um visual', () => {
   assert.equal(reading().image({ title: 'Tema futuro', image: 'Faça uma imagem', explanation: '' }), '');
 });
+
+test('cada tema recebe uma única aba exclusiva de fontes sem alterar os dados originais', () => {
+  const topic = { tabs: [{ id: 'conceitos', type: 'lesson' }, { id: 'referencias', type: 'lesson' }] };
+  const before = JSON.stringify(topic);
+  const prepared = reading().prepareTopic(topic);
+  assert.equal(prepared.tabs.length, 3);
+  assert.equal(prepared.tabs.filter(tab => tab.id === prepared.referenceTabId).length, 1);
+  assert.equal(prepared.referenceTabId, 'referencias-fontes');
+  assert.equal(JSON.stringify(topic), before);
+});
