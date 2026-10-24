@@ -5779,6 +5779,25 @@ const STR_TABLE = [
  ['admin.lang.label','Idioma do painel','Panel language','Idioma del panel'],
  ['admin.lang.saved','Idioma do painel guardado.','Panel language saved.','Idioma del panel guardado.'],
  ['admin.dash.title','Painel Administrativo','Admin Dashboard','Panel Administrativo'],
+ ['mfa.eyebrow','Verificação em dois passos','Two-step verification','Verificación en dos pasos'],
+ ['mfa.login.title','Código de verificação','Verification code','Código de verificación'],
+ ['mfa.login.sub','Abre a aplicação de autenticação e digita o código de 6 dígitos.','Open your authenticator app and enter the 6-digit code.','Abre tu aplicación de autenticación e introduce el código de 6 dígitos.'],
+ ['mfa.code','Código de 6 dígitos','6-digit code','Código de 6 dígitos'],
+ ['mfa.verify','Confirmar código','Confirm code','Confirmar código'],
+ ['mfa.cancel','Cancelar e terminar sessão','Cancel and sign out','Cancelar y cerrar sesión'],
+ ['mfa.cancel.short','Cancelar','Cancel','Cancelar'],
+ ['mfa.err.format','Digita os 6 números do código.','Enter the 6 digits of the code.','Introduce los 6 números del código.'],
+ ['mfa.err.code','Código incorreto ou expirado. Tenta novamente com o código atual.','Incorrect or expired code. Try again with the current code.','Código incorrecto o caducado. Inténtalo de nuevo con el código actual.'],
+ ['mfa.err.enroll','Não foi possível iniciar a ativação. Tenta novamente.','Could not start activation. Please try again.','No se pudo iniciar la activación. Inténtalo de nuevo.'],
+ ['mfa.card.title','Ativar verificação em dois passos','Enable two-step verification','Activar verificación en dos pasos'],
+ ['mfa.card.desc','Protege a conta de administrador com um código de uma aplicação de autenticação (Google Authenticator, Microsoft Authenticator, Authy).','Protect the administrator account with a code from an authenticator app (Google Authenticator, Microsoft Authenticator, Authy).','Protege la cuenta de administrador con un código de una aplicación de autenticación (Google Authenticator, Microsoft Authenticator, Authy).'],
+ ['mfa.card.start','Começar ativação','Start activation','Comenzar activación'],
+ ['mfa.card.scan','Lê este QR code com a aplicação de autenticação.','Scan this QR code with your authenticator app.','Escanea este código QR con tu aplicación de autenticación.'],
+ ['mfa.card.manual','Ou introduz esta chave manualmente:','Or enter this key manually:','O introduce esta clave manualmente:'],
+ ['mfa.card.confirm','Confirmar ativação','Confirm activation','Confirmar activación'],
+ ['mfa.card.active','Ativo','Active','Activo'],
+ ['mfa.card.active.desc','A partir de agora o login de administrador pede o código de 6 dígitos.','From now on the administrator login asks for the 6-digit code.','A partir de ahora el inicio de sesión de administrador pide el código de 6 dígitos.'],
+ ['mfa.card.done','Verificação em dois passos ativada.','Two-step verification enabled.','Verificación en dos pasos activada.'],
  ['admin.dash.sub','Visão geral de usuários, conteúdo e engajamento da plataforma.','Overview of platform users, content and engagement.','Resumen de usuarios, contenido y participación de la plataforma.'],
  ['admin.stat.total','Total de usuários','Total users','Usuarios totales'],
  ['admin.stat.active','Usuários ativos (7d)','Active users (7d)','Usuarios activos (7d)'],
@@ -8042,7 +8061,11 @@ async function refreshAuthCache(authenticatedSession) {
   if (adminError) { clearSession(); _authCache.ready = true; throw adminError; }
   const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single().setHeader('Authorization', 'Bearer ' + session.access_token);
 
-  if (adminRow) {
+  _authCache.mfaPending = false;
+  if (adminRow && await adminMfaRequired()) {
+    // Administrador com 2FA ativo mas sessão ainda em aal1: não conceder acesso.
+    _authCache.admin = null; _authCache.user = null; _authCache.mfaPending = true;
+  } else if (adminRow) {
     _authCache.admin = { user_id: session.user.id, username: session.user.email, level: adminRow.level };
     _authCache.user = null;
   } else {
@@ -8050,6 +8073,49 @@ async function refreshAuthCache(authenticatedSession) {
     _authCache.user = profile ? { id: session.user.id, ...profile } : null;
   }
   _authCache.ready = true;
+}
+
+/* ---- Verificação em dois passos (TOTP) do administrador ---- */
+/* True quando o utilizador tem um fator TOTP verificado e a sessão ainda está em aal1. */
+async function adminMfaRequired() {
+  const mfa = supabaseClient.auth && supabaseClient.auth.mfa;
+  if (!mfa) return false;
+  const { data, error } = await mfa.getAuthenticatorAssuranceLevel();
+  if (error) throw error;
+  return data.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
+}
+/* Estado do 2FA: { active, factorId } com base nos fatores TOTP verificados. */
+async function adminMfaStatus() {
+  const { data, error } = await supabaseClient.auth.mfa.listFactors();
+  if (error) throw error;
+  const verified = (data.totp || []).find(f => f.status === 'verified');
+  return { active: !!verified, factorId: verified ? verified.id : null, all: data.all || [] };
+}
+/* Valida um código de 6 dígitos; devolve a sessão nova (aal2). Nunca regista o código. */
+async function adminMfaVerifyCode(factorId, code) {
+  const clean = String(code || '').replace(/\s+/g, '');
+  if (!/^\d{6}$/.test(clean)) { const e = new Error('invalid_format'); e.code = 'invalid_format'; throw e; }
+  const mfa = supabaseClient.auth.mfa;
+  const ch = await mfa.challenge({ factorId });
+  if (ch.error) throw ch.error;
+  const vr = await mfa.verify({ factorId, challengeId: ch.data.id, code: clean });
+  if (vr.error) throw vr.error;
+  const { data } = await supabaseClient.auth.getSession();
+  return data.session;
+}
+/* Remove fatores TOTP antigos não verificados e cria um novo. */
+async function adminMfaEnroll() {
+  const mfa = supabaseClient.auth.mfa;
+  const { all } = await adminMfaStatus();
+  for (const f of all) {
+    if (f.factor_type === 'totp' && f.status !== 'verified') {
+      const r = await mfa.unenroll({ factorId: f.id });
+      if (r.error) throw r.error;
+    }
+  }
+  const { data, error } = await mfa.enroll({ factorType: 'totp', friendlyName: 'BK-CIRURGIA admin ' + Date.now() });
+  if (error) throw error;
+  return { factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret };
 }
 
 /* Items injected as the first settings group ("Conta"), reflecting who is
@@ -8337,6 +8403,7 @@ async function doAdminLogin() {
       return;
     }
     await refreshAuthCache(data.session);
+    if (_authCache.mfaPending) { adminMfaPrompt(); return; }
     if (!_authCache.admin) {
       await supabaseClient.auth.signOut();
       clearSession();
@@ -8353,6 +8420,52 @@ async function doAdminLogin() {
   } finally {
     btn.classList.remove('loading'); btn.disabled = false;
   }
+}
+
+/* Passo do código TOTP no login do administrador (sobreposição, sem alterar o ecrã de login). */
+async function adminMfaPrompt() {
+  const old = document.getElementById('adminMfaOverlay'); if (old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'adminMfaOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  el.innerHTML = `<div class="auth-panel admin" role="dialog" aria-modal="true" aria-labelledby="adminMfaTitle" style="max-width:380px;width:100%;">
+      <div class="auth-panel-eyebrow">${t('mfa.eyebrow')}</div>
+      <h2 id="adminMfaTitle">${t('mfa.login.title')}</h2>
+      <p style="font-size:13px;color:var(--text2);margin:0 0 12px;">${t('mfa.login.sub')}</p>
+      <div class="auth-field"><label for="adminMfaCode">${t('mfa.code')}</label><input class="auth-input" id="adminMfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></div>
+      <div class="auth-field"><div class="auth-err-msg" id="adminMfaErr"></div></div>
+      <button class="auth-submit" id="adminMfaBtn">${t('mfa.verify')}</button>
+      <div style="text-align:center;margin-top:10px;"><a href="javascript:void(0)" id="adminMfaCancel" style="font-size:12px;color:var(--text3);text-decoration:underline;">${t('mfa.cancel')}</a></div>
+    </div>`;
+  document.body.appendChild(el);
+  const input = el.querySelector('#adminMfaCode');
+  const btn = el.querySelector('#adminMfaBtn');
+  const errEl = el.querySelector('#adminMfaErr');
+  input.focus();
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+  el.querySelector('#adminMfaCancel').addEventListener('click', async () => {
+    el.remove(); clearSession(); _authCache.mfaPending = false;
+    try { await supabaseClient.auth.signOut(); } catch (_) {}
+  });
+  btn.addEventListener('click', async () => {
+    errEl.classList.remove('show');
+    btn.classList.add('loading'); btn.disabled = true;
+    try {
+      const { factorId } = await adminMfaStatus();
+      const session = await adminMfaVerifyCode(factorId, input.value);
+      await refreshAuthCache(session);
+      if (!_authCache.admin) throw new Error('not_admin');
+      auditLog('admin_mfa_verified');
+      el.remove();
+      auditLog('admin_login');
+      completeAuth(_authCache.admin.username, true);
+    } catch (e) {
+      if (e && e.code !== 'invalid_format') auditLog('admin_mfa_failed');
+      errEl.textContent = e && e.code === 'invalid_format' ? t('mfa.err.format') : t('mfa.err.code');
+      errEl.classList.add('show');
+      input.value = ''; input.focus();
+    } finally { btn.classList.remove('loading'); btn.disabled = false; }
+  });
 }
 
 /* ---- completion / gate ---- */
@@ -10398,9 +10511,66 @@ function renderAdminDashboard() {
       </table></div>
     </div>
 
+    <div id="adminMfaCard"></div>
     ${renderAdminInstallsSection()}
     ${renderAdminBooksSection()}
   `;
+  void renderAdminMfaCard();
+}
+
+/* Cartão "Ativar verificação em dois passos" no painel admin. */
+let _adminMfaEnrollment = null;
+async function renderAdminMfaCard() {
+  const host = document.getElementById('adminMfaCard');
+  if (!host) return;
+  let status;
+  try { status = await adminMfaStatus(); } catch (_) { host.innerHTML = ''; return; }
+  const head = `<div class="sec-heading" style="margin-top:18px;"><h2>${at('mfa.card.title')}</h2></div>`;
+  if (status.active) {
+    _adminMfaEnrollment = null;
+    host.innerHTML = head + `<div class="card"><span class="adm-role-pill">✓ ${at('mfa.card.active')}</span><p style="font-size:12.5px;color:var(--text2);margin:8px 0 0;">${at('mfa.card.active.desc')}</p></div>`;
+    return;
+  }
+  if (!_adminMfaEnrollment) {
+    host.innerHTML = head + `<div class="card"><p style="font-size:12.5px;color:var(--text2);margin:0 0 10px;">${at('mfa.card.desc')}</p><button class="btn primary" onclick="adminMfaStartEnroll()">${at('mfa.card.start')}</button><div class="auth-err-msg" id="adminMfaCardErr"></div></div>`;
+    return;
+  }
+  const en = _adminMfaEnrollment;
+  host.innerHTML = head + `<div class="card">
+      <p style="font-size:12.5px;color:var(--text2);margin:0 0 10px;">${at('mfa.card.scan')}</p>
+      <div style="text-align:center;"><img src="${escapeHtml(en.qr)}" alt="QR code" style="width:180px;height:180px;background:#fff;border-radius:10px;padding:6px;"></div>
+      <p style="font-size:12px;color:var(--text3);margin:10px 0 4px;">${at('mfa.card.manual')}</p>
+      <code style="display:block;word-break:break-all;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);user-select:all;">${escapeHtml(en.secret)}</code>
+      <div class="auth-field" style="margin-top:12px;"><label for="adminMfaEnrollCode">${at('mfa.code')}</label><input class="auth-input" id="adminMfaEnrollCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></div>
+      <div class="auth-err-msg" id="adminMfaCardErr"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">
+        <button class="btn" onclick="_adminMfaEnrollment=null;renderAdminMfaCard()">${at('mfa.cancel.short')}</button>
+        <button class="btn primary" id="adminMfaEnrollBtn" onclick="adminMfaConfirmEnroll()">${at('mfa.card.confirm')}</button>
+      </div>
+    </div>`;
+}
+function adminMfaCardError(msg) { const e = document.getElementById('adminMfaCardErr'); if (e) { e.textContent = msg; e.classList.add('show'); } }
+async function adminMfaStartEnroll() {
+  try { _adminMfaEnrollment = await adminMfaEnroll(); await renderAdminMfaCard(); }
+  catch (_) { adminMfaCardError(at('mfa.err.enroll')); }
+}
+async function adminMfaConfirmEnroll() {
+  const en = _adminMfaEnrollment; if (!en) return;
+  const btn = document.getElementById('adminMfaEnrollBtn');
+  const input = document.getElementById('adminMfaEnrollCode');
+  if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+  try {
+    const session = await adminMfaVerifyCode(en.factorId, input && input.value);
+    await refreshAuthCache(session);
+    auditLog('admin_mfa_enrolled');
+    _adminMfaEnrollment = null;
+    showToast(at('mfa.card.done'));
+    await renderAdminMfaCard();
+  } catch (e) {
+    if (e && e.code !== 'invalid_format') auditLog('admin_mfa_failed');
+    adminMfaCardError(e && e.code === 'invalid_format' ? at('mfa.err.format') : at('mfa.err.code'));
+    if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
+  }
 }
 
 /* Visão operacional dos uploads dos alunos: apenas metadados e estatísticas.
