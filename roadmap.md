@@ -1,5 +1,5 @@
 # Conteúdos de estudo
-- [ ] Reunir fontes numa única aba Referências por tema, sem repetição nas demais abas; verificar navegação.
+- [x] Reunir fontes numa única aba Referências por tema, sem repetição nas demais abas; administrador verificou fontes ocultas na aula e 17 referências na aba exclusiva, exercícios preservados e nenhum erro; onze testes passaram.
 - [x] Repor quadros anteriores, justificar textos e aperfeiçoar tabelas sem alterar conteúdos, imagens ou referências; leitura e exercício verificados com administrador, sem erros nem transbordamento em 400 px; dez testes passaram.
 - [x] Uniformizar leitura dos temas atuais e futuros, reunir fontes no fim e trocar sugestões por ilustrações educativas e diagramas baseados no texto; imagens, referências, exercício e abertura de tema antigo verificados com administrador em 1280 e 400 px, sem erros; dez testes passaram. Sem publicar.
 - [x] Preparar public/study-topics.js como lugar fixo, integrar catálogo/glossário/pesquisa e documentar em STUDY-CONTENT.md; sete testes passaram e abertura de Asepsia, lição e quiz verificada com sessão administrativa usando conteúdo temporário apenas no navegador, sem alterar os conteúdos existentes.
