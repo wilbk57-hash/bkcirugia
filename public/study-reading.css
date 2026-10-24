@@ -2,33 +2,26 @@
 #topicView { --study-body: var(--text); --study-muted: var(--text2); }
 #paneHost { max-width: 760px; margin-inline: auto; }
 #topicView .pane { overflow-wrap: anywhere; }
-#topicView :is(.lesson-intro, .lesson-objectives, .lesson-section, .card, .check-group, .lesson-connection) {
-  background: none; background-image: none; box-shadow: none; border: 0; border-radius: 0;
-  padding: 22px 0; margin: 0; border-bottom: 1px solid var(--border);
-}
 #topicView :is(.lesson-section-text, .lesson-intro-text, .lesson-objective-item, .info-box-text, .check-body, .caso-body, .lesson-connection-text, .acc-panel) {
   font-family: inherit; font-size: var(--reader-fs); line-height: 1.8; color: var(--study-body);
-  text-align: start; text-indent: 0; letter-spacing: 0;
+  text-align: justify; text-align-last: start; text-indent: 0; letter-spacing: 0;
 }
 #topicView :is(p, li, .info-box-text, .lesson-section-text p:first-child, .lesson-section-text p:only-child) {
-  font-size: var(--reader-fs); line-height: 1.8; text-align: start; text-indent: 0; letter-spacing: 0;
+  font-size: var(--reader-fs); line-height: 1.8; text-align: justify; text-align-last: start; text-indent: 0; letter-spacing: 0;
 }
 #topicView p + p { margin-top: 14px; }
 #topicView :is(ul, ol) { padding-inline-start: 22px; }
 #topicView li + li { margin-top: 8px; }
-#topicView :is(.info-box, .callout) {
-  background: none; box-shadow: none; border: 0; border-inline-start: 2px solid var(--border);
-  border-radius: 0; padding: 8px 0 8px 16px; margin: 18px 0;
-}
-#topicView .info-box.red, #topicView .callout-warn { border-inline-start-color: var(--red); }
-#topicView .info-box.amber { border-inline-start-color: var(--amber); }
 #topicView :is(.info-box .label, .callout-label, .lesson-section-num, .lesson-intro-label) {
   letter-spacing: 0; line-height: 1.5; margin-bottom: 6px;
 }
 #topicView .lesson-section-title { font-size: 20px; line-height: 1.4; margin-bottom: 16px; }
-#topicView .lesson-section .card { border: 0; }
-#topicView .data { width: 100%; font-size: var(--reader-fs); }
-#topicView .data td { white-space: normal !important; line-height: 1.7; }
+#topicView .data { width: 100%; font-size: var(--reader-fs); border-collapse: collapse; }
+#topicView .data :is(td, th) { white-space: normal !important; line-height: 1.7; padding: 12px 14px; vertical-align: top; text-align: start; border-bottom: 1px solid var(--border); }
+#topicView .data th { background: var(--panel2); color: var(--text); font-weight: 700; }
+#topicView .data tr:nth-child(even) { background: var(--panel2); }
+#topicView .data tr:last-child :is(td, th) { border-bottom: 0; }
+#topicView .data td:first-child { color: var(--text); font-weight: 600; width: 38%; min-width: 100px; overflow-wrap: normal; word-break: normal; hyphens: auto; }
 #topicView .lesson-meta { flex-wrap: wrap; color: var(--study-muted); }
 #topicView .study-figure { margin: 24px 0; }
 #topicView .study-figure img { display: block; width: 100%; height: auto; border-radius: 6px; }
@@ -50,4 +43,5 @@ body.text-spacing #topicView :is(p, li) { line-height: 1.95; }
 @media (max-width: 480px) {
   #topicView .lesson-section-title { font-size: 18px; }
   #topicView .study-diagram { padding: 14px; }
+  #topicView .data :is(td, th) { padding: 10px; }
 }
