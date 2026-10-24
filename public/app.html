@@ -7394,8 +7394,9 @@ function switchTab(tabId, fromPop) {
 }
 
 function openTopic(id, startTabId, fromPop) {
-  const topic = TOPICS[id];
-  if (!topic) return;
+  const originalTopic = TOPICS[id];
+  if (!originalTopic) return;
+  const topic = window.BKStudyReading?.prepareTopic(originalTopic, currentLang === 'en' ? 'References' : currentLang === 'es' ? 'Referencias' : currentLang === 'fr' ? 'Références' : 'Referências') || originalTopic;
   NAV_STATE.currentTopic = topic;
 
   MAIN_VIEWS.forEach(vid => hideEl(document.getElementById(vid)));

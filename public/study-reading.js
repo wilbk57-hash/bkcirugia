@@ -31,6 +31,11 @@
     if (!facts.length) return '';
     return `<figure class="study-diagram"><figcaption>${escape(section.title)}</figcaption><ol>${facts.map(f => `<li>${escape(f)}</li>`).join('')}</ol></figure>`;
   }
+  function prepareTopic(topic, label = 'Referências') {
+    let referenceTabId = 'referencias';
+    while (topic.tabs.some(tab => tab.id === referenceTabId)) referenceTabId += '-fontes';
+    return { ...topic, referenceTabId, tabs: [...topic.tabs, { id: referenceTabId, label, type: 'sections', sections: [] }] };
+  }
   function collect(host, topic) {
     const sources = new Map();
     const add = (citation, section) => {
@@ -58,8 +63,9 @@
     for (const ref of topic.references || []) add(typeof ref === 'string' ? ref : ref.text || ref.title);
     const existing = host.querySelector(':scope > .study-references');
     existing?.remove();
-    if (sources.size) host.insertAdjacentHTML('beforeend', `<section class="study-references" aria-label="Referências bibliográficas"><h2>Referências bibliográficas</h2><ol>${[...sources].map(([ref, sections]) => `<li><p>${escape(ref)}</p>${sections.size ? `<small>${escape([...sections].join(' · '))}</small>` : ''}</li>`).join('')}</ol></section>`);
+    const referencePane = topic.referenceTabId ? document.getElementById('pane-' + topic.referenceTabId) : null;
+    if (referencePane && host.contains(referencePane)) referencePane.innerHTML = `<section class="study-references" aria-label="Referências bibliográficas"><h2>${escape(topic.tabs.find(tab => tab.id === topic.referenceTabId)?.label)}</h2><ol>${[...sources].map(([ref, sections]) => `<li><p>${escape(ref)}</p>${sections.size ? `<small>${escape([...sections].join(' · '))}</small>` : ''}</li>`).join('')}</ol></section>`;
     host.querySelectorAll('.study-figure img').forEach(img => img.addEventListener('error', () => img.closest('figure')?.remove(), { once: true }));
   }
-  window.BKStudyReading = { image, collect };
+  window.BKStudyReading = { image, collect, prepareTopic };
 })();
