@@ -2053,6 +2053,8 @@ if (!window.supabase) {
 <script src="/library-reader.js"></script>
 <script src="/tutor-memory.js"></script>
 <script src="/tutor-stream.js"></script>
+<script src="/study-topics-loader.js"></script>
+<script src="/study-topics.js"></script>
 <script>
 /* ============================================================
    ÍNDICE DE TEMAS
@@ -4193,6 +4195,10 @@ const TOPIC_ABORDAGEM_VENOSO = {
 };
 
 const TOPICS = { 'pre-operatorio': TOPIC_PREOP, 'trans-operatorio': TOPIC_TRANSOP, 'pos-operatorio': TOPIC_POSOP, 'choque': TOPIC_CHOQUE, 'pvc': TOPIC_PVC, 'abordagem-venoso': TOPIC_ABORDAGEM_VENOSO };
+if (window.BKStudyTopics) {
+  const studyTopicsResult = window.BKStudyTopics.apply(window.BK_CONTENT, TOPICS, TERMS, TEMAS);
+  if (studyTopicsResult.rejected.length) console.warn('Temas não carregados: conteúdo incompleto ou formato incompatível.', studyTopicsResult.rejected);
+}
 
 /* ============================================================
    PESQUISA GLOBAL — índice + engine

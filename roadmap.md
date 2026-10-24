@@ -1,3 +1,6 @@
+# Conteúdos de estudo
+- [x] Preparar public/study-topics.js como lugar fixo, integrar catálogo/glossário/pesquisa e documentar em STUDY-CONTENT.md; sete testes passaram e abertura de Asepsia, lição e quiz verificada com sessão administrativa usando conteúdo temporário apenas no navegador, sem alterar os conteúdos existentes.
+
 # Segurança dos perfis
 - [x] Limitar detail de auditoria a 16384 bytes sem alterar RLS; acrescentar aviso da chave pessoal em pt/en/es e verificar regressões.
 - [x] Verificar os ajustes de ecrã e fluidez pedidos: sessão autenticada em 1280, 360 e 320 px, ambas as barras visíveis após deslocação, pesquisa com atraso de 150 ms e sem erros no navegador.
