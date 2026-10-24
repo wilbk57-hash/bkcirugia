@@ -21,7 +21,7 @@
 #topicView .data th { background: var(--panel2); color: var(--text); font-weight: 700; }
 #topicView .data tr:nth-child(even) { background: var(--panel2); }
 #topicView .data tr:last-child :is(td, th) { border-bottom: 0; }
-#topicView .data td:first-child { color: var(--text); font-weight: 600; }
+#topicView .data td:first-child { color: var(--text); font-weight: 600; width: 38%; min-width: 100px; overflow-wrap: normal; word-break: normal; hyphens: auto; }
 #topicView .lesson-meta { flex-wrap: wrap; color: var(--study-muted); }
 #topicView .study-figure { margin: 24px 0; }
 #topicView .study-figure img { display: block; width: 100%; height: auto; border-radius: 6px; }
