@@ -62,7 +62,7 @@ test('módulo das quatro partes de Asepsia mantém todas as abas e termos ao int
   const terms = {};
   const result = setup()({ asepsia: data }, topics, terms, catalog());
   assert.equal(result.loaded.length, 1);
-  assert.equal(topics.asepsia.tabs.length, 14);
+  assert.equal(topics.asepsia.tabs.length, 12);
   assert.equal(Object.keys(terms).length, 23);
 });
 

@@ -1,4 +1,3 @@
-# Segurança dos perfis
 # Conteúdos de estudo
 - [ ] Preparar lugar fixo para colar temas completos, integrar catálogo/glossário/pesquisa e verificar abertura sem alterar conteúdos existentes.
 
