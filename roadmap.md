@@ -1,3 +1,6 @@
+# SEO
+- [ ] Corrigir e verificar os dois resultados registados no resumo público: imagem de partilha e dados estruturados sem datas inventadas.
+
 # Conteúdos de estudo
 - [x] Separar conteúdos em public/temas com 31 ficheiros individuais, preservar Asepsia e verificar erro de sintaxe isolado no navegador, aula, exercício e Referências com administrador; 13 testes passaram. Sem publicar.
 - [x] Reunir fontes numa única aba Referências por tema, sem repetição nas demais abas; administrador verificou fontes ocultas na aula e 17 referências na aba exclusiva, exercícios preservados e nenhum erro; onze testes passaram.

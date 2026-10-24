@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 const URL = "https://bkcirugia.lovable.app/resumos/cirurgia-geral";
+const IMAGE_URL = "https://bkcirugia.lovable.app/resumos/pre-operatorio-share.webp";
 const TITLE = "Resumo de cirurgia geral: pré-operatório | BK-CIRURGIA";
 const DESCRIPTION =
   "Resumo de cirurgia geral para residência: definição de pré-operatório, cirurgia eletiva, de urgência e emergência, fases mediata e imediata e estresse cirúrgico.";
@@ -83,7 +84,12 @@ export const Route = createFileRoute("/resumos/cirurgia-geral")({
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "article" },
       { property: "og:url", content: URL },
+      { property: "og:image", content: IMAGE_URL },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Equipa cirúrgica numa sala de operações" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: IMAGE_URL },
     ],
     links: [{ rel: "canonical", href: URL }],
     scripts: [
@@ -91,11 +97,12 @@ export const Route = createFileRoute("/resumos/cirurgia-geral")({
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "Article",
-          headline: "Resumo de cirurgia geral: pré-operatório",
+          "@type": "WebPage",
+          name: "Resumo de cirurgia geral: pré-operatório",
           description: DESCRIPTION,
           inLanguage: "pt",
-          mainEntityOfPage: URL,
+          url: URL,
+          image: IMAGE_URL,
           author: { "@type": "Organization", name: "BK-CIRURGIA" },
           publisher: { "@type": "Organization", name: "BK-CIRURGIA" },
         }),
@@ -145,6 +152,13 @@ function ResumoCirurgiaGeral() {
             pré-operatório, como classificar a urgência da cirurgia, a diferença entre fase mediata
             e imediata e por que o corpo reage antes do primeiro corte.
           </p>
+          <img
+            src={IMAGE_URL}
+            alt="Equipa cirúrgica numa sala de operações"
+            width={1200}
+            height={630}
+            className="mt-6 h-auto w-full rounded-md"
+          />
         </header>
 
         <section className="mt-10" aria-labelledby="numeros">
