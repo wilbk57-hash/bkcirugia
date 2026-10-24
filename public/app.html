@@ -6267,13 +6267,6 @@ function applyFontSize(size) {
   SETTINGS_STATE.fontSize = size;
   document.body.classList.remove('fs-sm','fs-md','fs-lg','fs-xl');
   document.body.classList.add('fs-' + size);
-  /* Sincronizar o texto de leitura (temas, casos, termos) com o tamanho
-     geral escolhido nas definições, para o app inteiro seguir a mesma
-     escala de letra. */
-  const readerMap = { sm: 13, md: 14, lg: 16, xl: 18 };
-  const px = readerMap[size] || 14;
-  SETTINGS_STATE.readerFontSize = px;
-  applyReaderFontSize(px);
 }
 
 function applyToggleClass(key, className) {
