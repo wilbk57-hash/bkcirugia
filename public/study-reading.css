@@ -1,0 +1,51 @@
+/* Reading rules are scoped to study topics; login and other views are untouched. */
+#topicView { --study-body: var(--text); --study-muted: var(--text2); }
+#paneHost { max-width: 760px; margin-inline: auto; }
+#topicView .pane { overflow-wrap: anywhere; }
+#topicView :is(.lesson-intro, .lesson-objectives, .lesson-section, .card, .check-group, .lesson-connection) {
+  background: none; background-image: none; box-shadow: none; border: 0; border-radius: 0;
+  padding: 22px 0; margin: 0; border-bottom: 1px solid var(--border);
+}
+#topicView :is(.lesson-section-text, .lesson-intro-text, .lesson-objective-item, .info-box-text, .check-body, .caso-body, .lesson-connection-text, .acc-panel) {
+  font-family: inherit; font-size: var(--reader-fs); line-height: 1.8; color: var(--study-body);
+  text-align: start; text-indent: 0; letter-spacing: 0;
+}
+#topicView :is(p, li, .info-box-text, .lesson-section-text p:first-child, .lesson-section-text p:only-child) {
+  font-size: var(--reader-fs); line-height: 1.8; text-align: start; text-indent: 0; letter-spacing: 0;
+}
+#topicView p + p { margin-top: 14px; }
+#topicView :is(ul, ol) { padding-inline-start: 22px; }
+#topicView li + li { margin-top: 8px; }
+#topicView :is(.info-box, .callout) {
+  background: none; box-shadow: none; border: 0; border-inline-start: 2px solid var(--border);
+  border-radius: 0; padding: 8px 0 8px 16px; margin: 18px 0;
+}
+#topicView .info-box.red, #topicView .callout-warn { border-inline-start-color: var(--red); }
+#topicView .info-box.amber { border-inline-start-color: var(--amber); }
+#topicView :is(.info-box .label, .callout-label, .lesson-section-num, .lesson-intro-label) {
+  letter-spacing: 0; line-height: 1.5; margin-bottom: 6px;
+}
+#topicView .lesson-section-title { font-size: 20px; line-height: 1.4; margin-bottom: 16px; }
+#topicView .lesson-section .card { border: 0; }
+#topicView .data { width: 100%; font-size: var(--reader-fs); }
+#topicView .data td { white-space: normal !important; line-height: 1.7; }
+#topicView .lesson-meta { flex-wrap: wrap; color: var(--study-muted); }
+#topicView .study-figure { margin: 24px 0; }
+#topicView .study-figure img { display: block; width: 100%; height: auto; border-radius: 6px; }
+#topicView .study-figure a { display: block; cursor: zoom-in; }
+#topicView figcaption { color: var(--study-muted); font-size: 12px; line-height: 1.6; margin-top: 10px; }
+#topicView .study-diagram { margin: 24px 0; padding: 18px; background: var(--panel2); border-radius: 6px; }
+#topicView .study-diagram figcaption { font-weight: 600; color: var(--text); margin: 0 0 14px; font-size: var(--reader-fs); }
+#topicView .study-diagram ol { display: grid; gap: 12px; list-style-position: outside; }
+#topicView .study-diagram li { padding-inline-start: 6px; margin: 0; }
+#topicView .study-diagram li::marker { color: var(--teal-light); font-weight: 600; }
+#topicView .study-references { padding: 32px 0; border-top: 1px solid var(--border); margin-top: 28px; }
+#topicView .study-references h2 { font-size: 20px; margin-bottom: 18px; }
+#topicView .study-references li { padding-bottom: 12px; }
+#topicView .study-references p { margin: 0; }
+#topicView .study-references small { color: var(--study-muted); font-size: 12px; line-height: 1.6; display: block; }
+body.text-spacing #topicView :is(p, li) { line-height: 1.95; }
+@media (max-width: 480px) {
+  #topicView .lesson-section-title { font-size: 18px; }
+  #topicView .study-diagram { padding: 14px; }
+}

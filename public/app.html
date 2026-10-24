@@ -2050,6 +2050,8 @@ if (!window.supabase) {
 <button class="explain-select-btn" id="explainSelectBtn" onmousedown="event.preventDefault()" onclick="explainSelection()">✨ <span id="explainSelectLabel">Explicar</span></button>
 
 <link rel="stylesheet" href="/library-reader.css">
+<link rel="stylesheet" href="/study-reading.css">
+<script src="/study-reading.js"></script>
 <script src="/library-reader.js"></script>
 <script src="/tutor-memory.js"></script>
 <script src="/tutor-stream.js"></script>
@@ -7423,6 +7425,7 @@ function openTopic(id, startTabId, fromPop) {
 
   const host = document.getElementById('paneHost');
   host.innerHTML = topic.tabs.map((tb, i) => `<div class="pane ${i===startIdx?'active':''}" id="pane-${tb.id}">${renderTab(tb, topic)}</div>`).join('');
+  window.BKStudyReading?.collect(host, topic);
 
   if (topic.tabs.some(tb => tb.type === 'quiz')) initQuiz(topic);
   if (topic.tabs.some(tb => tb.type === 'case')) initCaso(topic);
@@ -7686,7 +7689,7 @@ function renderLesson(tab, topicId) {
       <div class="lesson-section-num">SEÇÃO ${i + 1} DE ${tab.sections.length}</div>
       <div class="lesson-section-title">${s.title}</div>
       <div class="lesson-section-text">${s.explanation}</div>
-      ${s.image ? `<div class="lesson-img-suggestion">🖼️ <span><strong>Sugestão visual:</strong> ${s.image}</span></div>` : ''}
+      ${window.BKStudyReading?.image(s) || ''}
       ${s.table ? `<div class="card" style="margin:10px 0;"><h3 style="font-size:12.5px;">${s.table.title}</h3><div style="overflow-x:auto;max-width:100%"><table class="data">${s.table.rows.map(r => `<tr><td style="font-weight:600;color:var(--text);white-space:nowrap;">${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div></div>` : ''}
       ${renderInfoBoxes(s.boxes || s.box)}
       ${infoBox('blue', t('ib.example'), s.example)}
