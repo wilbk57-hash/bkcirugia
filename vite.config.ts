@@ -54,12 +54,12 @@ export default defineConfig({
           },
           {
             urlPattern: ({ url, sameOrigin }) => sameOrigin &&
-              /^(\/icons\/|\/manifest\.webmanifest$|\/(tutor-memory|tutor-stream|library-reader|push-events|study-topics|study-topics-loader|study-reading)\.(js|css)$)/.test(url.pathname),
+              /^(\/icons\/|\/temas\/[a-z0-9-]+\.js$|\/manifest\.webmanifest$|\/(tutor-memory|tutor-stream|library-reader|push-events|study-topics|study-topics-loader|study-topic-files|study-reading)\.(js|css)$)/.test(url.pathname),
             handler: "NetworkFirst",
             options: {
               cacheName: "bk-cirurgia-resources",
               cacheableResponse: { statuses: [200] },
-              expiration: { maxEntries: 20, maxAgeSeconds: 604800 },
+              expiration: { maxEntries: 64, maxAgeSeconds: 604800 },
             },
           },
           {

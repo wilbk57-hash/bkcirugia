@@ -78,7 +78,7 @@ test('IDs incompatíveis e respostas de quiz fora das opções são rejeitados',
 
 test('conteúdo publicado de Asepsia reúne exatamente as quatro partes e fica ready', () => {
   const context = { window: {} };
-  runInNewContext(readFileSync(new URL('../public/study-topics.js', import.meta.url), 'utf8'), context);
+  runInNewContext(readFileSync(new URL('../public/temas/asepsia.js', import.meta.url), 'utf8'), context);
   const original = { window: {} };
   for (const part of [1, 2, 3, 4]) runInNewContext(readFileSync(new URL(`../public/topic-asepsia-${part}.js`, import.meta.url), 'utf8'), original);
   const parts = original.window.BK_CONTENT_PARTS;
