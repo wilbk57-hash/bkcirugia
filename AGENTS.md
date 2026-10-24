@@ -28,3 +28,4 @@
 
 - Pin iframe CDN scripts to exact versions with SHA-384 SRI on every loader call, keeping the shell client version and service-worker dependency URL aligned; this prevents unverified floating dependencies without changing synchronous bootstrap.
 - Curated study additions live in public/study-topics.js as window.BK_CONTENT entries; study-topics-loader.js validates and merges them before search initialization, marking matching catalog IDs ready without rewriting existing content. Unlisted IDs require explicit catalog placement so new topics remain discoverable.
+- Apply shared topic presentation through public/study-reading.js and study-reading.css, without mutating curated data or assessments; this keeps future topics consistent, groups citations at the end and resolves visual briefs into actual illustrations or source-derived diagrams.

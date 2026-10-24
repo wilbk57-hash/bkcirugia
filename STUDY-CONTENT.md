@@ -55,6 +55,14 @@ O número liga-o ao grupo existente. Se esse número ainda não existir, cria um
 
 ## Abas suportadas
 
+## Apresentação e imagens
+
+Todos os temas usam automaticamente o mesmo padrão de leitura, sem caixas dentro de caixas. Parágrafos que contêm apenas `Fonte: ...` são reunidos nas referências ao fim do tema, com as secções correspondentes. Também podes acrescentar `references: ['Referência completa']` ao objeto `topic`.
+
+Nas secções de uma lição, usa `image: { src: '/caminho/da-imagem.jpg', alt: 'Descrição acessível', caption: 'Legenda' }` para uma imagem existente. As imagens abrem ampliadas. Os antigos textos em `image` deixam de ser sugestões visíveis: quando existe ilustração adequada, ela aparece; nos restantes casos aparece um diagrama com os dados da própria secção. Uma imagem indisponível não deixa uma caixa vazia no leitor.
+
+## Estrutura das abas
+
 - `hero`: usa o título, introdução, `tags` e `stats` do tópico.
 - `sections`: `sections: [{ h, t }]`; tabela opcional `{ title, rows }`.
 - `lesson`: `intro: { why, where, importance, applications }`, `objectives`, `sections: [{ title, explanation, example, summary }]`, `exercises`, `review: { mindMap: [{ root, children }], summary, keywords }` e `connection`.

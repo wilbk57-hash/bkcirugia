@@ -1,4 +1,5 @@
 # Conteúdos de estudo
+- [ ] Uniformizar leitura dos temas atuais e futuros, reunir fontes no fim e apresentar imagens educativas reais; verificar navegação e exercícios.
 - [x] Preparar public/study-topics.js como lugar fixo, integrar catálogo/glossário/pesquisa e documentar em STUDY-CONTENT.md; sete testes passaram e abertura de Asepsia, lição e quiz verificada com sessão administrativa usando conteúdo temporário apenas no navegador, sem alterar os conteúdos existentes.
 
 # Segurança dos perfis
