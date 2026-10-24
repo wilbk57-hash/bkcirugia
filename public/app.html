@@ -6308,7 +6308,16 @@ function setSetting(key, value) {
   saveSettingsState();
   if (key === 'theme') applyThemeMode(value);
   else if (key === 'accent') applyAccent(value);
-  else if (key === 'fontSize') { applyFontSize(value); setTimeout(syncBnHeight, 50); }
+  else if (key === 'fontSize') {
+    applyFontSize(value);
+    /* Sincronizar o texto de leitura (temas, casos, termos) com o tamanho
+       geral escolhido, para o app inteiro seguir a mesma escala de letra. */
+    const readerMap = { sm: 13, md: 14, lg: 16, xl: 18 };
+    SETTINGS_STATE.readerFontSize = readerMap[value] || 14;
+    applyReaderFontSize(SETTINGS_STATE.readerFontSize);
+    saveSettingsState();
+    setTimeout(syncBnHeight, 50);
+  }
   else if (key === 'amoled') document.body.classList.toggle('amoled', value);
   else if (key === 'highContrast') applyToggleClass('highContrast', 'high-contrast');
   else if (key === 'textSpacing') applyToggleClass('textSpacing', 'text-spacing');
