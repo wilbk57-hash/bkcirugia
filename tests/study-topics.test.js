@@ -75,3 +75,20 @@ test('IDs incompatíveis e respostas de quiz fora das opções são rejeitados',
   quiz.topic.tabs.push({ id: 'quiz', label: 'Quiz', type: 'quiz', questions: [{ q: 'Q', options: ['A', 'B'], correct: 2, explain: 'E' }] });
   assert.equal(apply({ asepsia: quiz }, {}, {}, catalog()).loaded.length, 0);
 });
+
+test('conteúdo publicado de Asepsia reúne exatamente as quatro partes e fica ready', () => {
+  const context = { window: {} };
+  runInNewContext(readFileSync(new URL('../public/study-topics.js', import.meta.url), 'utf8'), context);
+  const original = { window: {} };
+  for (const part of [1, 2, 3, 4]) runInNewContext(readFileSync(new URL(`../public/topic-asepsia-${part}.js`, import.meta.url), 'utf8'), original);
+  const parts = original.window.BK_CONTENT_PARTS;
+  const expected = { topic: { ...parts[0].topic, tabs: parts.flatMap(part => part.topic.tabs) },
+    terms: Object.assign({}, ...parts.map(part => part.terms)) };
+  assert.deepEqual(JSON.parse(JSON.stringify(context.window.BK_CONTENT.asepsia)), JSON.parse(JSON.stringify(expected)));
+  const topics = {};
+  const groups = catalog();
+  const result = setup()(context.window.BK_CONTENT, topics, {}, groups);
+  assert.equal(result.loaded.includes('asepsia'), true);
+  assert.equal(topics.asepsia.tabs.length, 12);
+  assert.equal(groups[0].subs[0].status, 'ready');
+});
