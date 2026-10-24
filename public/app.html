@@ -10246,18 +10246,17 @@ function admRenderQuestions(body) {
 function admRenderImages(body) {
   const T = adminT3;
   const items = [];
-  admTopicsList().forEach(({ id, tp }) => admEachSection(tp, (tab, s) => { if (s.image) items.push({ id, topic: tp.title || id, tab: tab.label, title: s.title, image: s.image }); }));
+  admTopicsList().forEach(({ id, tp }) => admEachSection(tp, (tab, s) => { if (s.image) items.push({ id, topic: tp.title || id, tab: tab.label, title: s.title, image: s.image, visual: window.BKStudyReading?.image(s) || '' }); }));
   window._admImages = items;
   body.innerHTML = `<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">${T(
-    `${items.length} ilustrações descritas nas aulas. Copie a descrição para produzir a imagem.`,
-    `${items.length} illustrations described in lessons. Copy the brief to produce the image.`,
-    `${items.length} ilustraciones descritas en las clases. Copie la descripción para producir la imagen.`)}</div>` +
+    `${items.length} imagens e diagramas nas aulas.`,
+    `${items.length} images and diagrams in lessons.`,
+    `${items.length} imágenes y diagramas en las clases.`)}</div>` +
     items.map((it, i) => admCard(`
       <div style="font-size:10px;color:var(--teal);text-transform:uppercase;margin-bottom:6px;">${escapeHtml(it.topic)} · ${escapeHtml(it.tab || '')}</div>
       <div style="font-weight:600;color:var(--text);margin-bottom:6px;">${escapeHtml(it.title || '')}</div>
-      <div style="margin-bottom:8px;">${escapeHtml(it.image)}</div>
+      <div style="margin-bottom:8px;">${it.visual}</div>
       <div style="display:flex;gap:8px;">
-        <button class="btn" style="padding:5px 10px;font-size:11px;" onclick="admCopy(window._admImages[${i}].image)">📋 ${T('Copiar','Copy','Copiar')}</button>
         <button class="btn" style="padding:5px 10px;font-size:11px;" onclick="admOpenTopic('${escapeHtml(it.id)}')">${T('Ver aula','View lesson','Ver clase')}</button>
       </div>`)).join('');
 }

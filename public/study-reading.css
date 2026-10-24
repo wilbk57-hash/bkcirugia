@@ -44,6 +44,8 @@
 #topicView .study-references li { padding-bottom: 12px; }
 #topicView .study-references p { margin: 0; }
 #topicView .study-references small { color: var(--study-muted); font-size: 12px; line-height: 1.6; display: block; }
+#adminView .study-figure img { width: 100%; max-width: 540px; height: auto; display: block; }
+#adminView .study-diagram ol { padding-inline-start: 22px; }
 body.text-spacing #topicView :is(p, li) { line-height: 1.95; }
 @media (max-width: 480px) {
   #topicView .lesson-section-title { font-size: 18px; }
