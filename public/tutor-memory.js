@@ -151,7 +151,7 @@ async function tutorMemoryQuery(table, userId, generation) {
     const refreshed = await supabaseClient.auth.refreshSession().catch(() => null);
     if (refreshed?.data?.session?.access_token) session = refreshed.data.session;
   }
-  if (error || !session?.access_token || session.user?.id !== userId) {
+  if (!session?.access_token || session.user?.id !== userId) {
     const failure = new Error(bkL('A sessão mudou ou expirou. Entra novamente para continuar a conversa.', 'Your session changed or expired. Sign in again to continue.', 'Tu sesión cambió o caducó. Inicia sesión de nuevo para continuar.'));
     failure.needsAuth = true;
     throw failure;
