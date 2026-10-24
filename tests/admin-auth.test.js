@@ -53,7 +53,7 @@ test('code verification runs challenge + verify and returns the new session', as
   const { context, calls } = mfaSetup({ aal: {} });
   const s = await context.adminMfaVerifyCode('f1', ' 123 456 ');
   assert.equal(s.access_token, 'aal2-token');
-  assert.deepEqual(calls[1], ['verify', { factorId: 'f1', challengeId: 'ch-1', code: '123456' }]);
+  assert.equal(JSON.stringify(calls[1]), JSON.stringify(['verify', { factorId: 'f1', challengeId: 'ch-1', code: '123456' }]));
 });
 test('wrong code rejects; malformed code is rejected before any request', async () => {
   const { context, calls } = mfaSetup({ aal: {}, verifyError: Object.assign(Error('Invalid TOTP code'), { code: 'mfa_verification_failed' }) });
@@ -66,6 +66,6 @@ test('enrollment removes old unverified TOTP factors first', async () => {
   const { context, calls } = mfaSetup({ aal: {}, factors: { totp: [], all: [
     { id: 'old1', factor_type: 'totp', status: 'unverified' }, { id: 'ph', factor_type: 'phone', status: 'unverified' }] } });
   const r = await context.adminMfaEnroll();
-  assert.deepEqual(calls, [['unenroll', 'old1'], ['enroll']]);
+  assert.equal(JSON.stringify(calls), JSON.stringify([['unenroll', 'old1'], ['enroll']]));
   assert.equal(r.secret, 'SECRET'); assert.equal(r.factorId, 'new');
 });

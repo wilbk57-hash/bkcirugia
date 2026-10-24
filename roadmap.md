@@ -48,3 +48,7 @@
 - [x] Acrescentar aviso de falha de carregamento e preservar cache da dependência com URL fixa.
 - [x] Verificar arranque sem erros, sessão administrativa após recarregar, PDF oficial de 299 páginas, EPUB local no leitor e aviso com CDN bloqueado; oito testes passaram. Pré-visualização sem worker nem cache; HTML publicado usa NetworkFirst, sem pré-cache.
 - [ ] Verificar EPUB oficial — a biblioteca contém apenas seis PDFs; EPUB local verificado sem gravação no backend.
+
+# Verificação em dois passos do administrador
+- [x] Passo do código TOTP no login admin (aal1 → aal2), cartão de ativação com QR/chave no painel, auditoria e textos pt/en/es; testes em tests/admin-auth.test.js. Banco inalterado.
+- [ ] Exigir aal2 em is_platform_admin() e nas regras — depois de o administrador confirmar o 2FA.
