@@ -1,5 +1,5 @@
 # Conteúdos de estudo
-- [ ] Preparar lugar fixo para colar temas completos, integrar catálogo/glossário/pesquisa e verificar abertura sem alterar conteúdos existentes.
+- [x] Preparar public/study-topics.js como lugar fixo, integrar catálogo/glossário/pesquisa e documentar em STUDY-CONTENT.md; sete testes passaram e abertura de Asepsia, lição e quiz verificada com sessão administrativa usando conteúdo temporário apenas no navegador, sem alterar os conteúdos existentes.
 
 # Segurança dos perfis
 - [x] Limitar detail de auditoria a 16384 bytes sem alterar RLS; acrescentar aviso da chave pessoal em pt/en/es e verificar regressões.
