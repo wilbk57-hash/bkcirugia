@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 const html = readFileSync(new URL('../public/app.html', import.meta.url), 'utf8');
-const source = html.slice(html.indexOf('async function ccCurrentUser('), html.indexOf('const CC_STEP_PLAN'));
+const freshSession = html.slice(html.indexOf('async function getFreshSession('), html.indexOf('async function getTutorAuthToken('));
+const source = freshSession + html.slice(html.indexOf('async function ccCurrentUser('), html.indexOf('const CC_STEP_PLAN'));
 function setup(session) {
   const headers = [];
   let calls = 0;

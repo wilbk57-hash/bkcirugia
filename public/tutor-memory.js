@@ -144,8 +144,14 @@ async function tutorMemoryQuery(table, userId, generation) {
   if (!tutorIsCurrent(userId, generation)) return null;
   const { data, error } = await supabaseClient.auth.getSession();
   if (!tutorIsCurrent(userId, generation)) return null;
-  const session = data?.session;
-  if (error || !session?.access_token || session.user?.id !== userId) {
+  let session = data?.session;
+  /* Sessão em falta (ex.: token expirado sem renovação automática):
+     tenta renovar uma vez antes de desistir. */
+  if (!session?.access_token && typeof supabaseClient.auth.refreshSession === 'function') {
+    const refreshed = await supabaseClient.auth.refreshSession().catch(() => null);
+    if (refreshed?.data?.session?.access_token) session = refreshed.data.session;
+  }
+  if (!session?.access_token || session.user?.id !== userId) {
     const failure = new Error(bkL('A sessão mudou ou expirou. Entra novamente para continuar a conversa.', 'Your session changed or expired. Sign in again to continue.', 'Tu sesión cambió o caducó. Inicia sesión de nuevo para continuar.'));
     failure.needsAuth = true;
     throw failure;

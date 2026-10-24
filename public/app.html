@@ -4895,11 +4895,23 @@ function iaBooksSelectorHtml() {
   return `<div class="ia-books-row">${iaBooksSelectorInner()}</div>`;
 }
 
-async function getTutorAuthToken() {
+/* Devolve a sessão atual; se estiver em falta (ex.: token expirado sem
+   renovação automática), tenta renová-la uma vez antes de desistir. */
+async function getFreshSession() {
   try {
     const { data } = await supabaseClient.auth.getSession();
-    return (data && data.session && data.session.access_token) || '';
-  } catch (e) { return ''; }
+    if (data && data.session && data.session.access_token) return data.session;
+    if (typeof supabaseClient.auth.refreshSession === 'function') {
+      const refreshed = await supabaseClient.auth.refreshSession().catch(() => null);
+      if (refreshed && refreshed.data && refreshed.data.session) return refreshed.data.session;
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
+async function getTutorAuthToken() {
+  const session = await getFreshSession();
+  return (session && session.access_token) || '';
 }
 
 /* Claude — chamada direta com a chave pessoal do aluno (opção mantida). */
@@ -11378,6 +11390,16 @@ window.addEventListener('message', (ev) => {
 });
 supabaseClient.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT' && window.parent !== window) window.parent.postMessage({ type: 'bk-signout' }, window.location.origin);
+  /* Sessão perdida a meio do uso (renovação falhou ou saída noutro
+     separador/dispositivo): voltar ao login em vez de deixar o app
+     aberto a dizer "inicia sessão" em cada ação. */
+  if ((event === 'TOKEN_REFRESH_FAILED' || event === 'SIGNED_OUT') && !document.body.classList.contains('pre-auth')) {
+    tutorMemoryReset();
+    clearSession();
+    document.body.classList.add('pre-auth');
+    showAuthScreen('login');
+    showToast(bkL('A sessão expirou. Entra novamente.', 'Your session expired. Sign in again.', 'Tu sesión expiró. Inicia sesión de nuevo.'));
+  }
 });
 if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
 refreshAuthCache().catch(() => { clearSession(); _authCache.ready = true; }).then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); void tutorMemoryInit(); void refreshMyBooks(); });
@@ -13355,14 +13377,13 @@ async function mmExportPng() {
 const CC_STATE = { cases: [], active: null, step: 0, loading: false, loaded: false };
 
 async function ccCurrentUser() {
-  const { data, error } = await supabaseClient.auth.getSession();
-  return !error && data && data.session && data.session.access_token ? data.session.user : null;
+  const session = await getFreshSession();
+  return session && session.access_token ? session.user : null;
 }
 
 async function ccQuery(userId) {
-  const { data, error } = await supabaseClient.auth.getSession();
-  const session = data && data.session;
-  if (error || !session || !session.access_token || session.user.id !== userId) {
+  const session = await getFreshSession();
+  if (!session || !session.access_token || session.user.id !== userId) {
     const failure = new Error(t('cc.needauth'));
     failure.needsAuth = true;
     throw failure;

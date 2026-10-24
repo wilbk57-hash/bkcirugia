@@ -52,3 +52,9 @@
 # Verificação em dois passos do administrador
 - [x] Passo do código TOTP no login admin (aal1 → aal2), cartão de ativação com QR/chave no painel, auditoria e textos pt/en/es; testes em tests/admin-auth.test.js. Banco inalterado.
 - [ ] Exigir aal2 em is_platform_admin() e nas regras — depois de o administrador confirmar o 2FA.
+
+## Sessão expirada no Tutor e casos clínicos (2026-10-24)
+- [x] getFreshSession() com renovação única antes de desistir (Tutor, casos clínicos, memória do Tutor)
+- [x] onAuthStateChange: TOKEN_REFRESH_FAILED/SIGNED_OUT a meio do uso volta ao ecrã de login com aviso
+- [x] Testes atualizados (74 testes, 0 falhas); verificado no navegador: sessão estragada → login → Tutor funciona
+- [ ] Publicar para aplicar no site
