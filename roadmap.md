@@ -1,5 +1,5 @@
 # SEO
-- [ ] Corrigir e verificar os dois resultados registados no resumo público: imagem de partilha e dados estruturados sem datas inventadas.
+- [x] Corrigir os dois resultados registados no resumo público: imagem existente de cirurgia em 1200 × 630 (83 KB), partilhada e apresentada na página; WebPage em vez de Article sem datas verificadas. Metadados, imagem, apresentação em 1280 e 390 px e ausência de erros verificados; sem publicar.
 
 # Conteúdos de estudo
 - [x] Separar conteúdos em public/temas com 31 ficheiros individuais, preservar Asepsia e verificar erro de sintaxe isolado no navegador, aula, exercício e Referências com administrador; 13 testes passaram. Sem publicar.
