@@ -4,7 +4,7 @@
 .sg-form-grid label,.sg-search-label { display: grid; gap: 8px; color: var(--text2); }
 .sg-actions,.sg-history,.sg-search-results { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; align-items: center; }
 .sg-actions .btn { min-height: 40px; }
-.sg-workspace .sb-input { width: 100%; min-width: 0; }
+.sg-workspace .sb-input { width: 100%; min-width: 0; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font: inherit; min-height: 42px; }
 .sg-draft-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding: 12px 0; }
 .sg-draft-row p { margin: 5px 0; color: var(--text3); }
 .sg-tabs { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 10px 0; }

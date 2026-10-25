@@ -115,9 +115,9 @@
     host.innerHTML='<hr><h2>'+escape(draft.title)+'</h2><p>'+escape(phaseLabel[draft.phase]||draft.phase)+'</p><div class="sg-actions"></div><p class="sg-error">'+escape(draft.error_message||'')+'</p><div class="sg-preview"></div><div class="sg-review"></div>';
     const actions=host.querySelector('.sg-actions'); const button=(name,run)=>{const b=document.createElement('button');b.className='btn';b.textContent=name;b.onclick=run;actions.append(b);return b;};
     if(draft.phase!=='review'){
-      button(draft.paused?'Retomar geração':'Executar próxima etapa',async()=>{
+      button(draft.paused?'Retomar geração':'Gerar até à revisão',async()=>{
         if(controller)return;controller=new AbortController();actions.querySelectorAll('button').forEach(b=>b.disabled=true);stop.disabled=false;
-        try{let current=draft;if(current.paused){const r=await request({action:'resume',id,version:current.version});current=r.draft;}const result=await request({action:'step',id,version:current.version},controller.signal);await refresh();renderDrafts();await edit(id,result.payload);status('Etapa guardada.');}
+        try{let current=draft;if(current.paused){const r=await request({action:'resume',id,version:current.version});current=r.draft;}let result;for(let budget=0;budget<100 && current.phase!=='review';budget++){result=await request({action:'step',id,version:current.version},controller.signal);current=result.draft;status('Etapa guardada: '+(phaseLabel[current.phase]||current.phase)+' · '+(current.step+1));if(current.phase!=='review')await new Promise(resolve=>setTimeout(resolve,500));}await refresh();renderDrafts();await edit(id,result?.payload);status(current.phase==='review'?'Rascunho pronto para revisão.':'Progresso guardado. Continua para concluir as etapas restantes.');}
         catch(e){status(e.name==='AbortError'?'Interrompido. O progresso anterior permanece guardado.':e.message,true);await refresh().catch(()=>{});renderDrafts();await edit(id);}
         finally{controller=null;}
       });
@@ -125,7 +125,7 @@
       if(draft.data_json.research_log?.length)host.querySelector('.sg-preview').innerHTML='<h3>Pesquisa realizada</h3><ul>'+draft.data_json.research_log.map(r=>'<li>'+escape(draft.data_json.inventory.find(b=>b.id===r.book_id)?.title)+' · '+escape(r.query)+' · '+r.matches+' resultados</li>').join('')+'</ul><h3>Trechos recuperados</h3>'+draft.data_json.evidence.map(s=>'<details class="sg-detail"><summary>'+escape(s.title)+' · '+escape(s.locator)+'</summary>'+paragraph(s.content)+'</details>').join('');
       return;
     }
-    if(!payload){const response=await request({action:'save',id,version:draft.version,state:draft.data_json});payload=response.payload;const index=drafts.findIndex(d=>d.id===id);drafts[index]=response.draft;return edit(id,payload);}
+    if(!payload){const response=await request({action:'preview',id,version:draft.version});return edit(id,response.payload);}
     reader(host.querySelector('.sg-preview'),payload);
     const review=host.querySelector('.sg-review');review.innerHTML='<h3>Revisão</h3>'+payload.rastreabilidade.limitacoes_declaradas.map(paragraph).join('')+'<label class="sg-review-check"><input type="checkbox" id="sg-reviewed"> Revi o conteúdo e as fontes; compreendo as limitações declaradas.</label><details><summary>Editar conteúdo estruturado</summary><textarea class="sb-input sg-json" aria-label="Rascunho estruturado"></textarea><button class="btn" id="sg-save">✓ Guardar alterações</button></details><h3>Versões anteriores</h3><div class="sg-history"></div>';
     const editable={plan:draft.data_json.plan,tabs:draft.data_json.tabs,extras:draft.data_json.extras,review:draft.data_json.review};review.querySelector('textarea').value=JSON.stringify(editable,null,2);
