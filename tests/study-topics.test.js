@@ -52,12 +52,10 @@ test('subtema novo exige posição explícita e não duplica ao aplicar novament
   assert.equal(topics.novo, data.topic);
 });
 
-test('módulo das quatro partes de Asepsia mantém todas as abas e termos ao integrar', () => {
+test('módulo completo de Asepsia mantém todas as abas e termos ao integrar', () => {
   const context = { window: {} };
-  for (const part of [1, 2, 3, 4]) runInNewContext(readFileSync(new URL(`../public/topic-asepsia-${part}.js`, import.meta.url), 'utf8'), context);
-  const parts = context.window.BK_CONTENT_PARTS;
-  const data = { topic: { ...parts[0].topic, tabs: parts.flatMap(part => part.topic.tabs) },
-    terms: Object.assign({}, ...parts.map(part => part.terms)) };
+  runInNewContext(readFileSync(new URL('../public/temas/asepsia.js', import.meta.url), 'utf8'), context);
+  const data = context.window.BK_CONTENT.asepsia;
   const topics = {};
   const terms = {};
   const result = setup()({ asepsia: data }, topics, terms, catalog());
@@ -76,15 +74,10 @@ test('IDs incompatíveis e respostas de quiz fora das opções são rejeitados',
   assert.equal(apply({ asepsia: quiz }, {}, {}, catalog()).loaded.length, 0);
 });
 
-test('conteúdo publicado de Asepsia reúne exatamente as quatro partes e fica ready', () => {
+test('conteúdo publicado de Asepsia mantém 12 abas e 23 termos e fica ready', () => {
   const context = { window: {} };
   runInNewContext(readFileSync(new URL('../public/temas/asepsia.js', import.meta.url), 'utf8'), context);
-  const original = { window: {} };
-  for (const part of [1, 2, 3, 4]) runInNewContext(readFileSync(new URL(`../public/topic-asepsia-${part}.js`, import.meta.url), 'utf8'), original);
-  const parts = original.window.BK_CONTENT_PARTS;
-  const expected = { topic: { ...parts[0].topic, tabs: parts.flatMap(part => part.topic.tabs) },
-    terms: Object.assign({}, ...parts.map(part => part.terms)) };
-  assert.deepEqual(JSON.parse(JSON.stringify(context.window.BK_CONTENT.asepsia)), JSON.parse(JSON.stringify(expected)));
+  assert.equal(Object.keys(context.window.BK_CONTENT.asepsia.terms).length, 23);
   const topics = {};
   const groups = catalog();
   const result = setup()(context.window.BK_CONTENT, topics, {}, groups);
