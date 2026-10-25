@@ -2,6 +2,7 @@
 - [x] Corrigir os dois resultados registados no resumo público: imagem existente de cirurgia em 1200 × 630 (83 KB), partilhada e apresentada na página; WebPage em vez de Article sem datas verificadas. Metadados, imagem, apresentação em 1280 e 390 px e ausência de erros verificados; sem publicar.
 
 # Conteúdos de estudo
+- [ ] Acrescentar geração de temas dentro do app, exclusiva do administrador, segundo o Prompt Mestre 3.0: pesquisa bibliográfica, rascunho, revisão, publicação e cópia integral, preservando os temas existentes.
 - [x] Separar conteúdos em public/temas com 31 ficheiros individuais, preservar Asepsia e verificar erro de sintaxe isolado no navegador, aula, exercício e Referências com administrador; 13 testes passaram. Sem publicar.
 - [x] Reunir fontes numa única aba Referências por tema, sem repetição nas demais abas; administrador verificou fontes ocultas na aula e 17 referências na aba exclusiva, exercícios preservados e nenhum erro; onze testes passaram.
 - [x] Repor quadros anteriores, justificar textos e aperfeiçoar tabelas sem alterar conteúdos, imagens ou referências; leitura e exercício verificados com administrador, sem erros nem transbordamento em 400 px; dez testes passaram.
