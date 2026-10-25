@@ -125,7 +125,7 @@
       if(draft.data_json.research_log?.length)host.querySelector('.sg-preview').innerHTML='<h3>Pesquisa realizada</h3><ul>'+draft.data_json.research_log.map(r=>'<li>'+escape(draft.data_json.inventory.find(b=>b.id===r.book_id)?.title)+' · '+escape(r.query)+' · '+r.matches+' resultados</li>').join('')+'</ul><h3>Trechos recuperados</h3>'+draft.data_json.evidence.map(s=>'<details class="sg-detail"><summary>'+escape(s.title)+' · '+escape(s.locator)+'</summary>'+paragraph(s.content)+'</details>').join('');
       return;
     }
-    if(!payload){const response=await request({action:'save',id,version:draft.version,state:draft.data_json});payload=response.payload;const index=drafts.findIndex(d=>d.id===id);drafts[index]=response.draft;return edit(id,payload);}
+    if(!payload){const response=await request({action:'preview',id,version:draft.version});return edit(id,response.payload);}
     reader(host.querySelector('.sg-preview'),payload);
     const review=host.querySelector('.sg-review');review.innerHTML='<h3>Revisão</h3>'+payload.rastreabilidade.limitacoes_declaradas.map(paragraph).join('')+'<label class="sg-review-check"><input type="checkbox" id="sg-reviewed"> Revi o conteúdo e as fontes; compreendo as limitações declaradas.</label><details><summary>Editar conteúdo estruturado</summary><textarea class="sb-input sg-json" aria-label="Rascunho estruturado"></textarea><button class="btn" id="sg-save">✓ Guardar alterações</button></details><h3>Versões anteriores</h3><div class="sg-history"></div>';
     const editable={plan:draft.data_json.plan,tabs:draft.data_json.tabs,extras:draft.data_json.extras,review:draft.data_json.review};review.querySelector('textarea').value=JSON.stringify(editable,null,2);

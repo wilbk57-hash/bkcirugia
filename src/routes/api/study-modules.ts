@@ -7,7 +7,7 @@ import { buildModule, validateState, type GenerationState } from '@/lib/study-ge
 import type { Json } from '@/integrations/supabase/types'
 
 const inputSchema = z.object({
-  action: z.enum(['list', 'inventory', 'create', 'step', 'resume', 'save', 'publish', 'restore']),
+  action: z.enum(['list', 'inventory', 'create', 'step', 'resume', 'save', 'preview', 'publish', 'restore']),
   id: z.string().uuid().optional(), version: z.number().int().optional(),
   title: z.string().min(3).max(250).optional(), priorities: z.string().max(2000).optional(), edition: z.string().max(500).optional(),
   catalog_n: z.string().max(30).optional(), catalog_title: z.string().max(250).optional(),
@@ -57,6 +57,10 @@ export const Route = createFileRoute('/api/study-modules')({ server: { handlers:
       const draft = row.data
       if (input.version !== draft.version) return json({ message: 'O rascunho mudou. Recarrega antes de continuar.' }, 409)
       const state = draft.data_json as unknown as GenerationState
+      if (input.action === 'preview') {
+        if (draft.phase !== 'review') return json({ message: 'A geração ainda não está concluída.' }, 400)
+        return json({ payload: buildModule(draft.title, state) })
+      }
       if (input.action === 'publish') {
         if (!input.reviewed || draft.phase !== 'review') return json({ message: 'Confirma a revisão das fontes antes de disponibilizar.' }, 400)
         const errors = validateState(state)
@@ -100,7 +104,7 @@ export const Route = createFileRoute('/api/study-modules')({ server: { handlers:
           send({ progress: draft.phase })
           try {
             const next = await advance(request, client, draft.title, state, draft.phase, draft.step, apiKey)
-            const result = await client.rpc('study_module_finish', { p_id: draft.id, p_token: token, p_data: asJson(next.state), p_phase: next.phase, p_step: next.step, p_error: null, p_paused: false })
+            const result = await client.rpc('study_module_finish', { p_id: draft.id, p_token: token, p_data: asJson(next.state), p_phase: next.phase, p_step: next.step, p_error: '', p_paused: false })
             if (result.error || !result.data) throw new Error('A etapa não foi guardada: sessão ou rascunho mudou. Recarrega.')
             const saved = await client.from('study_module_drafts').select('*').eq('id', draft.id).single()
             if (saved.error) throw new Error('Não foi possível reler o rascunho guardado.')

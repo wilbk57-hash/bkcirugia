@@ -39,10 +39,10 @@ export type GenerationState = {
   priorities: string; edition_preference: string;
   inventory: BookInventory[]; queries: string[]; evidence: Evidence[];
   research_log: Array<{ book_id: string; query: string; matches: number }>;
-  plan?: z.infer<typeof planSchema>;
+  plan?: z.infer<typeof planSchema> | undefined;
   tabs: z.infer<typeof tabSchema>[];
-  extras?: z.infer<typeof extrasSchema>;
-  review?: z.infer<typeof reviewSchema>;
+  extras?: z.infer<typeof extrasSchema> | undefined;
+  review?: z.infer<typeof reviewSchema> | undefined;
   limitations: string[];
 }
 
