@@ -487,6 +487,107 @@ export type Database = {
         }
         Relationships: []
       }
+      study_module_drafts: {
+        Row: {
+          catalog_n: string
+          catalog_title: string
+          created_at: string
+          data_json: Json
+          error_message: string | null
+          id: string
+          lease_expires_at: string | null
+          lease_token: string | null
+          owner_id: string
+          paused: boolean
+          phase: string
+          step: number
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          catalog_n?: string
+          catalog_title?: string
+          created_at?: string
+          data_json?: Json
+          error_message?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          owner_id: string
+          paused?: boolean
+          phase?: string
+          step?: number
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          catalog_n?: string
+          catalog_title?: string
+          created_at?: string
+          data_json?: Json
+          error_message?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          owner_id?: string
+          paused?: boolean
+          phase?: string
+          step?: number
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      study_module_revisions: {
+        Row: {
+          catalog_n: string
+          catalog_title: string
+          id: string
+          module_id: string
+          payload: Json
+          published: boolean
+          reviewed_at: string
+          reviewed_by: string
+          title: string
+          version: number
+        }
+        Insert: {
+          catalog_n: string
+          catalog_title: string
+          id?: string
+          module_id: string
+          payload: Json
+          published?: boolean
+          reviewed_at?: string
+          reviewed_by: string
+          title: string
+          version: number
+        }
+        Update: {
+          catalog_n?: string
+          catalog_title?: string
+          id?: string
+          module_id?: string
+          payload?: Json
+          published?: boolean
+          reviewed_at?: string
+          reviewed_by?: string
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_module_revisions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "study_module_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_notes: {
         Row: {
           content: string
@@ -792,6 +893,27 @@ export type Database = {
           similarity: number
         }[]
       }
+      study_module_acquire: {
+        Args: { p_id: string; p_token: string; p_version: number }
+        Returns: boolean
+      }
+      study_module_finish: {
+        Args: {
+          p_data: Json
+          p_error?: string
+          p_id: string
+          p_paused?: boolean
+          p_phase: string
+          p_step: number
+          p_token: string
+        }
+        Returns: boolean
+      }
+      study_module_publish: {
+        Args: { p_id: string; p_payload: Json; p_version: number }
+        Returns: string
+      }
+      study_module_restore: { Args: { p_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
