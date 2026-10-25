@@ -17,15 +17,22 @@ export async function inventory(client: SupabaseClient<Database>) {
 
 export async function aiObject<S extends z.ZodTypeAny>(request: Request, apiKey: string, schema: S, task: string, state: unknown) {
   const provider = createLovableResponsesProvider(apiKey)
+  // Short deterministic citation handles prevent UUID transcription errors.
+  const evidence = (state as { evidence?: Evidence[] }).evidence || []
+  const handles = evidence.map((s, i) => [s.id, `F${String(i + 1).padStart(4, '0')}`] as const)
+  let encoded = JSON.stringify(state)
+  for (const [id, handle] of handles) encoded = encoded.replaceAll(JSON.stringify(id), JSON.stringify(handle))
   const result = streamText({
     model: provider.responses('openai/gpt-6-astra'), instructions: PROMPT,
-    messages: [{ role: 'user', content: task + '\n\nDados verificados e progresso:\n' + JSON.stringify(state) }],
+    messages: [{ role: 'user', content: task + '\n\nFONTES: campos fonte/fontes contêm exclusivamente o ID exato F0001, F0002, etc. que aparece em evidence; nunca título, referência bibliográfica escrita, número de página ou ID de livro.\n\nDados verificados e progresso:\n' + encoded }],
     output: Output.object({ schema }), abortSignal: request.signal, maxRetries: 0,
     providerOptions: { openai: { forceReasoning: true, reasoningEffort: 'low', reasoningSummary: 'auto', store: false, include: ['reasoning.encrypted_content'] } },
   })
   const out = await result.output
   if (!out) throw new Error('A IA não devolveu um objeto completo; o progresso anterior foi preservado.')
-  return schema.parse(out) as z.infer<S>
+  let decoded = JSON.stringify(out)
+  for (const [id, handle] of handles) decoded = decoded.replaceAll(JSON.stringify(handle), JSON.stringify(id))
+  return schema.parse(JSON.parse(decoded)) as z.infer<S>
 }
 
 export async function advance(request: Request, client: SupabaseClient<Database>, title: string, state: GenerationState, phase: string, step: number, apiKey: string) {
