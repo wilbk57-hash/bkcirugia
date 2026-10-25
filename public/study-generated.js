@@ -115,9 +115,9 @@
     host.innerHTML='<hr><h2>'+escape(draft.title)+'</h2><p>'+escape(phaseLabel[draft.phase]||draft.phase)+'</p><div class="sg-actions"></div><p class="sg-error">'+escape(draft.error_message||'')+'</p><div class="sg-preview"></div><div class="sg-review"></div>';
     const actions=host.querySelector('.sg-actions'); const button=(name,run)=>{const b=document.createElement('button');b.className='btn';b.textContent=name;b.onclick=run;actions.append(b);return b;};
     if(draft.phase!=='review'){
-      button(draft.paused?'Retomar geração':'Executar próxima etapa',async()=>{
+      button(draft.paused?'Retomar geração':'Gerar até à revisão',async()=>{
         if(controller)return;controller=new AbortController();actions.querySelectorAll('button').forEach(b=>b.disabled=true);stop.disabled=false;
-        try{let current=draft;if(current.paused){const r=await request({action:'resume',id,version:current.version});current=r.draft;}const result=await request({action:'step',id,version:current.version},controller.signal);await refresh();renderDrafts();await edit(id,result.payload);status('Etapa guardada.');}
+        try{let current=draft;if(current.paused){const r=await request({action:'resume',id,version:current.version});current=r.draft;}let result;for(let budget=0;budget<100 && current.phase!=='review';budget++){result=await request({action:'step',id,version:current.version},controller.signal);current=result.draft;status('Etapa guardada: '+(phaseLabel[current.phase]||current.phase)+' · '+(current.step+1));if(current.phase!=='review')await new Promise(resolve=>setTimeout(resolve,500));}await refresh();renderDrafts();await edit(id,result?.payload);status(current.phase==='review'?'Rascunho pronto para revisão.':'Progresso guardado. Continua para concluir as etapas restantes.');}
         catch(e){status(e.name==='AbortError'?'Interrompido. O progresso anterior permanece guardado.':e.message,true);await refresh().catch(()=>{});renderDrafts();await edit(id);}
         finally{controller=null;}
       });
