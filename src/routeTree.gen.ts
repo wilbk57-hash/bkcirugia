@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ApiStudyModulesRouteImport } from './routes/api/study-modules'
 import { Route as ApiTutorRouteImport } from './routes/api/tutor'
 import { Route as ResumosCirurgiaGeralRouteImport } from './routes/resumos/cirurgia-geral'
 import { Route as ApiBooksOcrRouteImport } from './routes/api/books/ocr'
@@ -32,6 +33,11 @@ const AppRoute = AppRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStudyModulesRoute = ApiStudyModulesRouteImport.update({
+  id: '/api/study-modules',
+  path: '/api/study-modules',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTutorRoute = ApiTutorRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/study-modules': typeof ApiStudyModulesRoute
   '/api/tutor': typeof ApiTutorRoute
   '/resumos/cirurgia-geral': typeof ResumosCirurgiaGeralRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/study-modules': typeof ApiStudyModulesRoute
   '/api/tutor': typeof ApiTutorRoute
   '/resumos/cirurgia-geral': typeof ResumosCirurgiaGeralRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/study-modules': typeof ApiStudyModulesRoute
   '/api/tutor': typeof ApiTutorRoute
   '/resumos/cirurgia-geral': typeof ResumosCirurgiaGeralRoute
   '/api/books/ocr': typeof ApiBooksOcrRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/sitemap.xml'
+    | '/api/study-modules'
     | '/api/tutor'
     | '/resumos/cirurgia-geral'
     | '/api/books/ocr'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/sitemap.xml'
+    | '/api/study-modules'
     | '/api/tutor'
     | '/resumos/cirurgia-geral'
     | '/api/books/ocr'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/sitemap.xml'
+    | '/api/study-modules'
     | '/api/tutor'
     | '/resumos/cirurgia-geral'
     | '/api/books/ocr'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiStudyModulesRoute: typeof ApiStudyModulesRoute
   ApiTutorRoute: typeof ApiTutorRoute
   ResumosCirurgiaGeralRoute: typeof ResumosCirurgiaGeralRoute
   ApiBooksOcrRoute: typeof ApiBooksOcrRoute
@@ -169,6 +182,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/study-modules': {
+      id: '/api/study-modules'
+      path: '/api/study-modules'
+      fullPath: '/api/study-modules'
+      preLoaderRoute: typeof ApiStudyModulesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/tutor': {
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiStudyModulesRoute: ApiStudyModulesRoute,
   ApiTutorRoute: ApiTutorRoute,
   ResumosCirurgiaGeralRoute: ResumosCirurgiaGeralRoute,
   ApiBooksOcrRoute: ApiBooksOcrRoute,

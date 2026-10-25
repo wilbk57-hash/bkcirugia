@@ -2051,6 +2051,8 @@ if (!window.supabase) {
 
 <link rel="stylesheet" href="/library-reader.css">
 <link rel="stylesheet" href="/study-reading.css">
+<link rel="stylesheet" href="/study-generated.css">
+<script src="/study-generated.js"></script>
 <script src="/study-reading.js"></script>
 <script src="/library-reader.js"></script>
 <script src="/tutor-memory.js"></script>
@@ -7437,6 +7439,19 @@ function switchTab(tabId, fromPop) {
 function openTopic(id, startTabId, fromPop) {
   const originalTopic = TOPICS[id];
   if (!originalTopic) return;
+  if (originalTopic.generated) {
+    NAV_STATE.currentTopic = originalTopic;
+    MAIN_VIEWS.forEach(vid => hideEl(document.getElementById(vid)));
+    ['settingsView','adminView','myLibraryView'].forEach(vid => hideEl(document.getElementById(vid)));
+    showEl(document.getElementById('topicView'));
+    document.getElementById('tabNav').innerHTML = '';
+    document.getElementById('homeBtn').classList.add('show');
+    document.getElementById('bottomNav').classList.remove('hide');
+    window.BKGeneratedStudy.reader(document.getElementById('paneHost'), originalTopic.generated);
+    renderCrumb('topic');
+    window.scrollTo(0,0);
+    return;
+  }
   const topic = window.BKStudyReading?.prepareTopic(originalTopic, currentLang === 'en' ? 'References' : currentLang === 'es' ? 'Referencias' : currentLang === 'fr' ? 'Références' : 'Referências') || originalTopic;
   NAV_STATE.currentTopic = topic;
 
@@ -8510,6 +8525,7 @@ function onAuthGranted(isAdmin) {
   bkAccessCheck();
   void tutorMemoryInit();
   void refreshMyBooks();
+  void window.BKGeneratedStudy?.refresh().catch(e => console.warn('Temas gerados:', e.message));
 }
 
 /* ---------- Experiência grátis (1 dia) + bloqueio sem pagamento ---------- */
@@ -9517,6 +9533,7 @@ function showLoginMethodInfo() {
 }
 
 async function doLogout() {
+  window.BKGeneratedStudy?.reset();
   await tutorMemoryQueue.catch(() => {});
   tutorMemoryReset();
   document.getElementById('bkPayGate')?.remove(); document.getElementById('bkPayBar')?.remove(); document.getElementById('bkPayPill')?.remove();
@@ -10504,6 +10521,7 @@ function renderAdminDashboard() {
 
     <div class="sec-heading" style="margin-top:18px;"><h2>${at('admin.mgmt.title')}</h2></div>
     <div class="adm-mgmt-grid">
+      <button class="adm-mgmt-card" type="button" onclick="window.BKGeneratedStudy.workspace()"><div class="ic">✦</div><div class="l">${bkL('Gerar tema','Generate topic','Generar tema')}</div></button>
       ${ADMIN_MGMT_ITEMS.map(m => `<div class="adm-mgmt-card" onclick="${m.action || "showToast(at('toast.stub'))"}"><div class="ic">${m.ic}</div><div class="l">${at(m.key) !== m.key ? at(m.key) : m.key}</div></div>`).join('')}
     </div>
 
@@ -11402,7 +11420,20 @@ supabaseClient.auth.onAuthStateChange((event) => {
   }
 });
 if (window.parent !== window) window.parent.postMessage({ type: 'bk-frame-ready' }, window.location.origin);
-refreshAuthCache().catch(() => { clearSession(); _authCache.ready = true; }).then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); void tutorMemoryInit(); void refreshMyBooks(); });
+window.BKGeneratedStudy?.init({
+  session: getFreshSession, admin: () => !!getCurrentAdmin(), translate: bkL,
+  catalog: () => TEMAS,
+  install(id, title, n, groupTitle, payload) {
+    TOPICS[id] = { id, title, eyebrow: groupTitle, sub: payload.objetivos_aprendizagem.join(' '), generated: payload, tags: [], stats: [],
+      tabs: window.BKGeneratedStudy.views(payload).map(v => ({ id: v.id, label: escapeHtml(v.label), type: 'accordion', items: [{ title: v.label, body: escapeHtml(v.markdown), extra: '' }] })) };
+    let group = TEMAS.find(g => g.n === n);
+    if (!group) { group = { n, title: groupTitle, subs: [] }; TEMAS.push(group); }
+    group.subs.push({ id, title, status: 'ready' });
+  },
+  remove(ids) { for (const id of ids) { delete TOPICS[id]; for (const group of TEMAS) group.subs = group.subs.filter(s => s.id !== id); } },
+  changed() { SEARCH_INDEX = null; if (document.getElementById('temaList')) renderHome(); }
+});
+refreshAuthCache().catch(() => { clearSession(); _authCache.ready = true; }).then(() => { initApp(); spLoad(); seLoad(); dmFabStart(); bkAccessCheck(); void tutorMemoryInit(); void refreshMyBooks(); void window.BKGeneratedStudy?.refresh().catch(e => console.warn('Temas gerados:', e.message)); });
 </script>
 <script>
 // ── Web Push: lembretes de eventos de estudo ──
