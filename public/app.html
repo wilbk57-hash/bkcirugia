@@ -7448,8 +7448,12 @@ function openTopic(id, startTabId, fromPop) {
     document.getElementById('homeBtn').classList.add('show');
     document.getElementById('bottomNav').classList.remove('hide');
     window.BKGeneratedStudy.reader(document.getElementById('paneHost'), originalTopic.generated);
+    const stepper = document.getElementById('paneStepper');
+    if (stepper) stepper.innerHTML = '';
     renderCrumb('topic');
+    if (typeof syncIaBar === 'function') syncIaBar();
     window.scrollTo(0,0);
+    if (!fromPop) pushNav({ view: 'topic', topicId: id, tabId: startTabId || null }, `topic/${id}`);
     return;
   }
   const topic = window.BKStudyReading?.prepareTopic(originalTopic, currentLang === 'en' ? 'References' : currentLang === 'es' ? 'Referencias' : currentLang === 'fr' ? 'Références' : 'Referências') || originalTopic;
