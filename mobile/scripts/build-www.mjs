@@ -4,7 +4,12 @@
 //  - embute as fontes do Google;
 //  - injeta o mobile-shim.js (API publicada, links externos, botão voltar);
 //  - ajusta 2 trechos do app.html que não funcionam fora de um navegador comum.
-import { cp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+  const report = {};
+  const appFiles = ['app.html', 'library-reader.js', 'tutor-memory.js'];
+  for (const dir of ['js', 'css']) {
+    if (existsSync(path.join(www, dir))) for (const f of await readdir(path.join(www, dir))) appFiles.push(dir + '/' + f);
+  }
+  for (const name of appFiles) {
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -108,14 +113,13 @@ async function main() {
   }
 
   // 5. Nada pode continuar apontando para fora (senão não funciona offline).
-  for (const name of ['app.html', 'library-reader.js']) {
+   for (const name of appFiles.filter((n) => n !== 'tutor-memory.js')) {
     const text = await readFile(path.join(www, name), 'utf8');
     const left = text.match(/cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/g);
     if (left) throw new Error(`${name} ainda referencia ${[...new Set(left)].join(', ')}. O app mudou; atualize as regras em build-www.mjs.`);
   }
   for (const id of ['login social', 'recuperar senha', 'supabase-js']) {
-    if (!report['app.html'][id]) throw new Error(`Trecho "${id}" não encontrado no app.html. O app mudou; atualize as regras em build-www.mjs.`);
-  }
+    if (!Object.values(report).some((c) => c[id])) throw
 
   // 6. Shim + entrada do Capacitor (index.html).
   const shim = await readFile(path.join(mobile, 'www-extra', 'mobile-shim.js'), 'utf8');
