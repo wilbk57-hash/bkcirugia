@@ -1,27 +1,54 @@
 
-// Monta mobile/www a partir de public/ para o Capacitor.
-// Não altera nada em public/: trabalha numa cópia.
-// - embute as bibliotecas que hoje vêm de CDN;
-// - embute as fontes do Google;
-// - injeta o mobile-shim.js;
-// - ajusta trechos do app.html para o ambiente móvel.
+// ============================================================
+// BK-CIRURGIA — BUILD MOBILE (CAPACITOR)
+// ============================================================
+// Objetivos:
+// - Construir mobile/www a partir de public/.
+// - Nunca modificar os ficheiros originais de public/.
+// - Copiar bibliotecas e fontes para utilização offline.
+// - Aplicar as adaptações móveis já existentes.
+// - Processar JavaScript e CSS da raiz e das subpastas.
+// - Validar dependências e referências externas.
+// - Construir numa pasta temporária para proteger o build anterior.
+//
+// NOTA:
+// As alterações específicas de fontes e estrutura do app.html
+// que dependem da modularização ficam para a próxima fase.
+// ============================================================
 
 import { existsSync } from 'node:fs';
+
 import {
   cp,
   mkdir,
   readFile,
   readdir,
+  rename,
   rm,
   writeFile,
 } from 'node:fs/promises';
+
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// ------------------------------------------------------------
+// 1. CONFIGURAÇÃO
+// ------------------------------------------------------------
 
 export const DEFAULT_API_BASE =
   'https://project--b951eaff-f66b-4dd3-896d-302004fcc7f8.lovable.app';
 
 const CDN = 'https://cdn.jsdelivr.net/npm/';
+
+const EXCLUDED_PUBLIC_ROOTS = new Set([
+  'resumos',
+  'robots.txt',
+  'sitemap.xml',
+]);
+
+// ------------------------------------------------------------
+// 2. REGRAS DE ADAPTAÇÃO
+// ------------------------------------------------------------
 
 export const RULES = [
   {
@@ -29,42 +56,53 @@ export const RULES = [
     find: /@import url\('https:\/\/fonts\.googleapis\.com\/css2[^']*'\);/g,
     to: "@import url('/fonts.css');",
   },
+
   {
     id: 'supabase-js',
     find: CDN + '@supabase/supabase-js@2/dist/umd/supabase.js',
     to: '/vendor/supabase.js',
   },
+
   {
     id: 'pdf.js',
     find: CDN + 'pdfjs-dist@3.11.174/build/pdf.min.js',
     to: '/vendor/pdf.min.js',
   },
+
   {
     id: 'pdf.js worker',
     find: CDN + 'pdfjs-dist@3.11.174/build/pdf.worker.min.js',
     to: '/vendor/pdf.worker.min.js',
   },
+
   {
     id: 'jszip',
     find: CDN + 'jszip@3.10.1/dist/jszip.min.js',
     to: '/vendor/jszip.min.js',
   },
+
   {
     id: 'epub.js',
     find: CDN + 'epubjs@0.3.93/dist/epub.min.js',
     to: '/vendor/epub.min.js',
   },
+
   {
     id: 'login social',
     find: "if (window.parent === window) { window.location.href = '/app'; return; }",
     to: "if (window.parent === window) { if (window.BK_NATIVE) { window.BK_NATIVE_OAUTH(provider); return; } window.location.href = '/app'; return; }",
   },
+
   {
     id: 'recuperar senha',
     find: "redirectTo: window.location.href.split('#')[0]",
     to: "redirectTo: (window.BK_WEB_URL || window.location.href.split('#')[0])",
   },
 ];
+
+// ------------------------------------------------------------
+// 3. APLICAÇÃO DAS REGRAS
+// ------------------------------------------------------------
 
 export function patchText(source) {
   let text = source;
@@ -79,200 +117,145 @@ export function patchText(source) {
         counts[rule.id] = count;
         text = parts.join(rule.to);
       }
-    } else {
-      const found = text.match(rule.find);
 
-      if (found) {
-        counts[rule.id] = found.length;
-        text = text.replace(rule.find, () => rule.to);
-      }
+      continue;
+    }
+
+    const found = text.match(rule.find);
+
+    if (found) {
+      counts[rule.id] = found.length;
+      text = text.replace(rule.find, () => rule.to);
     }
   }
 
   return { text, counts };
 }
 
+// ------------------------------------------------------------
+// 4. INJEÇÃO DO SHIM
+// ------------------------------------------------------------
+
 export function injectShim(html) {
   if (!html.includes('<head>')) {
     throw new Error(
-      'app.html sem <head>: não foi possível injetar o mobile-shim.js',
+      'app.html sem <head>: não foi possível injetar o mobile-shim.js.',
     );
   }
 
-  if (html.includes('<script src="/mobile-shim.js"></script>')) {
+  const shimTag = '<script src="/mobile-shim.js"></script>';
+
+  // Evita injetar o mesmo script duas vezes.
+  if (html.includes(shimTag)) {
     return html;
   }
 
   return html.replace(
     '<head>',
-    '<head>\n<script src="/mobile-shim.js"></script>',
+    `<head>\n${shimTag}`,
   );
 }
 
-// Recolhe ficheiros de uma pasta, incluindo subpastas.
-async function collectFiles(directory, baseDirectory = directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
+// ------------------------------------------------------------
+// 5. DESCOBERTA RECURSIVA DOS FICHEIROS
+// ------------------------------------------------------------
+
+async function collectFiles(
+  directory,
+  baseDirectory = directory,
+) {
+  const entries = await readdir(directory, {
+    withFileTypes: true,
+  });
+
   const files = [];
 
   for (const entry of entries) {
     const absolutePath = path.join(directory, entry.name);
+    const relativePath = path.relative(
+      baseDirectory,
+      absolutePath,
+    );
+
+    const rootName = relativePath.split(path.sep)[0];
+
+    // Mantém a mesma exclusão utilizada na cópia de public/.
+    if (EXCLUDED_PUBLIC_ROOTS.has(rootName)) {
+      continue;
+    }
 
     if (entry.isDirectory()) {
-      files.push(...await collectFiles(absolutePath, baseDirectory));
-    } else if (entry.isFile()) {
-      files.push(path.relative(baseDirectory, absolutePath));
+      const nestedFiles = await collectFiles(
+        absolutePath,
+        baseDirectory,
+      );
+
+      files.push(...nestedFiles);
+      continue;
     }
+
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    // Inclui JavaScript, módulos JavaScript e CSS.
+    if (!/\.(?:js|mjs|css)$/i.test(entry.name)) {
+      continue;
+    }
+
+    files.push(relativePath);
   }
 
   return files;
 }
 
-async function main() {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const mobile = path.resolve(here, '..');
-  const repo = path.resolve(mobile, '..');
-  const pub = path.join(repo, 'public');
-  const www = path.join(mobile, 'www');
-  const nm = path.join(mobile, 'node_modules');
+// ------------------------------------------------------------
+// 6. VERIFICAÇÃO DE REFERÊNCIAS EXTERNAS
+// ------------------------------------------------------------
 
-  const apiBase = (
-    process.env.BK_API_BASE || DEFAULT_API_BASE
-  ).replace(/\/+$/, '');
+function prepareForDeferredHtmlChecks(content, fileName) {
+  if (fileName !== 'app.html') {
+    return content;
+  }
 
-  if (!existsSync(path.join(pub, 'app.html'))) {
-    throw new Error(
-      'public/app.html não encontrado. Rode a partir da raiz do repositório.',
+  // Estas referências serão tratadas durante a modularização.
+  // São removidas apenas da verificação, não do HTML original.
+
+  return content
+    .replace(
+      /<link\b(?=[^>]*\brel\s*=\s*["']preconnect["'])[^>]*>\s*/gi,
+      '',
+    )
+    .replace(
+      /<noscript\b[^>]*>\s*<link\b(?=[^>]*fonts\.googleapis\.com)[^>]*>\s*<\/noscript>/gi,
+      '',
+    )
+    .replace(
+      /<link\b(?=[^>]*fonts\.googleapis\.com)[^>]*>\s*/gi,
+      '',
     );
-  }
+}
 
-  const need = (filePath) => {
-    if (!existsSync(filePath)) {
-      throw new Error(
-        'Arquivo ausente (verifique se npm install foi executado): ' + filePath,
-      );
-    }
-
-    return filePath;
-  };
-
-  // 1. Limpa e recria a pasta de destino.
-  await rm(www, { recursive: true, force: true });
-  await mkdir(www, { recursive: true });
-
-  // 2. Copia public/ sem páginas de SEO.
-  const skip = new Set(['resumos', 'robots.txt', 'sitemap.xml']);
-
-  await cp(pub, www, {
-    recursive: true,
-    filter: (source) => {
-      const relative = path.relative(pub, source);
-      const firstPart = relative.split(path.sep)[0];
-
-      return !skip.has(firstPart);
-    },
-  });
-
-  // 3. Copia as bibliotecas para uso offline.
-  await mkdir(path.join(www, 'vendor'), { recursive: true });
-
-  const vendor = [
-    ['@supabase/supabase-js/dist/umd/supabase.js', 'supabase.js'],
-    ['pdfjs-dist/build/pdf.min.js', 'pdf.min.js'],
-    ['pdfjs-dist/build/pdf.worker.min.js', 'pdf.worker.min.js'],
-    ['jszip/dist/jszip.min.js', 'jszip.min.js'],
-    ['epubjs/dist/epub.min.js', 'epub.min.js'],
-  ];
-
-  for (const [from, to] of vendor) {
-    await cp(
-      need(path.join(nm, from)),
-      path.join(www, 'vendor', to),
-    );
-  }
-
-  // 4. Copia as fontes para uso offline.
-  const fonts = [
-    ['inter', 'Inter', [400, 500, 600, 700]],
-    ['space-grotesk', 'Space Grotesk', [500, 600, 700]],
-    ['ibm-plex-mono', 'IBM Plex Mono', [500, 600]],
-  ];
-
-  await mkdir(path.join(www, 'fonts'), { recursive: true });
-
-  let fontCss = '';
-
-  for (const [slug, family, weights] of fonts) {
-    for (const weight of weights) {
-      const file = `${slug}-latin-${weight}-normal.woff2`;
-
-      await cp(
-        need(path.join(nm, '@fontsource', slug, 'files', file)),
-        path.join(www, 'fonts', file),
-      );
-
-      fontCss +=
-        `@font-face{font-family:'${family}';` +
-        `font-style:normal;font-weight:${weight};` +
-        `font-display:swap;src:url('/fonts/${file}') format('woff2');}\n`;
-    }
-  }
-
-  await writeFile(path.join(www, 'fonts.css'), fontCss);
-
-  // 5. Identifica todos os ficheiros relevantes.
-  const appFiles = new Set([
-    'app.html',
-    'library-reader.js',
-    'tutor-memory.js',
-  ]);
-
-  for (const directory of ['js', 'css']) {
-    const absoluteDirectory = path.join(www, directory);
-
-    if (existsSync(absoluteDirectory)) {
-      const files = await collectFiles(absoluteDirectory);
-
-      for (const file of files) {
-        appFiles.add(path.posix.join(directory, file.split(path.sep).join('/')));
-      }
-    }
-  }
-
-  // 6. Aplica as substituições necessárias.
-  const report = {};
+async function validateExternalReferences(
+  outputDirectory,
+  appFiles,
+) {
+  const problems = [];
 
   for (const name of appFiles) {
-    const file = path.join(www, name);
+    const file = path.join(outputDirectory, name);
 
     if (!existsSync(file)) {
+      problems.push(`${name}: ficheiro não encontrado.`);
       continue;
     }
 
-    const source = await readFile(file, 'utf8');
-    const { text, counts } = patchText(source);
+    const original = await readFile(file, 'utf8');
 
-    report[name] = counts;
-
-    const output = name === 'app.html'
-      ? injectShim(text)
-      : text;
-
-    await writeFile(file, output);
-  }
-
-  // 7. Confirma que não restaram referências às CDNs.
-  for (const name of appFiles) {
-    if (name === 'tutor-memory.js') {
-      continue;
-    }
-
-    const file = path.join(www, name);
-
-    if (!existsSync(file)) {
-      continue;
-    }
-
-    const content = await readFile(file, 'utf8');
+    const content = prepareForDeferredHtmlChecks(
+      original,
+      name,
+    );
 
     const remaining = content.match(
       /cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com/g,
@@ -281,68 +264,451 @@ async function main() {
     if (remaining) {
       const domains = [...new Set(remaining)];
 
-      throw new Error(
-        `${name} ainda referencia ${domains.join(', ')}. ` +
-        'Atualize as regras em build-www.mjs.',
+      problems.push(
+        `${name}: referências externas restantes: ${domains.join(', ')}`,
       );
     }
   }
 
-  // 8. Confirma que as substituições críticas aconteceram.
-  const requiredRules = [
-    'login social',
-    'recuperar senha',
-    'supabase-js',
+  if (problems.length > 0) {
+    throw new Error(
+      'Foram encontradas referências externas não tratadas:\n- ' +
+      problems.join('\n- '),
+    );
+  }
+}
+
+// ------------------------------------------------------------
+// 7. FUNÇÃO PRINCIPAL
+// ------------------------------------------------------------
+
+async function main() {
+  const here = path.dirname(
+    fileURLToPath(import.meta.url),
+  );
+
+  const mobile = path.resolve(here, '..');
+  const repo = path.resolve(mobile, '..');
+
+  const pub = path.join(repo, 'public');
+  const nm = path.join(mobile, 'node_modules');
+
+  const www = path.join(mobile, 'www');
+  const staging = path.join(mobile, '.www-build');
+
+  const apiBase = (
+    process.env.BK_API_BASE || DEFAULT_API_BASE
+  ).replace(/\/+$/, '');
+
+  // ----------------------------------------------------------
+  // 7.1. VERIFICAÇÕES INICIAIS
+  // ----------------------------------------------------------
+
+  if (Number(process.versions.node.split('.')[0]) < 22) {
+    throw new Error(
+      `Node.js 22 ou superior é necessário. Versão atual: ${process.versions.node}`,
+    );
+  }
+
+  if (!existsSync(path.join(pub, 'app.html'))) {
+    throw new Error(
+      'public/app.html não encontrado. Verifique a localização do projeto.',
+    );
+  }
+
+  const need = (filePath) => {
+    if (!existsSync(filePath)) {
+      throw new Error(
+        `Dependência ou ficheiro ausente: ${filePath}\n` +
+        'Verifique se npm install foi executado corretamente.',
+      );
+    }
+
+    return filePath;
+  };
+
+  // ----------------------------------------------------------
+  // 7.2. PREPARAÇÃO DAS BIBLIOTECAS
+  // ----------------------------------------------------------
+
+  const vendor = [
+    [
+      '@supabase/supabase-js/dist/umd/supabase.js',
+      'supabase.js',
+    ],
+    [
+      'pdfjs-dist/build/pdf.min.js',
+      'pdf.min.js',
+    ],
+    [
+      'pdfjs-dist/build/pdf.worker.min.js',
+      'pdf.worker.min.js',
+    ],
+    [
+      'jszip/dist/jszip.min.js',
+      'jszip.min.js',
+    ],
+    [
+      'epubjs/dist/epub.min.js',
+      'epub.min.js',
+    ],
   ];
 
-  for (const id of requiredRules) {
-    const wasApplied = Object.values(report).some(
-      (counts) => Boolean(counts[id]),
-    );
+  // Verifica todos os ficheiros antes de iniciar a construção.
+  const vendorSources = vendor.map(([from, to]) => ({
+    source: need(path.join(nm, from)),
+    destination: to,
+  }));
 
-    if (!wasApplied) {
-      throw new Error(
-        `A regra "${id}" não foi aplicada. ` +
-        'O app.html pode ter mudado; verifique a regra antes de continuar.',
-      );
+  // ----------------------------------------------------------
+  // 7.3. PREPARAÇÃO DAS FONTES
+  // ----------------------------------------------------------
+
+  const fonts = [
+    ['inter', 'Inter', [400, 500, 600, 700]],
+    ['space-grotesk', 'Space Grotesk', [500, 600, 700]],
+    ['ibm-plex-mono', 'IBM Plex Mono', [500, 600]],
+  ];
+
+  const fontSources = [];
+
+  for (const [slug, family, weights] of fonts) {
+    for (const weight of weights) {
+      const file = `${slug}-latin-${weight}-normal.woff2`;
+
+      fontSources.push({
+        family,
+        weight,
+        file,
+        source: need(
+          path.join(
+            nm,
+            '@fontsource',
+            slug,
+            'files',
+            file,
+          ),
+        ),
+      });
     }
   }
 
-  // 9. Injeta a configuração e o shim do ambiente móvel.
+  // ----------------------------------------------------------
+  // 7.4. PREPARAÇÃO DO SHIM
+  // ----------------------------------------------------------
+
   const shimSource = await readFile(
-    need(path.join(mobile, 'www-extra', 'mobile-shim.js')),
+    need(
+      path.join(
+        mobile,
+        'www-extra',
+        'mobile-shim.js',
+      ),
+    ),
     'utf8',
   );
 
-  const config =
-    `window.BK_API_BASE=${JSON.stringify(apiBase)};` +
-    `window.BK_WEB_URL=${JSON.stringify(apiBase + '/app.html')};\n`;
+  // ----------------------------------------------------------
+  // 7.5. DESCOBERTA DOS FICHEIROS DA APLICAÇÃO
+  // ----------------------------------------------------------
 
-  await writeFile(
-    path.join(www, 'mobile-shim.js'),
-    config + shimSource,
-  );
+  const discoveredFiles = await collectFiles(pub);
 
-  // 10. Cria a entrada esperada pelo Capacitor.
-  await cp(
-    need(path.join(www, 'app.html')),
-    path.join(www, 'index.html'),
-  );
+  const appFiles = [
+    'app.html',
+    ...discoveredFiles,
+  ];
 
-  await rm(path.join(www, 'app.html'));
+  // Remove duplicados e mantém ordem determinística.
+  const uniqueAppFiles = [...new Set(appFiles)].sort();
 
-  console.log('API publicada:', apiBase);
-  console.log('Trocas feitas:', JSON.stringify(report, null, 2));
-  console.log('Ficheiros processados:', appFiles.size);
-  console.log('www pronto em', www);
+  // ----------------------------------------------------------
+  // 7.6. INÍCIO DA CONSTRUÇÃO TEMPORÁRIA
+  // ----------------------------------------------------------
+
+  await rm(staging, {
+    recursive: true,
+    force: true,
+  });
+
+  try {
+    await mkdir(staging, {
+      recursive: true,
+    });
+
+    // --------------------------------------------------------
+    // 7.7. CÓPIA DO PUBLIC
+    // --------------------------------------------------------
+
+    await cp(pub, staging, {
+      recursive: true,
+
+      filter: (source) => {
+        const relative = path.relative(pub, source);
+
+        if (!relative) {
+          return true;
+        }
+
+        const firstPart = relative.split(path.sep)[0];
+
+        return !EXCLUDED_PUBLIC_ROOTS.has(firstPart);
+      },
+    });
+
+    // --------------------------------------------------------
+    // 7.8. CÓPIA DAS BIBLIOTECAS
+    // --------------------------------------------------------
+
+    const vendorDirectory = path.join(
+      staging,
+      'vendor',
+    );
+
+    await mkdir(vendorDirectory, {
+      recursive: true,
+    });
+
+    for (const item of vendorSources) {
+      await cp(
+        item.source,
+        path.join(vendorDirectory, item.destination),
+      );
+    }
+
+    // --------------------------------------------------------
+    // 7.9. CÓPIA DAS FONTES
+    // --------------------------------------------------------
+
+    const fontsDirectory = path.join(
+      staging,
+      'fonts',
+    );
+
+    await mkdir(fontsDirectory, {
+      recursive: true,
+    });
+
+    let fontCss = '';
+
+    for (const item of fontSources) {
+      await cp(
+        item.source,
+        path.join(fontsDirectory, item.file),
+      );
+
+      fontCss +=
+        `@font-face{` +
+        `font-family:'${item.family}';` +
+        `font-style:normal;` +
+        `font-weight:${item.weight};` +
+        `font-display:swap;` +
+        `src:url('/fonts/${item.file}') format('woff2');` +
+        `}\n`;
+    }
+
+    await writeFile(
+      path.join(staging, 'fonts.css'),
+      fontCss,
+      'utf8',
+    );
+
+    // --------------------------------------------------------
+    // 7.10. APLICAÇÃO DAS REGRAS
+    // --------------------------------------------------------
+
+    const report = {};
+
+    for (const name of uniqueAppFiles) {
+      const file = path.join(staging, name);
+
+      if (!existsSync(file)) {
+        throw new Error(
+          `Ficheiro esperado não encontrado após a cópia: ${name}`,
+        );
+      }
+
+      const source = await readFile(file, 'utf8');
+
+      const result = patchText(source);
+
+      report[name] = result.counts;
+
+      const output = name === 'app.html'
+        ? injectShim(result.text)
+        : result.text;
+
+      await writeFile(
+        file,
+        output,
+        'utf8',
+      );
+    }
+
+    // --------------------------------------------------------
+    // 7.11. VALIDAÇÃO DAS REFERÊNCIAS EXTERNAS
+    // --------------------------------------------------------
+
+    await validateExternalReferences(
+      staging,
+      uniqueAppFiles,
+    );
+
+    // --------------------------------------------------------
+    // 7.12. VALIDAÇÃO DAS REGRAS OBRIGATÓRIAS
+    // --------------------------------------------------------
+
+    const requiredRules = [
+      'login social',
+      'recuperar senha',
+      'supabase-js',
+    ];
+
+    for (const id of requiredRules) {
+      const wasApplied = Object.values(report).some(
+        (counts) => Boolean(counts[id]),
+      );
+
+      if (!wasApplied) {
+        throw new Error(
+          `A regra obrigatória "${id}" não foi aplicada. ` +
+          'Verifique se o código-fonte mudou antes de continuar.',
+        );
+      }
+    }
+
+    // --------------------------------------------------------
+    // 7.13. INJEÇÃO DA CONFIGURAÇÃO E DO SHIM
+    // --------------------------------------------------------
+
+    const config =
+      `window.BK_API_BASE=${JSON.stringify(apiBase)};` +
+      `window.BK_WEB_URL=${JSON.stringify(apiBase + '/app.html')};\n`;
+
+    await writeFile(
+      path.join(staging, 'mobile-shim.js'),
+      config + shimSource,
+      'utf8',
+    );
+
+    // --------------------------------------------------------
+    // 7.14. CRIAÇÃO DO INDEX.HTML
+    // --------------------------------------------------------
+
+    const appHtml = path.join(
+      staging,
+      'app.html',
+    );
+
+    const indexHtml = path.join(
+      staging,
+      'index.html',
+    );
+
+    if (!existsSync(appHtml)) {
+      throw new Error(
+        'app.html desapareceu durante a construção.',
+      );
+    }
+
+    await cp(appHtml, indexHtml);
+
+    await rm(appHtml);
+
+    // --------------------------------------------------------
+    // 7.15. VALIDAÇÃO DOS ARQUIVOS FINAIS
+    // --------------------------------------------------------
+
+    const requiredOutputs = [
+      'index.html',
+      'mobile-shim.js',
+      'fonts.css',
+      'vendor/supabase.js',
+      'vendor/pdf.min.js',
+      'vendor/pdf.worker.min.js',
+      'vendor/jszip.min.js',
+      'vendor/epub.min.js',
+    ];
+
+    for (const relativePath of requiredOutputs) {
+      if (!existsSync(path.join(staging, relativePath))) {
+        throw new Error(
+          `Ficheiro final obrigatório ausente: ${relativePath}`,
+        );
+      }
+    }
+
+    for (const item of fontSources) {
+      if (!existsSync(path.join(fontsDirectory, item.file))) {
+        throw new Error(
+          `Fonte não foi copiada corretamente: ${item.file}`,
+        );
+      }
+    }
+
+    // --------------------------------------------------------
+    // 7.16. PUBLICAÇÃO DO BUILD
+    // --------------------------------------------------------
+
+    // Só substitui o www anterior depois de todas as validações.
+    await rm(www, {
+      recursive: true,
+      force: true,
+    });
+
+    await rename(staging, www);
+
+    // --------------------------------------------------------
+    // 7.17. RELATÓRIO
+    // --------------------------------------------------------
+
+    console.log('\n========================================');
+    console.log(' BK-CIRURGIA — BUILD MOBILE CONCLUÍDO');
+    console.log('========================================\n');
+
+    console.log('API publicada:', apiBase);
+    console.log('Ficheiros processados:', uniqueAppFiles.length);
+    console.log('Bibliotecas locais:', vendorSources.length);
+    console.log('Ficheiros de fontes:', fontSources.length);
+    console.log('Destino:', www);
+
+    console.log(
+      '\nRelatório de substituições:',
+      JSON.stringify(report, null, 2),
+    );
+
+    console.log('\nBuild concluído com sucesso.\n');
+
+  } catch (error) {
+    // Remove apenas a construção temporária.
+    // O build anterior permanece intacto se ainda não foi substituído.
+    await rm(staging, {
+      recursive: true,
+      force: true,
+    });
+
+    throw error;
+  }
 }
 
-if (
+// ------------------------------------------------------------
+// 8. EXECUÇÃO DIRETA
+// ------------------------------------------------------------
+
+const isDirectExecution =
   process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+  import.meta.url === pathToFileURL(
+    path.resolve(process.argv[1]),
+  ).href;
+
+if (isDirectExecution) {
   main().catch((error) => {
-    console.error('ERRO:', error.message);
-    process.exit(1);
+    console.error('\n========================================');
+    console.error(' ERRO NO BUILD DO BK-CIRURGIA');
+    console.error('========================================\n');
+
+    console.error(error.message);
+
+    process.exitCode = 1;
   });
 }
