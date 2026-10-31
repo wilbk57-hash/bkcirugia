@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Sem ligação | BK Cirurgia</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      text-align: center;
+    }
+
+    main {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .icon {
+      font-size: 56px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 26px;
+    }
+
+    p {
+      color: #cbd5e1;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 13px 22px;
+      background: #2563eb;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 3px;
+    }
+
+    footer {
+      margin-top: 36px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div class="icon" aria-hidden="true">📡</div>
+
+    <h1>Sem ligação à Internet</h1>
+
+    <p>
+      Não foi possível carregar esta página.
+      Verifica a tua ligação e tenta novamente.
+    </p>
+
+    <button type="button" onclick="window.location.reload()">
+      Tentar novamente
+    </button>
+
+    <footer>
+      BK Cirurgia · Plataforma de estudo
+    </footer>
+  </main>
+</body>
+</html>
