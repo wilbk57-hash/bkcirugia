@@ -33,3 +33,18 @@ export function createLovableResponsesProvider(lovableApiKey: string, initialRun
   })
   return Object.assign(provider, { getRunId: runIdFetch.getRunId, waitForRunId: runIdFetch.waitForRunId })
 }
+/** Gemini API direta — a chave permanece exclusivamente no servidor. */
+export function createGeminiProvider(geminiApiKey: string) {
+  if (!geminiApiKey) {
+    throw new Error('GEMINI_API_KEY não configurada')
+  }
+
+  return createOpenAICompatible({
+    name: 'gemini',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    headers: {
+      Authorization: `Bearer ${geminiApiKey}`,
+      'x-goog-api-client': 'bk-cirurgia/1.0.0',
+    },
+  })
+}
