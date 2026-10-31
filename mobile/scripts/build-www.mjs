@@ -650,13 +650,62 @@ async function main() {
     // 7.16. PUBLICAÇÃO DO BUILD
     // --------------------------------------------------------
 
-    // Só substitui o www anterior depois de todas as validações.
-    await rm(www, {
-      recursive: true,
-      force: true,
-    });
+    
+    // Publica o novo build preservando a versão anterior para rollback.
+    // A pasta de backup fica no mesmo diretório para manter rename no mesmo volume.
+    const backup = path.join(mobile, '.www-backup');
+    let previousBuildMoved = false;
 
-    await rename(staging, www);
+    // Um backup antigo não deve ser apagado automaticamente:
+    // pode conter a única cópia recuperável de um build anterior.
+    if (existsSync(backup)) {
+      throw new Error(
+        'Foi encontrada a pasta .www-backup. Verifique o seu conteúdo e ' +
+        'remova-a ou renomeie-a manualmente antes de publicar um novo build.',
+      );
+    }
+
+    // Preserva o build atual antes de publicar o novo.
+    if (existsSync(www)) {
+      await rename(www, backup);
+      previousBuildMoved = true;
+    }
+
+    try {
+      await rename(staging, www);
+    } catch (publishError) {
+      // Se a publicação falhar, tenta restaurar o build anterior.
+      if (previousBuildMoved) {
+        try {
+          await rename(backup, www);
+        } catch (restoreError) {
+          throw new AggregateError(
+            [publishError, restoreError],
+            'A publicação falhou e também não foi possível restaurar o build anterior. ' +
+            'A versão anterior permanece na pasta .www-backup; não a apague.',
+          );
+        }
+      }
+
+      throw publishError;
+    }
+
+    // O novo www já está publicado.
+    // Se a limpeza falhar, preserva o backup e apenas apresenta um aviso.
+    if (previousBuildMoved) {
+      try {
+        await rm(backup, {
+          recursive: true,
+          force: true,
+        });
+      } catch (cleanupError) {
+        console.warn(
+          'Aviso: o novo build foi publicado, mas não foi possível remover .www-backup:',
+          cleanupError.message,
+        );
+      }
+    }
+
 
     // --------------------------------------------------------
     // 7.17. RELATÓRIO
