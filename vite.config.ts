@@ -80,8 +80,9 @@ export default defineConfig({
 
       manifest: false,
 
-      // Registo manual através de virtual:pwa-register.
-      injectRegister: null,
+      // O Service Worker é registado exclusivamente pelo wrapper
+// protegido em src/lib/register-sw.ts.
+injectRegister: false,
 
       // Atualização controlada pelo utilizador.
       registerType: "prompt",
