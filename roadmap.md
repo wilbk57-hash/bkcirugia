@@ -24,6 +24,8 @@
 - [ ] Validar instalação nativa e abertura offline após publicação em dispositivos reais — depende da publicação e de teste num dispositivo.
 
 # Tutor
+- [x] Corrigir instruções descartadas em /api/tutor: preservar tarefas JSON dos casos/mapas e contexto de memória/livros, mantendo as regras oficiais; testes de transporte, streaming e acesso passaram, sem publicar.
+- [ ] Validar resposta real após a correção das instruções — pedido autenticado de administrador alcançou a IA, mas foi bloqueado por falta de créditos (402); não foram feitas novas tentativas.
 - [ ] Esclarecer o aviso «Limite de uso atingido»: distinguir quota do app, limitação temporária do serviço e créditos, com base no pedido real.
 - [x] Corrigir e verificar geração, recuperação e conclusão de casos clínicos na conta de administrador autenticada.
 - [x] Retirar a quota de utilização do Tutor sem alterar os outros limites ou o acesso pago.

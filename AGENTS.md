@@ -25,6 +25,7 @@
 - Library reads (user_books, book_chunks, user-books storage) and /api/tutor, /api/books/search require public.has_access() (admin, or active profile with unexpired subscription); access-check failures return 503, never 402, so technical errors never lock students out.
 - /api routes use src/lib/cors.server.ts with a fixed origin allowlist (never *) so the Capacitor app can call the published server.
 - Tutor streaming uses plain UTF-8 deltas with an RS-delimited terminal record; display-only drafts stay outside account memory and sources attach only after verified completion, so interrupted responses cannot become saved answers.
+- The Tutor endpoint accepts the existing app `system` field as subordinate feature task/format instructions, separately from untrusted `context`, while retaining its server-owned base prompt; this preserves JSON-based tools and chat memory/library context without replacing official safety rules.
 
 - Pin iframe CDN scripts to exact versions with SHA-384 SRI on every loader call, keeping the shell client version and service-worker dependency URL aligned; this prevents unverified floating dependencies without changing synchronous bootstrap.
 - Curated study additions live in separate public/temas/<id>.js files listed in temas/lista.js; parser-blocking study-topic-files.js loads them before study-topics-loader.js validates and merges entries before search initialization, isolating syntax failures. New IDs require explicit catalog placement.

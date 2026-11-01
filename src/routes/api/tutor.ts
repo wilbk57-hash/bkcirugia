@@ -16,6 +16,7 @@ const BodySchema = z.object({
   provider: z.enum(['gemini', 'openai']),
   stream: z.boolean().optional(),
   context: z.string().max(60000).optional(),
+  system: z.string().max(60000).optional(),
   maxTokens: z.number().int().min(64).max(4000).optional(),
   messages: z
     .array(
@@ -106,8 +107,9 @@ export const Route = createFileRoute('/api/tutor')({
         }
 
         // 5. Construção do prompt oficial no servidor
-        // O contexto enviado pelo navegador é tratado como informação auxiliar.
-        const system = buildTutorSystemPrompt(parsed.context)
+        // As tarefas/formato do app são subordinados às regras oficiais;
+        // o contexto separado continua a ser informação auxiliar não confiável.
+        const system = buildTutorSystemPrompt(parsed.context, parsed.system)
 
         const modelId = MODELS[parsed.provider]
         const maxOutputTokens = parsed.maxTokens ?? 1500
