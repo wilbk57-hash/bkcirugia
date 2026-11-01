@@ -103,6 +103,24 @@ test('streaming keeps Android CORS and omits unlisted origins',async()=>{
 });
 
 const html=load('public/app.html');
+test('real clinical-case and mind-map prompts reach the server through callGatewayTutor',async()=>{
+  const r=route();
+  const client={currentLang:'pt',CC_STEP_PLAN:Array.from({length:10},(_,i)=>({id:'step'+i})),
+    getTutorAuthToken:async()=>'test-only',
+    fetch:async(url,init)=>r.post({request:new Request('http://localhost'+url,init)})};
+  for(const name of ['callGatewayTutor','ccBuildSystemPrompt','mmSystemPrompt','mmLangName']) {
+    const start=html.indexOf((name==='callGatewayTutor'?'async ':'')+'function '+name+'(');
+    const end=html.indexOf('\n}',start)+2;
+    runInNewContext(html.slice(start,end),client);
+  }
+  for(const provider of ['gemini','openai']) {
+    for(const prompt of [client.ccBuildSystemPrompt(),client.mmSystemPrompt()]) {
+      await client.callGatewayTutor(provider,{system:prompt,messages:[{role:'user',content:'Choque hipovolémico'}],maxTokens:3000});
+      assert.ok(r.inputs.at(-1).system.includes(JSON.stringify(prompt)));
+      assert.equal(r.inputs.at(-1).maxOutputTokens,3000);
+    }
+  }
+});
 const start=html.indexOf('async function sendIaMessage(');
 const sendSource=html.slice(start,html.indexOf('\n}',start)+2);
 function sender(fail=false) {
