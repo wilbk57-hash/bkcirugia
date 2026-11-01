@@ -57,7 +57,7 @@ export const RULES = [
     to: "@import url('/fonts.css');",
   },
 
-    {
+  {
     id: 'supabase-js',
     find: /https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[\d.]+\/dist\/umd\/supabase\.js/g,
     to: '/vendor/supabase.js',
