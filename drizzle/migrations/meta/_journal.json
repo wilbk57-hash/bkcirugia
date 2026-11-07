@@ -120,6 +120,13 @@
       "when": 1792934149840,
       "tag": "0016_study_module_generation",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794090825609,
+      "tag": "0017_security_hardening_mfa_messages_trial",
+      "breakpoints": true
     }
   ]
 }

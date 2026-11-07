@@ -914,6 +914,7 @@ export type Database = {
         Returns: string
       }
       study_module_restore: { Args: { p_id: string }; Returns: boolean }
+      verify_reminders_secret: { Args: { _provided: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
