@@ -92,8 +92,6 @@ export const Route = createFileRoute('/api/public/hooks/study-reminders')({
           });
         }
 
-        const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-
         const today = new Date().toISOString().slice(0, 10);
         const horizon = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
 
