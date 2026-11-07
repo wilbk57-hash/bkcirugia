@@ -53,14 +53,27 @@ export const Route = createFileRoute('/api/public/hooks/study-reminders')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        // Segredo dedicado a este hook. A chave pública do projeto já não serve:
+        // Segredo dedicado a este hook, guardado no backend (tabela privada fora
+        // da API) e verificado no banco. A chave pública do projeto já não serve:
         // é conhecida por qualquer visitante do site.
-        const expectedKey = process.env['REMINDERS_HOOK_SECRET'];
         const provided =
           request.headers.get('x-reminders-secret') ||
           request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
-        if (!expectedKey || !provided || provided !== expectedKey) {
+        const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+
+        if (!provided) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: secretOk, error: secretError } = await supabaseAdmin.rpc(
+          'verify_reminders_secret',
+          { _provided: provided },
+        );
+        if (secretError || secretOk !== true) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), {
             status: 401,
             headers: { 'Content-Type': 'application/json' },
