@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SITE_URL } from "@/lib/site";
 
 const FEATURES = [
   {
@@ -7,7 +8,7 @@ const FEATURES = [
   },
   {
     title: "Tutor de IA",
-    text: "Tire dúvidas a qualquer momento e peça explicações sobre qualquer trecho do conteúdo, com respostas baseadas também nos seus próprios livros.",
+    text: "Tire dúvidas a qualquer momento e peça explicações sobre qualquer trecho do conteúdo, com respostas baseadas nos livros da biblioteca oficial.",
   },
   {
     title: "Mapas mentais gerados por IA",
@@ -43,10 +44,10 @@ export const Route = createFileRoute("/")({
           "Estude cirurgia com conteúdo estruturado, tutor de IA, mapas mentais e acompanhamento de progresso.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://bkcirugia.lovable.app/" },
+      { property: "og:url", content: `${SITE_URL}/` },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://bkcirugia.lovable.app/" }],
+    links: [{ rel: "canonical", href: `${SITE_URL}/` }],
     scripts: [
       {
         type: "application/ld+json",
@@ -54,7 +55,7 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "BK-CIRURGIA",
-          url: "https://bkcirugia.lovable.app/",
+          url: `${SITE_URL}/`,
           description:
             "Plataforma de estudos em cirurgia com módulos estruturados, tutor de IA, mapas mentais e acompanhamento de progresso.",
           inLanguage: "pt",
@@ -78,7 +79,7 @@ function Index() {
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-muted-foreground">
             Estude cirurgia com conteúdo estruturado, tutor de inteligência artificial, mapas
-            mentais interativos, biblioteca ficial de livros e acompanhamento real do seu
+            mentais interativos, biblioteca oficial de livros e acompanhamento real do seu
             progresso.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -86,15 +87,19 @@ function Index() {
               to="/app"
               className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              Entrar na plataforma
+              Começar 7 dias grátis
             </Link>
             <Link
               to="/app"
               className="inline-flex min-h-11 items-center justify-center rounded-md border border-input bg-background px-6 text-sm font-medium transition-colors hover:bg-accent"
             >
-              Criar conta
+              Entrar
             </Link>
           </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Crie a sua conta e experimente tudo durante 7 dias, sem compromisso. Depois escolha um
+            plano para continuar.
+          </p>
         </header>
 
         <section className="mt-16" aria-labelledby="recursos">
@@ -153,7 +158,7 @@ function Index() {
           <p className="mt-4 max-w-3xl text-muted-foreground">
             Estudantes de medicina, internos e médicos em preparação para provas de cirurgia que
             precisam de rever grandes volumes de conteúdo com método: revisão espaçada por tema,
-            questões de consolidação e material próprio sempre à mão.
+            questões de consolidação e os livros da biblioteca oficial sempre à mão.
           </p>
           <div className="mt-8">
             <Link
