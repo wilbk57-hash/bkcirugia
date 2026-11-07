@@ -8532,7 +8532,7 @@ function onAuthGranted(isAdmin) {
   void window.BKGeneratedStudy?.refresh().catch(e => console.warn('Temas gerados:', e.message));
 }
 
-/* ---------- Experiência grátis (1 dia) + bloqueio sem pagamento ---------- */
+/* ---------- Experiência grátis (7 dias) + bloqueio sem pagamento ---------- */
 let bkAccessTimer = null;
 /* Servidor recusou por falta de assinatura: reabre o mesmo ecrã de bloqueio. */
 function bkShowPayGate() { try { bkAccessCheck(); } catch (e) {} }
@@ -9896,7 +9896,7 @@ function bkPayForm(k, price, mtn, body) {
       <li>${L('Envia aqui o comprovativo. A equipa confirma e o acesso ativa-se.','Upload the receipt here. The team confirms and your access is activated.','Sube el comprobante aquí.')}</li>
     </ol>
     <input class="sb-input" id="bkPayPhone" style="width:100%;margin-bottom:8px;" placeholder="${L('O teu número MTN (quem pagou)','Your MTN number (who paid)','Tu número MTN')}">
-    <input type="file" id="bkPayFile" accept="image/*" style="width:100%;font-size:12px;">
+    <input type="file" id="bkPayFile" accept="image/jpeg,image/png,image/webp,application/pdf" style="width:100%;font-size:12px;">
     <button class="btn" id="bkPaySend" style="margin-top:8px;width:100%;">${L('Enviar comprovativo','Send receipt','Enviar comprobante')}</button>
     <div id="bkPayMsg" style="font-size:12px;margin-top:6px;"></div>
   </div>`;
