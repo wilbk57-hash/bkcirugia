@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SITE_URL } from "@/lib/site";
 
-const URL = "https://bkcirugia.lovable.app/resumos/cirurgia-geral";
-const IMAGE_URL = "https://bkcirugia.lovable.app/resumos/pre-operatorio-share.webp";
+const URL = `${SITE_URL}/resumos/cirurgia-geral`;
+const IMAGE_URL = `${SITE_URL}/resumos/pre-operatorio-share.webp`;
 const TITLE = "Resumo de cirurgia geral: pré-operatório | BK-CIRURGIA";
 const DESCRIPTION =
   "Resumo de cirurgia geral para residência: definição de pré-operatório, cirurgia eletiva, de urgência e emergência, fases mediata e imediata e estresse cirúrgico.";
@@ -117,7 +118,7 @@ export const Route = createFileRoute("/resumos/cirurgia-geral")({
               "@type": "ListItem",
               position: 1,
               name: "Início",
-              item: "https://bkcirugia.lovable.app/",
+              item: `${SITE_URL}/`,
             },
             { "@type": "ListItem", position: 2, name: "Resumo de cirurgia geral", item: URL },
           ],
