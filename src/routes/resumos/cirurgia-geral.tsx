@@ -118,7 +118,7 @@ export const Route = createFileRoute("/resumos/cirurgia-geral")({
               "@type": "ListItem",
               position: 1,
               name: "Início",
-              item: "https://bkcirugia.lovable.app/",
+              item: `${SITE_URL}/`,
             },
             { "@type": "ListItem", position: 2, name: "Resumo de cirurgia geral", item: URL },
           ],
