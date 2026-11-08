@@ -55,7 +55,14 @@
 
 # Verificação em dois passos do administrador
 - [x] Passo do código TOTP no login admin (aal1 → aal2), cartão de ativação com QR/chave no painel, auditoria e textos pt/en/es; testes em tests/admin-auth.test.js. Banco inalterado.
-- [ ] Exigir aal2 em is_platform_admin() e nas regras — depois de o administrador confirmar o 2FA.
+- [x] Exigir aal2 em is_platform_admin() quando o admin tem TOTP verificado (migração 0017); admin sem 2FA não fica bloqueado.
+
+## Endurecimento de segurança e trial de 7 dias (2026-11-08)
+- [x] Migração 0017: is_platform_admin com aal2; UPDATE só em read_at + CHECK 1–4000 nas mensagens; chat_directory com has_access e sem email; INSERT de peer_messages com destinatário ativo e acesso; audit_events bloqueia eventos admin_/payment_* de não-admins; grant_trial_access com 7 dias e sem EXECUTE pela API; segredo do cron em tabela privada + verify_reminders_secret só para service_role.
+- [x] Cron study-reminders-daily lê o segredo da tabela privada; rota valida via RPC; REMINDERS_HOOK_SECRET antigo apagado.
+- [x] Formulário de comprovativo aceita jpeg/png/webp/pdf; landing com SITE_URL (trypixelperfect.app), textos corrigidos e botões "Começar 7 dias grátis"/"Entrar".
+- [ ] Limitar tipos de ficheiro do bucket payment-receipts (ferramenta não suporta allowed_mime_types).
+- [ ] Publicar para aplicar no site.
 
 ## Sessão expirada no Tutor e casos clínicos (2026-10-24)
 - [x] getFreshSession() com renovação única antes de desistir (Tutor, casos clínicos, memória do Tutor)
